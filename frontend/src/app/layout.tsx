@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { QueryProvider } from "@/providers/QueryProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -44,7 +45,9 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${dancingScript.variable} h-full antialiased`}
     >
       <body className="min-h-screen flex flex-col font-sans">
-        {children}
+        <QueryProvider>
+          {children}
+        </QueryProvider>
         <Toaster position="top-center" richColors />
       </body>
     </html>
