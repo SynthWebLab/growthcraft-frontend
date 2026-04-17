@@ -1,28 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { NAV_ROUTES, LOGIN_ROUTES, REGISTER_ROUTES } from "@/lib/constants/routes";
 import logoMain from "@/assets/logo-main.png";
-
-const navLinks = [
-  { name: "Home", path: "/" },
-  { name: "Courses", path: "/courses" },
-  { name: "Bootcamps", path: "/bootcamps" },
-  { name: "About", path: "/about" },
-  { name: "For Students", path: "/for-students" },
-  { name: "For Colleges", path: "/for-colleges" },
-  { name: "For Mentors", path: "/for-mentors" },
-  { name: "For Employers", path: "/for-employers" },
-  { name: "Contact", path: "/contact" },
-];
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16 lg:h-20">
+            <Link href="/" className="flex items-center">
+              <Image
+                src={logoMain}
+                alt="GrowthCraft"
+                className="h-8 lg:h-10 w-auto object-contain"
+                height={40}
+                width={120}
+                priority
+              />
+            </Link>
+            <div className="hidden lg:flex items-center gap-2">
+              <Button variant="outline" size="sm">Login</Button>
+              <Button size="default">Get Started</Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
@@ -30,10 +55,10 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image 
-              src={logoMain} 
-              alt="GrowthCraft" 
-              className="h-8 lg:h-10 w-auto object-contain" 
+            <Image
+              src={logoMain}
+              alt="GrowthCraft"
+              className="h-8 lg:h-10 w-auto object-contain"
               height={40}
               width={120}
               priority
@@ -42,7 +67,7 @@ export const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
+            {NAV_ROUTES.map((link) => (
               <Link
                 key={link.path}
                 href={link.path}
@@ -58,17 +83,38 @@ export const Navbar = () => {
           </div>
 
           {/* CTA Buttons */}
-          <div className="hidden lg:flex items-center gap-3">
-            <Link href="/student/login">
-              <Button variant="outline" size="sm">
-                Login
-              </Button>
-            </Link>
-            <Link href="/student/login">
-              <Button variant="default" size="default">
-                Get Started
-              </Button>
-            </Link>
+          <div className="hidden lg:flex items-center gap-2">
+            {/* Login Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  Login <ChevronDown className="ml-1 h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {LOGIN_ROUTES.map((opt) => (
+                  <DropdownMenuItem key={opt.path} asChild>
+                    <Link href={opt.path}>{opt.label}</Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Get Started Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="default">
+                  Get Started <ChevronDown className="ml-1 h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {REGISTER_ROUTES.map((opt) => (
+                  <DropdownMenuItem key={opt.path} asChild>
+                    <Link href={opt.path}>{opt.label}</Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile Menu Button */}
@@ -84,7 +130,7 @@ export const Navbar = () => {
         {isOpen && (
           <div className="lg:hidden py-4 border-t border-border animate-fade-in">
             <div className="flex flex-col gap-2">
-              {navLinks.map((link) => (
+              {NAV_ROUTES.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
@@ -98,17 +144,41 @@ export const Navbar = () => {
                   {link.name}
                 </Link>
               ))}
+
               <div className="pt-4 px-4 space-y-2">
-                <Link href="/student/login" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/student/login" onClick={() => setIsOpen(false)}>
-                  <Button variant="default" className="w-full">
-                    Get Started
-                  </Button>
-                </Link>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-2">
+                  Login As
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {LOGIN_ROUTES.map((opt) => (
+                    <Link
+                      key={opt.path}
+                      href={opt.path}
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Button variant="outline" size="sm" className="w-full text-xs">
+                        {opt.label}
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-2 mt-4">
+                  Register As
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {REGISTER_ROUTES.map((opt) => (
+                    <Link
+                      key={opt.path}
+                      href={opt.path}
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Button size="sm" className="w-full text-xs">
+                        {opt.label}
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
