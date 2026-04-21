@@ -9,10 +9,10 @@ export const NAV_ROUTES = [
 
 // Login routes by role
 export const LOGIN_ROUTES = [
-  { label: "Student Login", path: "/login?role=student", role: "student" },
-  { label: "College Login", path: "/login?role=college", role: "college" },
-  { label: "Mentor Login", path: "/login?role=mentor", role: "mentor" },
-  { label: "Employer Login", path: "/login?role=employer", role: "employer" },
+  { label: "Student Login", path: "/login/student", role: "student" },
+  { label: "College Login", path: "/login/college", role: "college" },
+  { label: "Mentor Login", path: "/login/mentor", role: "mentor" },
+  { label: "Employer Login", path: "/login/employer", role: "employer" },
 ] as const;
 
 // Registration routes by role

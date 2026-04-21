@@ -1,12 +1,63 @@
-export default function StudentRegisterPage() {
+"use client";
+
+import { usePathname, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GraduationCap } from "lucide-react";
+import { AuthPageLayout } from "@/components/auth/AuthPageLayout";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { StudentRegisterForm } from "@/components/auth/StudentRegisterForm";
+
+export default function StudentAuthPage() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
+  // Check if URL contains "login" or has tab=login parameter
+  const isLoginPage = pathname.includes("/login") || searchParams.get("tab") === "login";
+  const defaultTab = isLoginPage ? "login" : "register";
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-6">Student Registration</h1>
-        <p className="text-center text-muted-foreground">
-          Registration form will be built soon
-        </p>
-      </div>
-    </div>
+    <AuthPageLayout
+      icon={GraduationCap}
+      title="Student Portal"
+      subtitle="Access your learning dashboard"
+    >
+      <Card className="border-border/50 shadow-lg">
+        <Tabs defaultValue={defaultTab}>
+          <CardHeader className="pb-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
+          </CardHeader>
+
+          <CardContent>
+            <TabsContent value="login" className="mt-0">
+              <LoginForm role="student" redirectPath="/student" />
+            </TabsContent>
+
+            <TabsContent value="register" className="mt-0">
+              <StudentRegisterForm />
+            </TabsContent>
+          </CardContent>
+        </Tabs>
+      </Card>
+
+      <p className="text-center text-xs text-muted-foreground mt-6">
+        Not a student?{" "}
+        <Link href="/register/college" className="text-primary hover:underline">
+          College Login
+        </Link>{" "}
+        ·{" "}
+        <Link href="/register/mentor" className="text-primary hover:underline">
+          Mentor Login
+        </Link>{" "}
+        ·{" "}
+        <Link href="/register/employer" className="text-primary hover:underline">
+          Employer Login
+        </Link>
+      </p>
+    </AuthPageLayout>
   );
 }

@@ -44,7 +44,7 @@ export default function RootLayout({
       lang="en"
       className={`${plusJakartaSans.variable} ${dancingScript.variable} h-full antialiased`}
     >
-      <body className="min-h-screen flex flex-col font-sans">
+      <body className="font-sans antialiased">
         <QueryProvider>
           {children}
         </QueryProvider>
