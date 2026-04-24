@@ -1,15 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
-import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
+import { loginSchema, type LoginFormData } from "@/lib/validations/auth-forms.schema";
 import { useState } from "react";
+import { useLogin } from "@/hooks/queries/useAuthentication";
 
 interface LoginFormProps {
   role: string;
@@ -17,8 +16,8 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ role, redirectPath }: LoginFormProps) {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const loginMutation = useLogin();
   
   const {
     register,
@@ -29,13 +28,10 @@ export function LoginForm({ role, redirectPath }: LoginFormProps) {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    
-    toast.success("Welcome back!", {
-      description: "You've been logged in successfully.",
+    loginMutation.mutate({
+      email: data.email,
+      password: data.password,
     });
-    router.push(redirectPath);
   };
 
   return (
@@ -86,14 +82,14 @@ export function LoginForm({ role, redirectPath }: LoginFormProps) {
       </div>
 
       <div className="flex justify-end">
-        <button type="button" className="text-xs text-primary hover:underline">
+        <a href="/forgot-password" className="text-xs text-primary hover:underline">
           Forgot password?
-        </button>
+        </a>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Signing in…" : "Sign In"}
-        {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
+      <Button type="submit" className="w-full" disabled={isSubmitting || loginMutation.isPending}>
+        {isSubmitting || loginMutation.isPending ? "Signing in…" : "Sign In"}
+        {!isSubmitting && !loginMutation.isPending && <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
     </form>
   );

@@ -1,19 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Mail, ArrowRight, Lock, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
-import { studentRegisterSchema, type StudentRegisterFormData } from "@/lib/validations/auth";
+import { studentRegisterSchema, type StudentRegisterFormData } from "@/lib/validations/auth-forms.schema";
+import { useRegister } from "@/hooks/queries/useAuthentication";
 
 export function StudentRegisterForm() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const registerMutation = useRegister();
 
   const {
     register,
@@ -21,16 +20,17 @@ export function StudentRegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<StudentRegisterFormData>({
     resolver: zodResolver(studentRegisterSchema),
+    mode: "onChange",
   });
 
   const onSubmit = async (data: StudentRegisterFormData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    toast.success("Account created!", {
-      description: "Welcome to GrowthCraft.",
+    registerMutation.mutate({
+      fullName: data.name,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+      role: "student",
     });
-    router.push("/student");
   };
 
   return (
@@ -109,9 +109,18 @@ export function StudentRegisterForm() {
         )}
       </div>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Creating account…" : "Create Account"}
-        {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
+      {registerMutation.isError && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive font-medium">Registration failed</p>
+          <p className="text-xs text-destructive/80 mt-1">
+            {registerMutation.error?.message || "Please check your information and try again"}
+          </p>
+        </div>
+      )}
+
+      <Button type="submit" className="w-full" disabled={isSubmitting || registerMutation.isPending}>
+        {isSubmitting || registerMutation.isPending ? "Creating account…" : "Create Account"}
+        {!isSubmitting && !registerMutation.isPending && <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
     </form>
   );

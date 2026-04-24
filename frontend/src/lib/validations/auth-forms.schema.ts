@@ -33,7 +33,7 @@ export const mentorRegisterSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: emailSchema,
   phone: phoneSchema,
-  experience: z.coerce.number().min(0, "Experience must be 0 or greater"),
+  experience: z.string().min(1, "Experience is required"),
   expertise: z.string().min(1, "Please select your area of expertise"),
   company: z.string().min(2, "Organization name is required"),
   bio: z.string().min(20, "Bio must be at least 20 characters"),
@@ -50,7 +50,11 @@ export const collegeRegisterSchema = z.object({
   email: emailSchema,
   phone: phoneSchema,
   city: z.string().min(2, "City/State is required"),
-  website: z.string().url("Invalid URL").optional().or(z.literal("")),
+  website: z.string()
+    .optional()
+    .refine((val) => !val || val === "" || /^https?:\/\/.+\..+/.test(val), {
+      message: "Invalid URL format",
+    }),
   password: passwordSchema,
 });
 
@@ -64,8 +68,12 @@ export const employerRegisterSchema = z.object({
   email: emailSchema,
   phone: phoneSchema,
   companySize: z.string().min(1, "Please select company size"),
-  website: z.string().url("Invalid URL").optional().or(z.literal("")),
-  hiringNeeds: z.string().optional(),
+  website: z.string()
+    .optional()
+    .refine((val) => !val || val === "" || /^https?:\/\/.+\..+/.test(val), {
+      message: "Invalid URL format",
+    }),
+  hiringNeeds: z.string().optional().or(z.literal("")),
   password: passwordSchema,
 });
 

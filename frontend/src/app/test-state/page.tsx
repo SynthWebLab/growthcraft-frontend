@@ -1,28 +1,19 @@
 "use client";
 
 import { useExampleQuery } from "@/hooks/queries/useExampleQuery";
-import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 
 export default function TestStatePage() {
   // Test TanStack Query
   const { data, isLoading, error } = useExampleQuery();
 
-  // Test Zustand Auth Store
-  const { user, isAuthenticated, login, logout } = useAuthStore();
+  // Test NextAuth Session (actual auth system)
+  const { data: session, status } = useSession();
 
   // Test Zustand UI Store
   const { sidebarOpen, theme, toggleSidebar, setTheme } = useUIStore();
-
-  const handleLogin = () => {
-    login({
-      id: "1",
-      name: "Test User",
-      email: "test@example.com",
-      role: "student",
-    });
-  };
 
   return (
     <div className="container mx-auto p-8 space-y-8">
@@ -41,28 +32,23 @@ export default function TestStatePage() {
         )}
       </div>
 
-      {/* Zustand Auth Store Test */}
+      {/* NextAuth Session Test (Actual Auth System) */}
       <div className="border rounded-lg p-6 space-y-4">
-        <h2 className="text-2xl font-semibold">Zustand Auth Store Test</h2>
+        <h2 className="text-2xl font-semibold">NextAuth Session Test</h2>
         <div className="space-y-2">
           <p>
-            <span className="font-semibold">Authenticated:</span>{" "}
-            {isAuthenticated ? "✓ Yes" : "✗ No"}
+            <span className="font-semibold">Status:</span>{" "}
+            {status === "authenticated" ? "✓ Authenticated" : status === "loading" ? "Loading..." : "✗ Not Authenticated"}
           </p>
-          {user && (
+          {session?.user && (
             <div className="bg-blue-50 p-4 rounded">
               <p className="font-semibold text-blue-700">User Data:</p>
-              <pre className="mt-2 text-sm">{JSON.stringify(user, null, 2)}</pre>
+              <pre className="mt-2 text-sm">{JSON.stringify(session.user, null, 2)}</pre>
             </div>
           )}
-          <div className="flex gap-2">
-            <Button onClick={handleLogin} disabled={isAuthenticated}>
-              Login
-            </Button>
-            <Button onClick={logout} disabled={!isAuthenticated} variant="outline">
-              Logout
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Note: This uses httpOnly cookies. Check Application → Cookies in DevTools.
+          </p>
         </div>
       </div>
 
@@ -96,7 +82,7 @@ export default function TestStatePage() {
         </h2>
         <ul className="space-y-1 text-green-700">
           <li>✓ TanStack Query v5 configured and fetching data</li>
-          <li>✓ Zustand auth store with persistence</li>
+          <li>✓ NextAuth with httpOnly cookies for secure authentication</li>
           <li>✓ Zustand UI store for client state</li>
         </ul>
       </div>
