@@ -1,19 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, User, Mail, ArrowRight, Phone, Globe, MapPin, Lock, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
-import { collegeRegisterSchema, type CollegeRegisterFormData } from "@/lib/validations/auth";
+import { collegeRegisterSchema, type CollegeRegisterFormData } from "@/lib/validations/auth-forms.schema";
+import { useRegister } from "@/hooks/queries/useAuthentication";
 
 export function CollegeRegisterForm() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const registerMutation = useRegister();
 
   const {
     register,
@@ -21,15 +20,29 @@ export function CollegeRegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<CollegeRegisterFormData>({
     resolver: zodResolver(collegeRegisterSchema),
+    mode: "onChange",
   });
 
   const onSubmit = async (data: CollegeRegisterFormData) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    toast.success("Account created!", {
-      description: "Welcome to GrowthCraft Campus.",
+    const [city, state] = data.city.split(",").map(s => s.trim());
+    
+    registerMutation.mutate({
+      fullName: data.contactPerson,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+      role: "college",
+      collegeData: {
+        institutionName: data.institution,
+        contactPerson: data.contactPerson,
+        designation: data.designation,
+        officialEmail: data.email,
+        phone: data.phone,
+        city: city || data.city,
+        state: state || "",
+        website: data.website || undefined,
+      },
     });
-    router.push("/college");
   };
 
   return (
@@ -137,9 +150,18 @@ export function CollegeRegisterForm() {
         {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
       </div>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Creating account…" : "Register Institution"}
-        {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
+      {registerMutation.isError && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive font-medium">Registration failed</p>
+          <p className="text-xs text-destructive/80 mt-1">
+            {registerMutation.error?.message || "Please check your information and try again"}
+          </p>
+        </div>
+      )}
+
+      <Button type="submit" className="w-full" disabled={isSubmitting || registerMutation.isPending}>
+        {isSubmitting || registerMutation.isPending ? "Creating account…" : "Register Institution"}
+        {!isSubmitting && !registerMutation.isPending && <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
     </form>
   );

@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NAV_ROUTES, LOGIN_ROUTES, REGISTER_ROUTES } from "@/lib/constants/routes";
+import { NAV_ROUTES, LOGIN_ROUTES, REGISTER_ROUTES } from "@/lib/constants/routes.constant";
 import logoMain from "@/assets/logo-main.png";
 
 export const Navbar = () => {

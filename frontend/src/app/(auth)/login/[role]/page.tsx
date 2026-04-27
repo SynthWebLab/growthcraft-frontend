@@ -1,11 +1,12 @@
 "use client";
 
 import { use } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GraduationCap, Building2, UserCheck, Briefcase } from "lucide-react";
+import { GraduationCap, Building2, UserCheck, Briefcase, CheckCircle, Info } from "lucide-react";
 import { AuthPageLayout } from "@/components/auth/AuthPageLayout";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { StudentRegisterForm } from "@/components/auth/StudentRegisterForm";
@@ -60,6 +61,10 @@ const roleLabels = {
 
 export default function LoginPage({ params }: { params: Promise<{ role: string }> }) {
   const { role: roleParam } = use(params);
+  const searchParams = useSearchParams();
+  const verified = searchParams.get("verified");
+  const registered = searchParams.get("registered");
+  
   const role = roleParam as keyof typeof roleConfig;
   const config = roleConfig[role];
 
@@ -71,6 +76,36 @@ export default function LoginPage({ params }: { params: Promise<{ role: string }
 
   return (
     <AuthPageLayout icon={Icon} title={title} subtitle={subtitle}>
+      {/* Success message after email verification */}
+      {verified && (
+        <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-start gap-3">
+          <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-900 dark:text-green-100">
+              Email verified successfully!
+            </p>
+            <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+              You can now login to your account.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Info message after registration */}
+      {registered && (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-3">
+          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              Please verify your email first
+            </p>
+            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+              Check your inbox for the verification code.
+            </p>
+          </div>
+        </div>
+      )}
+
       <Card className="border-border/50 shadow-lg">
         <Tabs defaultValue="login">
           <CardHeader className="pb-4">

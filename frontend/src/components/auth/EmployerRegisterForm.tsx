@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -10,12 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Building2, User, Mail, ArrowRight, Phone, Globe, Lock, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
-import { employerRegisterSchema, type EmployerRegisterFormData } from "@/lib/validations/auth";
+import { employerRegisterSchema, type EmployerRegisterFormData } from "@/lib/validations/auth-forms.schema";
+import { useRegister } from "@/hooks/queries/useAuthentication";
+import { EMPLOYER_INDUSTRY_OPTIONS, COMPANY_SIZE_OPTIONS } from "@/lib/constants/registration.constant";
 
 export function EmployerRegisterForm() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const registerMutation = useRegister();
 
   const {
     register,
@@ -24,15 +24,27 @@ export function EmployerRegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<EmployerRegisterFormData>({
     resolver: zodResolver(employerRegisterSchema),
+    mode: "onChange", // Validate on every change
   });
 
   const onSubmit = async (data: EmployerRegisterFormData) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    toast.success("Account created!", {
-      description: "Welcome to GrowthCraft Employer.",
+    registerMutation.mutate({
+      fullName: data.contactPerson,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+      role: "employer",
+      employerData: {
+        companyName: data.company,
+        contactPerson: data.contactPerson,
+        industry: data.industry,
+        officialEmail: data.email,
+        phone: data.phone,
+        companySize: data.companySize,
+        website: data.website || undefined,
+        hiringNeeds: data.hiringNeeds || undefined,
+      },
     });
-    router.push("/employer");
   };
 
   return (
@@ -72,13 +84,11 @@ export function EmployerRegisterForm() {
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="it">IT / Software</SelectItem>
-                  <SelectItem value="fintech">Fintech</SelectItem>
-                  <SelectItem value="ecommerce">E-Commerce</SelectItem>
-                  <SelectItem value="healthcare">Healthcare</SelectItem>
-                  <SelectItem value="edtech">EdTech</SelectItem>
-                  <SelectItem value="startup">Startup</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  {EMPLOYER_INDUSTRY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             )}
@@ -183,9 +193,18 @@ export function EmployerRegisterForm() {
         {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
       </div>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Creating account…" : "Register Company"}
-        {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
+      {registerMutation.isError && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive font-medium">Registration failed</p>
+          <p className="text-xs text-destructive/80 mt-1">
+            {registerMutation.error?.message || "Please check your information and try again"}
+          </p>
+        </div>
+      )}
+
+      <Button type="submit" className="w-full" disabled={isSubmitting || registerMutation.isPending}>
+        {isSubmitting || registerMutation.isPending ? "Creating account…" : "Register Company"}
+        {!isSubmitting && !registerMutation.isPending && <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
     </form>
   );

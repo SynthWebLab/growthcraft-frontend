@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -10,12 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { User, Mail, ArrowRight, Phone, Briefcase, Award, Lock, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
-import { mentorRegisterSchema, type MentorRegisterFormData } from "@/lib/validations/auth";
+import { mentorRegisterSchema, type MentorRegisterFormData } from "@/lib/validations/auth-forms.schema";
+import { useRegister } from "@/hooks/queries/useAuthentication";
+import { MENTOR_EXPERTISE_OPTIONS } from "@/lib/constants/registration.constant";
 
 export function MentorRegisterForm() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const registerMutation = useRegister();
 
   const {
     register,
@@ -24,15 +24,23 @@ export function MentorRegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<MentorRegisterFormData>({
     resolver: zodResolver(mentorRegisterSchema),
+    mode: "onChange",
   });
 
-  const onSubmit = async (data: MentorRegisterFormData) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    toast.success("Application submitted!", {
-      description: "Welcome to GrowthCraft Mentors.",
+  const onSubmit = (data: MentorRegisterFormData) => {
+    registerMutation.mutate({
+      fullName: data.name,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+      role: "mentor",
+      mentorData: {
+        experienceYears: parseInt(data.experience, 10),
+        areaOfExpertise: data.expertise,
+        currentOrganization: data.company,
+        bio: data.bio,
+      },
     });
-    router.push("/mentor");
   };
 
   return (
@@ -104,13 +112,11 @@ export function MentorRegisterForm() {
                 <SelectValue placeholder="Select domain" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="web-dev">Web Development</SelectItem>
-                <SelectItem value="data-science">Data Science & AI</SelectItem>
-                <SelectItem value="mobile">Mobile Development</SelectItem>
-                <SelectItem value="devops">DevOps & Cloud</SelectItem>
-                <SelectItem value="design">UI/UX Design</SelectItem>
-                <SelectItem value="cybersecurity">Cybersecurity</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                {MENTOR_EXPERTISE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           )}
@@ -165,9 +171,18 @@ export function MentorRegisterForm() {
         {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
       </div>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Submitting…" : "Apply as Mentor"}
-        {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
+      {registerMutation.isError && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive font-medium">Registration failed</p>
+          <p className="text-xs text-destructive/80 mt-1">
+            {registerMutation.error?.message || "Please check your information and try again"}
+          </p>
+        </div>
+      )}
+
+      <Button type="submit" className="w-full" disabled={isSubmitting || registerMutation.isPending}>
+        {isSubmitting || registerMutation.isPending ? "Submitting…" : "Apply as Mentor"}
+        {!isSubmitting && !registerMutation.isPending && <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
     </form>
   );
