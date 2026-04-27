@@ -34,8 +34,6 @@ export const DASHBOARD_ROUTES = {
   mentor: "/mentor",
   college: "/college",
   employer: "/hiring-partner",
-  ambassador: "/ambassador",
-  admin: "/admin/dashboard",
 } as const;
 
 // Common auth routes (for programmatic navigation)

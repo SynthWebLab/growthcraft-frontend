@@ -91,8 +91,22 @@ export function useLogin() {
           description: "You've been logged in successfully.",
         });
         
-        // Just refresh the page - role-based redirect will be handled by middleware
-        router.refresh();
+        // Get session to determine role-based redirect
+        const session = await fetch('/api/auth/session').then(res => res.json());
+        
+        if (session?.user?.role) {
+          // Role-based redirect
+          const dashboardRoute = DASHBOARD_ROUTES[session.user.role as keyof typeof DASHBOARD_ROUTES];
+          if (dashboardRoute) {
+            router.push(dashboardRoute);
+          } else {
+            // Fallback if role not found
+            router.push('/');
+          }
+        } else {
+          // Fallback if no role in session
+          router.refresh();
+        }
       }
     },
     onError: (error: Error) => {
