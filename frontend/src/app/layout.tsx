@@ -3,7 +3,6 @@ import { Plus_Jakarta_Sans, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/QueryProvider";
-import { SessionProvider } from "@/components/providers/SessionProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -32,7 +31,11 @@ export const metadata: Metadata = {
     title: "GrowthCraft - Where Learning Meets Opportunity",
     description: "Learn tech, master skills, join bootcamps, and land your dream job.",
   },
-  viewport: "width=device-width, initial-scale=1.0",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1.0,
 };
 
 export default function RootLayout({
@@ -46,11 +49,9 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${dancingScript.variable} h-full antialiased`}
     >
       <body className="font-sans antialiased">
-        <SessionProvider>
-          <QueryProvider>
-            {children}
-          </QueryProvider>
-        </SessionProvider>
+        <QueryProvider>
+          {children}
+        </QueryProvider>
         <Toaster position="top-center" richColors />
       </body>
     </html>

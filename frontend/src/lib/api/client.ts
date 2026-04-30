@@ -22,7 +22,7 @@ async function refreshToken(): Promise<boolean> {
   try {
     const response = await fetch(`${BACKEND_URL}${API_ENDPOINTS.auth.refresh}`, {
       method: "POST",
-      credentials: "include", // Send refresh token cookie
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -32,10 +32,8 @@ async function refreshToken(): Promise<boolean> {
       return true;
     }
 
-    // Refresh failed - token might be expired or reused
     return false;
   } catch (error) {
-    console.error("Token refresh failed:", error);
     return false;
   }
 }
@@ -77,7 +75,6 @@ export async function apiFetch<T = any>(
       if (isRefreshing && refreshPromise) {
         const refreshSuccess = await refreshPromise;
         if (refreshSuccess) {
-          // Retry original request with new token
           return apiFetch(endpoint, { ...options, skipRefresh: true });
         } else {
           throw new Error("Token refresh failed");
@@ -96,11 +93,9 @@ export async function apiFetch<T = any>(
         // Retry original request with new token
         return apiFetch(endpoint, { ...options, skipRefresh: true });
       } else {
-        // Refresh failed - redirect to login
-        if (typeof window !== "undefined") {
-          window.location.href = AUTH_ROUTES.login.student;
-        }
-        throw new Error("Authentication failed. Please login again.");
+        // Refresh failed - just throw error, don't redirect
+        // Let the calling code (components/hooks) decide what to do
+        throw new Error("Authentication failed");
       }
     }
 
@@ -109,34 +104,20 @@ export async function apiFetch<T = any>(
     try {
       data = await response.json();
     } catch (parseError) {
-      // If JSON parsing fails, try to get text
       const text = await response.text();
-      console.error("Failed to parse response as JSON:", text);
       
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}: ${text || 'No response body'}`);
       }
       
-      // If response is OK but not JSON, return empty object
       return {} as T;
     }
 
     // Check for errors
     if (!response.ok) {
-      // Extract detailed error information
       const errorMessage = data?.error?.message || data?.message || `Request failed with status ${response.status}`;
       const errorDetails = data?.error?.details || data?.details || null;
-      
-      // Log detailed error for debugging
-      console.error("API Error:", {
-        status: response.status,
-        message: errorMessage,
-        details: errorDetails,
-        url,
-        fullResponse: data,
-      });
 
-      // Create detailed error message
       let fullError = errorMessage;
       if (errorDetails) {
         if (Array.isArray(errorDetails)) {
@@ -156,9 +137,7 @@ export async function apiFetch<T = any>(
 
     return data;
   } catch (error: any) {
-    // Better error messages for common issues
     if (error.message === "Failed to fetch") {
-      console.error("❌ Backend connection failed. Is the backend running on http://localhost:5001?");
       throw new Error(
         "Cannot connect to backend. Please ensure:\n" +
         "1. Backend is running (npm run dev in backend folder)\n" +
@@ -167,7 +146,6 @@ export async function apiFetch<T = any>(
       );
     }
     
-    console.error("API request failed:", error);
     throw error;
   }
 }

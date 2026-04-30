@@ -33,7 +33,7 @@ export const DASHBOARD_ROUTES = {
   student: "/student",
   mentor: "/mentor",
   college: "/college",
-  employer: "/hiring-partner",
+  employer: "/employer",
 } as const;
 
 // Common auth routes (for programmatic navigation)
