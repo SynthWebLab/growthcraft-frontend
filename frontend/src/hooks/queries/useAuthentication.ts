@@ -5,7 +5,6 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { signIn, signOut as nextAuthSignOut } from "next-auth/react";
 import { toast } from "sonner";
 import { authService } from "@/services/auth.service";
 import { AUTH_ROUTES, DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
@@ -50,62 +49,48 @@ export function useRegister() {
 
 /**
  * Hook to login user
+ * Uses direct backend authentication with httpOnly cookies
  */
 export function useLogin() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      }),
-    onSuccess: async (result, variables) => {
-      if (result?.error) {
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      // Call backend directly - this will set httpOnly cookies in browser
+      const response = await authService.login(email, password);
+      return response;
+    },
+    onSuccess: async (response) => {
+      if (!response.success) {
         // Check if error is due to unverified email
-        if (result.error.startsWith("EMAIL_NOT_VERIFIED:")) {
-          const email = result.error.split(":")[1];
+        if (response.error?.code === "EMAIL_NOT_VERIFIED") {
           toast.error("Email not verified", {
             description: "Please verify your email before logging in.",
-            action: {
-              label: "Verify Now",
-              onClick: () => router.push(AUTH_ROUTES.verifyEmail(email)),
-            },
           });
-          // Redirect to verify email page after 2 seconds
-          setTimeout(() => {
-            router.push(AUTH_ROUTES.verifyEmail(email));
-          }, 2000);
           return;
         }
 
         toast.error("Login failed", {
-          description: result.error,
+          description: response.error?.message || "Please try again.",
         });
         return;
       }
 
-      if (result?.ok) {
+      // Login successful - backend has set httpOnly cookies (access_token, refreshToken)
+      const user = response.data?.user;
+      
+      if (user) {
         toast.success("Welcome back!", {
           description: "You've been logged in successfully.",
         });
         
-        // Get session to determine role-based redirect
-        const session = await fetch('/api/auth/session').then(res => res.json());
-        
-        if (session?.user?.role) {
-          // Role-based redirect
-          const dashboardRoute = DASHBOARD_ROUTES[session.user.role as keyof typeof DASHBOARD_ROUTES];
-          if (dashboardRoute) {
-            router.push(dashboardRoute);
-          } else {
-            // Fallback if role not found
-            router.push('/');
-          }
+        // Role-based redirect
+        const dashboardRoute = DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES];
+        if (dashboardRoute) {
+          router.push(dashboardRoute);
+          router.refresh(); // Refresh to update middleware auth state
         } else {
-          // Fallback if no role in session
-          router.refresh();
+          router.push('/');
         }
       }
     },
@@ -249,17 +234,30 @@ export function useLogout() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => authService.logout(),
+    mutationFn: async () => {
+      // Call backend logout to clear httpOnly cookies
+      await authService.logout();
+      return { success: true };
+    },
     onSuccess: async () => {
-      // Sign out from NextAuth
-      await nextAuthSignOut({ redirect: false });
-      
-      // Clear all queries
+      // Clear all React Query cache
       queryClient.clear();
       
+      // Clear any non-httpOnly cookies (just in case)
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+      
       toast.success("Logged out successfully");
-      router.push(AUTH_ROUTES.home);
-      router.refresh();
+      
+      // Small delay to ensure cookies are cleared
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Use replace instead of href to prevent back button from going to dashboard
+      // This replaces the current history entry instead of adding a new one
+      window.location.replace('/');
     },
     onError: (error: Error) => {
       toast.error("Logout failed", {
@@ -277,17 +275,29 @@ export function useLogoutAll() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => authService.logoutAll(),
+    mutationFn: async () => {
+      // Call backend logout-all to invalidate all refresh tokens
+      await authService.logoutAll();
+      return { success: true };
+    },
     onSuccess: async () => {
-      // Sign out from NextAuth
-      await nextAuthSignOut({ redirect: false });
-      
-      // Clear all queries
+      // Clear all React Query cache
       queryClient.clear();
       
+      // Clear any non-httpOnly cookies (just in case)
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+      
       toast.success("Logged out from all devices");
-      router.push(AUTH_ROUTES.home);
-      router.refresh();
+      
+      // Small delay to ensure cookies are cleared
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Use replace instead of href to prevent back button from going to dashboard
+      window.location.replace('/');
     },
     onError: (error: Error) => {
       toast.error("Logout failed", {
