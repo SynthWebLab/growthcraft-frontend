@@ -1,118 +1,94 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { CodeWindow } from "@/components/ui/code-window";
+import { Section } from "@/components/ui/section";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, Play } from "lucide-react";
-import { TechLogosStrip } from "@/components/common/TechLogos";
-import heroLearning from "@/assets/hero-learning.jpg";
+
+const expressCode = `const app = express();
+
+app.post('/api/enroll', auth, async (req, res) => {
+  const { courseId, userId } = req.body;
+  
+  const enrollment = await Enrollment.create({
+    course: courseId,
+    student: userId,
+    status: 'active',
+    startedAt: new Date()
+  });
+  
+  await sendWelcomeEmail(userId, courseId);
+  res.json({ success: true, enrollment });
+});`;
+
+const reactCode = `function CourseCard({ course }) {
+  const [enrolled, setEnrolled] = useState(false);
+  
+  return (
+    <div className="card">
+      <h3>{course.title}</h3>
+      <p>{course.instructor}</p>
+      <span>{course.duration}h</span>
+      <button onClick={() => setEnrolled(true)}>
+        {enrolled ? 'Enrolled' : 'Enroll Now'}
+      </button>
+    </div>
+  );
+}`;
 
 export const HeroSection = () => {
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-      {/* Background Image with Overlay */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src={heroLearning}
-          alt="Modern tech learning environment"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/98 to-background/80" />
+    <Section variant="white" className="!py-6 sm:!py-12 md:!py-16 lg:!py-20 relative overflow-hidden">
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 animate-gradient" />
+        <div className="absolute top-0 -left-4 w-48 h-48 sm:w-72 sm:h-72 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" />
+        <div className="absolute top-0 -right-4 w-48 h-48 sm:w-72 sm:h-72 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-8 left-20 w-48 h-48 sm:w-72 sm:h-72 bg-accent/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000" />
       </div>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 relative z-10 py-8 md:py-0">
-        <div className="max-w-3xl">
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-secondary      text-foreground text-xs md:text-sm font-medium mb-4 md:mb-6 animate-fade-up"
-          >
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            Your Career Transformation Starts Here
-          </div>
-
-          {/* Headline */}
-          <h1
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 animate-fade-up text-foreground leading-tight"
-            style={{ animationDelay: "0.1s" }}
-          >
-            Where{" "}
-            <span className="text-primary">Learning</span>{" "}
-            Meets{" "}
-            <span className="text-primary">Opportunity</span>
-          </h1>
-
-          {/* Subheadline */}
-          <p
-            className="text-base md:text-lg lg:text-xl text-muted-foreground mb-6 md:mb-8 leading-relaxed animate-fade-up"
-            style={{ animationDelay: "0.2s" }}
-          >
-            GrowthCraft is your all-in-one platform to learn tech, master
-            industry skills, join hands-on bootcamps, connect with mentors, and
-            land your dream job.
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 md:gap-12 lg:gap-16 items-center">
+        {/* Left Column - Content */}
+        <div className="animate-fade-up">
+          <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-4 font-semibold">
+            India&apos;s outcome-driven MERN academy
           </p>
 
-          {/* CTAs */}
-          <div
-            className="flex flex-col sm:flex-row gap-3 md:gap-4 animate-fade-up"
-            style={{ animationDelay: "0.3s" }}
-          >
-            <Button asChild variant="hero" size="lg" className="w-full sm:w-auto">
-              <Link href="/courses">
-                Explore Courses
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-3 sm:mb-6">
+            <span className="font-script text-primary">Craft</span> the career.{" "}
+            <br className="hidden sm:block" />
+            We&apos;ll teach the code.
+          </h1>
+
+          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-lg mb-5 sm:mb-8 leading-relaxed">
+            Escape tutorial hell. Learn from engineers who ship in production,
+            build real projects, and get hired — not just certified.
+          </p>
+
+          <div className="flex flex-wrap gap-3 sm:gap-4">
+            <Button size="lg" asChild>
+              <Link href="/courses">Explore Courses</Link>
             </Button>
-            <Button asChild variant="hero-outline" size="lg" className="w-full sm:w-auto">
-              <Link href="/bootcamps">
-                <Play className="mr-2 h-5 w-5" />
-                Join a Bootcamp
-              </Link>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary hover:text-white"
+              asChild
+            >
+              <Link href="/partnerships">Talk to a Mentor</Link>
             </Button>
           </div>
+        </div>
 
-          {/* Stats */}
-          <div
-            className="mt-8 md:mt-12 grid grid-cols-3 gap-4 md:gap-8 pt-6 md:pt-8 border-t border-border animate-fade-up"
-            style={{ animationDelay: "0.4s" }}
-          >
-            <div className="text-center sm:text-left">
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
-                5000+
-              </p>
-              <p className="text-muted-foreground text-xs sm:text-sm">
-                Students Trained
-              </p>
-            </div>
-            <div className="text-center sm:text-left">
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
-                50+
-              </p>
-              <p className="text-muted-foreground text-xs sm:text-sm">
-                College Partners
-              </p>
-            </div>
-            <div className="text-center sm:text-left">
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
-                100+
-              </p>
-              <p className="text-muted-foreground text-xs sm:text-sm">
-                Hiring Partners
-              </p>
-            </div>
-          </div>
+        {/* Right Column - Code Windows */}
+        <div
+          className="space-y-3 sm:space-y-4 animate-fade-up"
+          style={{ animationDelay: "0.2s" }}
+        >
+          <CodeWindow code={expressCode} language="server.js" />
+          <CodeWindow code={reactCode} language="CourseCard.jsx" />
         </div>
       </div>
-
-      {/* Tech Logos Strip at bottom - hidden on small screens */}
-      {/* <div className="hidden md:block absolute bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border"> */}
-      <div className="hidden md:block absolute bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm ">
-        <div className="container mx-auto px-4">
-          <TechLogosStrip />
-        </div>
-      </div>
-    </section>
+    </Section>
   );
 };

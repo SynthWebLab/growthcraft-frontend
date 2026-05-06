@@ -1,0 +1,60 @@
+"use client";
+
+import { Section } from "@/components/ui/section";
+import { testimonialsMock } from "@/data/testimonials.mock";
+import { Quote } from "lucide-react";
+
+export const Outcomes = () => {
+  return (
+    <Section variant="marble" >
+      <div className="text-center mb-10 sm:mb-12 md:mb-14 animate-fade-up">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3">
+          Placements
+        </p>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display">
+          Outcomes that talk for themselves.
+        </h2>
+      </div>
+
+      <div
+        className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 snap-x snap-mandatory -mx-4 px-4 scrollbar-hide"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {testimonialsMock.map((t) => (
+          <div
+            key={t._id}
+            className="min-w-[280px] sm:min-w-[300px] md:min-w-[340px] snap-start flex-shrink-0"
+          >
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 h-full transition-all hover:-translate-y-1">
+              <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-secondary mb-2 sm:mb-3" />
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-4 sm:mb-5">
+                &quot;{t.quote}&quot;
+              </p>
+              <div className="flex items-center gap-3">
+                <img
+                  src={t.photo}
+                  alt={t.name}
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-muted"
+                />
+                <div>
+                  <p className="text-xs sm:text-sm font-bold font-display">
+                    {t.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Now at{" "}
+                    <span className="font-medium text-foreground">
+                      {t.hiredAt}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {t.courseTaken}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+};
