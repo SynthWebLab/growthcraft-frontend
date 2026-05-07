@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { bootcampsMock } from "@/data/bootcamps.mock";
 import { Calendar, MapPin, Users } from "lucide-react";
+import { getPrimaryCta } from "@/lib/ctaPolicy";
 
 export const BootcampHighlight = () => {
   const openBootcamp = bootcampsMock.find((b) => b.status === "Open");
@@ -12,6 +13,14 @@ export const BootcampHighlight = () => {
   if (!openBootcamp) return null;
 
   const seatsLeft = openBootcamp.maxSeats - openBootcamp.enrolledCount;
+  
+  const cta = getPrimaryCta({
+    type: "bootcamp",
+    status: openBootcamp.status,
+    maxSeats: openBootcamp.maxSeats,
+    enrolledCount: openBootcamp.enrolledCount,
+    startDate: openBootcamp.startDate,
+  });
 
   return (
     <Section variant="white" className="!py-8 sm:!py-12 md:!py-16 lg:!py-20">
@@ -92,11 +101,20 @@ export const BootcampHighlight = () => {
 
             {/* CTA & Price */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <Button size="lg" className="w-full sm:w-auto" asChild>
-                <Link href={`/bootcamps/${openBootcamp.slug}`}>
-                  Reserve your seat
-                </Link>
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto" asChild>
+                  <Link href={`/bootcamps/${openBootcamp.slug}`}>
+                    {cta.primary.label}
+                  </Link>
+                </Button>
+                {cta.secondary && (
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
+                    <Link href={`/bootcamps/${openBootcamp.slug}`}>
+                      {cta.secondary.label}
+                    </Link>
+                  </Button>
+                )}
+              </div>
               <span className="text-xl sm:text-2xl font-bold font-display">
                 ₹{openBootcamp.price.toLocaleString()}
               </span>

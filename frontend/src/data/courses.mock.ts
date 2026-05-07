@@ -14,6 +14,7 @@ export interface MockCourse {
   instructorName: string;
   enrollmentCount: number;
   avgRating: number;
+  status: "active" | "coming-soon" | "draft";
 }
 
 export const coursesMock: MockCourse[] = [
@@ -34,6 +35,7 @@ export const coursesMock: MockCourse[] = [
     instructorName: "Arjun Mehta",
     enrollmentCount: 2340,
     avgRating: 4.8,
+    status: "active",
   },
   {
     _id: "c2",
@@ -52,6 +54,7 @@ export const coursesMock: MockCourse[] = [
     instructorName: "Priya Sharma",
     enrollmentCount: 1890,
     avgRating: 4.9,
+    status: "active",
   },
   {
     _id: "c3",
@@ -70,6 +73,7 @@ export const coursesMock: MockCourse[] = [
     instructorName: "Rohit Verma",
     enrollmentCount: 1560,
     avgRating: 4.7,
+    status: "active",
   },
   {
     _id: "c4",
@@ -88,6 +92,7 @@ export const coursesMock: MockCourse[] = [
     instructorName: "Sneha Patel",
     enrollmentCount: 1230,
     avgRating: 4.6,
+    status: "active",
   },
   {
     _id: "c5",
@@ -106,6 +111,7 @@ export const coursesMock: MockCourse[] = [
     instructorName: "Vikram Singh",
     enrollmentCount: 1780,
     avgRating: 4.8,
+    status: "active",
   },
   {
     _id: "c6",
@@ -124,6 +130,7 @@ export const coursesMock: MockCourse[] = [
     instructorName: "Karan Gupta",
     enrollmentCount: 980,
     avgRating: 4.7,
+    status: "coming-soon",
   },
   {
     _id: "c7",
@@ -142,6 +149,7 @@ export const coursesMock: MockCourse[] = [
     instructorName: "Ananya Iyer",
     enrollmentCount: 3200,
     avgRating: 4.9,
+    status: "active",
   },
   {
     _id: "c8",
@@ -160,5 +168,6 @@ export const coursesMock: MockCourse[] = [
     instructorName: "Deepak Joshi",
     enrollmentCount: 890,
     avgRating: 4.5,
-  },
+    status: "draft",
+   },
 ];

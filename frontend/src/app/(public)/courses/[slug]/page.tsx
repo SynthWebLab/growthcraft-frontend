@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCourse } from "@/hooks/useCourses";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
+import { getPrimaryCta } from "@/lib/ctaPolicy";
 import { 
   Clock, 
   Users, 
@@ -86,6 +87,11 @@ export default function CourseDetail({ params }: { params: Promise<{ slug: strin
 
   const courseImage = categoryImages[course.category] || courseWebDev;
 
+  const cta = getPrimaryCta({
+    type: "course",
+    status: course.status,
+  });
+
   return (
     <>
       <PopupForm isOpen={isOpen} onClose={closeForm} type={formType} title={formTitle} />
@@ -152,9 +158,12 @@ export default function CourseDetail({ params }: { params: Promise<{ slug: strin
                 )}
                 <Button 
                   size="lg" 
-                  onClick={() => openForm("enrollment", `Enroll in ${course.title}`)}
+                  onClick={() => openForm(
+                    cta.primary.type === "enroll-now" ? "enrollment" : "callback",
+                    cta.primary.type === "enroll-now" ? `Enroll in ${course.title}` : undefined
+                  )}
                 >
-                  Enroll Now <ArrowRight className="ml-2 h-5 w-5" />
+                  {cta.primary.label} <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
             </div>
@@ -272,7 +281,9 @@ export default function CourseDetail({ params }: { params: Promise<{ slug: strin
               <div className="sticky top-24 space-y-6">
                 {/* Enrollment Card */}
                 <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
-                  <h3 className="text-xl font-bold text-foreground mb-4">Enroll Now</h3>
+                  <h3 className="text-xl font-bold text-foreground mb-4">
+                    {cta.primary.type === "enroll-now" ? "Enroll Now" : cta.primary.label}
+                  </h3>
                   
                   {course.price ? (
                     <div className="mb-4">
@@ -297,17 +308,22 @@ export default function CourseDetail({ params }: { params: Promise<{ slug: strin
                   <Button 
                     className="w-full mb-4" 
                     size="lg" 
-                    onClick={() => openForm("enrollment", `Enroll in ${course.title}`)}
+                    onClick={() => openForm(
+                      cta.primary.type === "enroll-now" ? "enrollment" : "callback",
+                      cta.primary.type === "enroll-now" ? `Enroll in ${course.title}` : undefined
+                    )}
                   >
-                    Enroll Now
+                    {cta.primary.label}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => openForm("callback")}
-                  >
-                    Request Callback
-                  </Button>
+                  {cta.secondary && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={() => openForm("callback")}
+                    >
+                      {cta.secondary.label}
+                    </Button>
+                  )}
                 </div>
 
                 {/* Course Highlights */}
@@ -365,9 +381,12 @@ export default function CourseDetail({ params }: { params: Promise<{ slug: strin
           <Button 
             size="lg" 
             className="bg-primary-foreground text-primary hover:bg-primary-foreground/90" 
-            onClick={() => openForm("enrollment", `Enroll in ${course.title}`)}
+            onClick={() => openForm(
+              cta.primary.type === "enroll-now" ? "enrollment" : "callback",
+              cta.primary.type === "enroll-now" ? `Enroll in ${course.title}` : undefined
+            )}
           >
-            Enroll Now <ArrowRight className="ml-2 h-5 w-5" />
+            {cta.primary.label} <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
       </section>

@@ -24,7 +24,7 @@ export const bootcampsMock: MockBootcamp[] = [
     startDate: "2026-05-15",
     endDate: "2026-08-15",
     maxSeats: 40,
-    enrolledCount: 31,
+    enrolledCount: 40,
     mode: "Hybrid",
     status: "Open",
     skillsCovered: [
