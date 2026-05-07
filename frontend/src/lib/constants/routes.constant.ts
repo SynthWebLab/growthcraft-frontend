@@ -9,7 +9,11 @@ export const NAV_ROUTES = [
   { name: "Courses", path: "/courses" },
   { name: "Bootcamps", path: "/bootcamps" },
   { name: "About", path: "/about" },
-  { name: "Partnerships", path: "/partnerships" },
+  { name: "For Students", path: "/for-students" },
+  { name: "For Colleges", path: "/for-colleges" },
+  { name: "For Mentors", path: "/for-mentors" },
+  { name: "For Employers", path: "/for-employers" },
+  { name: "Contact", path: "/contact" },
 ] as const;
 
 // Login routes by role
