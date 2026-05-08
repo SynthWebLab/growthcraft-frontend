@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { HeroSection } from "@/components/public/HeroSection";
 import { TrustStrip } from "@/components/public/TrustStrip";
 import { PainPath } from "@/components/public/PainPath";
@@ -16,10 +17,56 @@ import { BootcampsSection } from "@/components/public/BootcampsSection";
 import { AudienceSection } from "@/components/public/AudienceSection";
 import { PhilosophySection } from "@/components/public/PhilosophySection";
 import { NewsletterSection } from "@/components/public/NewsletterSection";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { SEO_CONFIG } from "@/config/seo.config";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = SEO_CONFIG.homepage;
+
+  return {
+    title: seo.meta.title,
+    description: seo.meta.description,
+    keywords: seo.meta.keywords,
+    alternates: {
+      canonical: seo.meta.canonical,
+    },
+    openGraph: {
+      title: seo.openGraph.title,
+      description: seo.openGraph.description,
+      url: seo.openGraph.url,
+      siteName: seo.openGraph.siteName,
+      images: [
+        {
+          url: seo.openGraph.image,
+          width: 1200,
+          height: 630,
+          alt: seo.openGraph.title,
+        },
+      ],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seo.twitter.title,
+      description: seo.twitter.description,
+      images: [seo.twitter.image],
+      site: seo.twitter.site,
+      creator: seo.twitter.creator,
+    },
+  };
+}
 
 export default function Home() {
+  const seo = SEO_CONFIG.homepage;
+
   return (
     <>
+      {/* JSON-LD Structured Data */}
+      <JsonLd data={seo.jsonLd.organization} />
+      <JsonLd data={seo.jsonLd.website} />
+      {seo.jsonLd.breadcrumb && <JsonLd data={seo.jsonLd.breadcrumb} />}
+
+      {/* Page Content */}
       <HeroSection />
       <TrustStrip />
       <PainPath />
