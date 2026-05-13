@@ -58,15 +58,21 @@ export function useLogin() {
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
       // Call backend directly - this will set httpOnly cookies in browser
       const response = await authService.login(email, password);
-      return response;
+      return { response, email }; // Return email for use in onSuccess
     },
-    onSuccess: async (response) => {
+    onSuccess: async ({ response, email }) => {
       if (!response.success) {
         // Check if error is due to unverified email
-        if (response.error?.code === "EMAIL_NOT_VERIFIED") {
+        if (response.error?.code === "EMAIL_NOT_VERIFIED" || 
+            response.error?.message?.toLowerCase().includes("not verified") ||
+            response.error?.message?.toLowerCase().includes("verify your email")) {
+          
           toast.error("Email not verified", {
-            description: "Please verify your email before logging in.",
+            description: "Redirecting you to verify your email...",
           });
+          
+          // Redirect to verify-email page with email immediately
+          router.push(AUTH_ROUTES.verifyEmail(email));
           return;
         }
 
@@ -94,7 +100,20 @@ export function useLogin() {
         }
       }
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables) => {
+      // Check if error is due to unverified email
+      if (error.message?.toLowerCase().includes("not verified") ||
+          error.message?.toLowerCase().includes("verify your email")) {
+        
+        toast.error("Email not verified", {
+          description: "Redirecting you to verify your email...",
+        });
+        
+        // Redirect to verify-email page with email
+        router.push(AUTH_ROUTES.verifyEmail(variables.email));
+        return;
+      }
+      
       toast.error("Login failed", {
         description: error.message || "An unexpected error occurred.",
       });
