@@ -35,7 +35,8 @@ export const coursesMock: MockCourse[] = [
     instructorName: "Arjun Mehta",
     enrollmentCount: 2340,
     avgRating: 4.8,
-    status: "active",
+    // status: "active",
+    status: "coming-soon",
   },
   {
     _id: "c2",

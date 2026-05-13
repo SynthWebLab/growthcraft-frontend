@@ -15,9 +15,13 @@ const publicRoutes = [
 const authRoutes = [
   '/login',
   '/register',
-  '/verify-email',
   '/forgot-password',
   '/reset-password',
+];
+
+// Routes that should be accessible even when authenticated
+const alwaysAccessibleAuthRoutes = [
+  '/verify-email',
 ];
 
 // Define role-based route access
@@ -79,6 +83,7 @@ export async function middleware(request: NextRequest) {
   // Check authentication status
   const { isAuthenticated, user } = await checkAuth(request);
   const userRole = user?.role as keyof typeof roleRoutes | undefined;
+  const isEmailVerified = user?.isEmailVerified ?? false;
 
   // Check if route is public
   const isPublicRoute = publicRoutes.some(route => {
@@ -90,14 +95,26 @@ export async function middleware(request: NextRequest) {
   
   // Check if route is auth route (login, register, etc.)
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
+  const isAlwaysAccessibleAuthRoute = alwaysAccessibleAuthRoutes.some(route => pathname.startsWith(route));
 
   // Allow public routes
   if (isPublicRoute) {
     return NextResponse.next();
   }
 
-  // Redirect authenticated users away from auth pages
-  if (isAuthRoute && isAuthenticated && userRole) {
+  // Allow verify-email page even for authenticated users (they may not have verified yet)
+  if (isAlwaysAccessibleAuthRoute) {
+    return NextResponse.next();
+  }
+
+  // Redirect authenticated but unverified users away from REGISTER pages to verify-email
+  // But allow them to access LOGIN pages (they might want to logout or use a different account)
+  if (pathname.startsWith('/register') && isAuthenticated && !isEmailVerified) {
+    return NextResponse.redirect(new URL('/verify-email', request.url));
+  }
+
+  // Redirect fully authenticated and verified users away from auth pages (login, register)
+  if (isAuthRoute && isAuthenticated && isEmailVerified && userRole) {
     const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
     return NextResponse.redirect(new URL(dashboardRoute, request.url));
   }
@@ -126,6 +143,11 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL(loginRoute, request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Authenticated but email not verified - redirect to verify-email
+    if (!isEmailVerified) {
+      return NextResponse.redirect(new URL('/verify-email', request.url));
     }
 
     // Must have user role to access dashboard

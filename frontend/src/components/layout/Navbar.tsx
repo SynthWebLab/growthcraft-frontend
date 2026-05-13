@@ -56,8 +56,8 @@ export const Navbar = () => {
 
           {/* CTA Buttons */}
           <div className="hidden lg:flex items-center gap-2">
-            {user ? (
-              // Logged in - Show Dashboard button
+            {user && user.isEmailVerified ? (
+              // Logged in and verified - Show Dashboard button
               <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'}>
                 <Button size="default">
                   <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -65,7 +65,7 @@ export const Navbar = () => {
                 </Button>
               </Link>
             ) : (
-              // Not logged in - Show Login/Register
+              // Not logged in or not verified - Show Login/Register
               <>
                 {/* Login Dropdown */}
                 <DropdownMenu>
@@ -131,8 +131,8 @@ export const Navbar = () => {
               ))}
 
               <div className="pt-4 px-4 space-y-2">
-                {user ? (
-                  // Logged in - Show Dashboard button
+                {user && user.isEmailVerified ? (
+                  // Logged in and verified - Show Dashboard button
                   <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'}>
                     <Button size="default" className="w-full">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -140,7 +140,7 @@ export const Navbar = () => {
                     </Button>
                   </Link>
                 ) : (
-                  // Not logged in - Show Login/Register options
+                  // Not logged in or not verified - Show Login/Register options
                   <>
                     <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-2">
                       Login As

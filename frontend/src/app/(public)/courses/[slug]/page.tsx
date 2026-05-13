@@ -2,394 +2,451 @@
 
 import { use } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useCourse } from "@/hooks/useCourses";
-import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
-import { getPrimaryCta } from "@/lib/ctaPolicy";
-import { 
-  Clock, 
-  Users, 
-  BookOpen, 
-  ArrowRight, 
-  CheckCircle, 
-  ArrowLeft, 
-  GraduationCap, 
-  Target, 
-  Award, 
-  Monitor
+import { Section } from "@/components/ui/section";
+import { DataCard } from "@/components/ui/data-card";
+import { coursesMock } from "@/data/courses.mock";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Check,
+  Star,
+  ArrowLeft,
+  Users,
+  Share2,
+  Copy,
+  Lock,
+  PlayCircle,
+  ArrowRight,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import courseWebDev from "@/assets/course-web-dev.jpg";
-import courseDataScience from "@/assets/course-data-science.jpg";
-import courseCloud from "@/assets/course-cloud.jpg";
-import courseMobile from "@/assets/course-mobile.jpg";
-import courseSecurity from "@/assets/course-security.jpg";
+import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { getPrimaryCta, ctaTypeToFormType } from "@/lib/ctaPolicy";
+import { toast } from "sonner";
 
-const categoryImages: Record<string, any> = {
-  "Web Development": courseWebDev,
-  "Programming Languages": courseWebDev,
-  "Programming": courseWebDev,
-  "Data Science & AI": courseDataScience,
-  "Data Science & Analytics": courseDataScience,
-  "Data Science": courseDataScience,
-  "Cloud & DevOps": courseCloud,
-  "DevOps & Cloud": courseCloud,
-  "Cloud Computing": courseCloud,
-  "DevOps": courseCloud,
-  "Mobile Development": courseMobile,
-  "Cybersecurity": courseSecurity,
-};
+const curriculumMock = [
+  {
+    title: "Getting Started",
+    lessons: [
+      { name: "Introduction & Setup", duration: "15 min", free: true },
+      { name: "Environment Configuration", duration: "20 min", free: true },
+    ],
+  },
+  {
+    title: "Core Fundamentals",
+    lessons: [
+      { name: "Key Concepts Deep Dive", duration: "45 min", free: false },
+      { name: "Hands-on Exercise 1", duration: "30 min", free: false },
+    ],
+  },
+  {
+    title: "Advanced Patterns",
+    lessons: [
+      { name: "Architecture & Design", duration: "40 min", free: false },
+      { name: "Real-World Project", duration: "60 min", free: false },
+    ],
+  },
+  {
+    title: "Deployment & Production",
+    lessons: [
+      { name: "CI/CD Pipeline", duration: "35 min", free: false },
+      { name: "Final Capstone", duration: "90 min", free: false },
+    ],
+  },
+];
 
-const getLevelColor = (level: string) => {
-  const lowerLevel = level.toLowerCase();
-  if (lowerLevel.includes("beginner")) return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-  if (lowerLevel.includes("intermediate")) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
-  if (lowerLevel.includes("advanced")) return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-  return "bg-secondary text-secondary-foreground";
-};
+const faqMock = [
+  {
+    q: "Is this course suitable for beginners?",
+    a: "The prerequisites section above outlines what you need. If you meet those, you're good to go.",
+  },
+  {
+    q: "Do I get lifetime access?",
+    a: "Yes. Once enrolled, you have lifetime access to all course materials and future updates.",
+  },
+  {
+    q: "Is there a certificate?",
+    a: "Yes, you receive a verifiable certificate of completion.",
+  },
+  {
+    q: "Can I get a refund?",
+    a: "We offer a 7-day no-questions-asked refund policy.",
+  },
+];
 
-export default function CourseDetail({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
-  const { course, isLoading, error } = useCourse(slug);
+export default function CourseDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { isOpen, formType, formTitle, openForm, closeForm } = usePopupForm();
+  const { data: user, isLoading } = useCurrentUser();
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-16">
-        <Skeleton className="h-96 w-full rounded-2xl mb-8" />
-        <Skeleton className="h-8 w-2/3 mb-4" />
-        <Skeleton className="h-4 w-1/2 mb-8" />
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-2">
-            <Skeleton className="h-64 w-full" />
-          </div>
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </div>
-    );
+  const { slug } = use(params);
+  const course = coursesMock.find((c) => c.slug === slug);
+
+  if (!course) {
+    notFound();
   }
 
-  if (error || !course) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-foreground mb-4">Course Not Found</h1>
-        <p className="text-muted-foreground mb-8">
-          The course you're looking for doesn't exist or has been removed.
-        </p>
-        <Button asChild>
-          <Link href="/courses">Browse Courses</Link>
-        </Button>
-      </div>
-    );
-  }
+  const handleCopyLink = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied!");
+    }
+  };
 
-  const courseImage = categoryImages[course.category] || courseWebDev;
+  // Check if user is logged in and verified
+  const isAuthenticated = user && user.isEmailVerified;
+  const isStudent = user?.role === "student";
 
+  // Get CTA configuration based on course status
   const cta = getPrimaryCta({
     type: "course",
-    status: course.status,
+    status: course.status || "active",
   });
+
+  // Handle primary CTA click
+  const handlePrimaryCTAClick = () => {
+    if (isAuthenticated && isStudent && cta.primary.type === "enroll-now") {
+      // Logged in as student and enrolling - redirect to payment
+      toast.success("Redirecting to payment...");
+      // TODO: Redirect to actual payment/enrollment page
+    } else if (isAuthenticated && cta.primary.type === "enroll-now") {
+      // Logged in but not a student
+      toast.error("Please login as a student to enroll");
+    } else {
+      // Show popup form with dynamic type based on CTA
+      const formType = ctaTypeToFormType(cta.primary.type);
+      openForm(formType, `${cta.primary.label} - ${course.title}`);
+    }
+  };
+
+  // Handle secondary CTA click
+  const handleSecondaryCTAClick = () => {
+    if (cta.secondary) {
+      const formType = ctaTypeToFormType(cta.secondary.type);
+      openForm(formType, `${cta.secondary.label} - ${course.title}`);
+    }
+  };
 
   return (
     <>
       <PopupForm isOpen={isOpen} onClose={closeForm} type={formType} title={formTitle} />
+      
+      <Section variant="white">
+        <Link
+          href="/courses"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-magenta mb-6 text-sm transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to Courses
+        </Link>
 
-      {/* Hero Section */}
-      <section className="relative py-16 lg:py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <Link 
-            href="/courses" 
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Courses
-          </Link>
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Main content */}
+          <div className="lg:col-span-8 space-y-8">
+            {/* Banner */}
+            <div className="aspect-video bg-graphite rounded-xl flex items-center justify-center overflow-hidden">
+              <div className="text-center text-white/50">
+                <PlayCircle className="h-16 w-16 mx-auto mb-2" />
+                <p className="text-sm">Course Preview</p>
+              </div>
+            </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Title area */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Badge variant="secondary">{course.category}</Badge>
-                <Badge className={getLevelColor(course.level || "Beginner")}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-magenta/10 text-magenta">
+                  {course.category}
+                </span>
+                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-lavender/10 text-lavender">
                   {course.level}
-                </Badge>
+                </span>
               </div>
 
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-foreground">
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
                 {course.title}
               </h1>
 
-              <p className="text-lg text-muted-foreground mb-6">
-                {course.description || "Master the skills you need to succeed in today's tech industry."}
-              </p>
-
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-8">
-                {course.duration && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <span>{course.duration}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Monitor className="h-4 w-4 text-primary" />
-                  <span>{course.format || "Online"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-primary" />
-                  <span>Certificate Included</span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-4">
-                {course.price ? (
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-primary">
-                      ₹{course.discount_price || course.price}
-                    </span>
-                    {course.discount_price && (
-                      <span className="text-lg text-muted-foreground line-through">
-                        ₹{course.price}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-3xl font-bold text-primary">Free</span>
-                )}
-                <Button 
-                  size="lg" 
-                  onClick={() => openForm(
-                    cta.primary.type === "enroll-now" ? "enrollment" : "callback",
-                    cta.primary.type === "enroll-now" ? `Enroll in ${course.title}` : undefined
-                  )}
-                >
-                  {cta.primary.label} <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
+                  alt=""
+                  className="h-8 w-8 rounded-full"
+                />
+                <span>{course.instructorName}</span>
+                <span className="flex items-center gap-1">
+                  <Star className="h-4 w-4 text-warning" />
+                  {course.avgRating}
+                </span>
+                <span>{course.enrollmentCount.toLocaleString()} enrolled</span>
               </div>
             </div>
 
-            <div className="relative">
-              <Image 
-                src={courseImage}
-                alt={course.title}
-                width={600}
-                height={400}
-                className="w-full h-80 lg:h-96 object-cover rounded-2xl shadow-lg"
-              />
-              {course.is_featured && (
-                <Badge className="absolute top-4 right-4 bg-primary">Featured</Badge>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+            {/* Tabs */}
+            <Tabs defaultValue="overview">
+              <TabsList className="w-full justify-start bg-muted">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+                <TabsTrigger value="instructor">Instructor</TabsTrigger>
+                <TabsTrigger value="faq">FAQ</TabsTrigger>
+              </TabsList>
 
-      {/* Content Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-3 gap-12">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-12">
-              {/* What You'll Learn */}
-              {course.learning_outcomes && course.learning_outcomes.length > 0 && (
+              <TabsContent value="overview" className="space-y-8 pt-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-                    <Target className="h-6 w-6 text-primary" />
-                    What You'll Learn
-                  </h2>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {course.learning_outcomes.map((outcome, index) => (
-                      <div 
-                        key={index} 
-                        className="flex items-start gap-3 p-4 rounded-lg bg-muted/50"
-                      >
-                        <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-foreground">{outcome}</span>
+                  <h2 className="text-xl font-bold mb-4">About this course</h2>
+                  <p className="text-muted-foreground">{course.description}</p>
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-bold mb-4">What you'll learn</h2>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {[
+                      "Build production-ready applications",
+                      "Master core concepts and patterns",
+                      "Write clean, maintainable code",
+                      "Deploy and scale applications",
+                      "Implement best practices",
+                      "Pass technical interviews",
+                    ].map((item) => (
+                      <div key={item} className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-magenta mt-0.5 flex-shrink-0" />
+                        <span className="text-sm text-foreground">{item}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Topics Covered */}
-              {course.topics && course.topics.length > 0 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-                    <BookOpen className="h-6 w-6 text-primary" />
-                    Topics Covered
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {course.topics.map((topic, index) => (
-                      <Badge key={index} variant="secondary" className="px-3 py-1.5 text-sm">
-                        {topic}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Curriculum */}
-              {Array.isArray(course.curriculum) && course.curriculum.length > 0 && (
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-                    <GraduationCap className="h-6 w-6 text-primary" />
-                    Curriculum
-                  </h2>
-                  <div className="space-y-4">
-                    {(course.curriculum as any[]).map((module: any, index: number) => (
-                      <div 
-                        key={index} 
-                        className="rounded-xl border border-border bg-card p-4"
-                      >
-                        <h3 className="font-semibold text-foreground mb-2">
-                          Module {index + 1}: {module.title || module}
-                        </h3>
-                        {module.topics && (
-                          <ul className="space-y-1 text-sm text-muted-foreground">
-                            {module.topics.map((topic: string, i: number) => (
-                              <li key={i} className="flex items-center gap-2">
-                                <CheckCircle className="h-3 w-3 text-primary" />
-                                {topic}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Prerequisites */}
-              {course.prerequisites && course.prerequisites.length > 0 && (
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-6">Prerequisites</h2>
-                  <ul className="space-y-2">
-                    {course.prerequisites.map((prereq, index) => (
-                      <li key={index} className="flex items-start gap-3 text-muted-foreground">
-                        <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                        {prereq}
-                      </li>
-                    ))}
+                  <h2 className="text-xl font-bold mb-4">Prerequisites</h2>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-lavender mt-0.5" />
+                      Basic programming knowledge
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-lavender mt-0.5" />
+                      Familiarity with HTML/CSS
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-lavender mt-0.5" />A
+                      laptop with internet access
+                    </li>
                   </ul>
                 </div>
-              )}
-            </div>
+              </TabsContent>
 
-            {/* Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-24 space-y-6">
-                {/* Enrollment Card */}
-                <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
-                  <h3 className="text-xl font-bold text-foreground mb-4">
-                    {cta.primary.type === "enroll-now" ? "Enroll Now" : cta.primary.label}
-                  </h3>
-                  
-                  {course.price ? (
-                    <div className="mb-4">
-                      <span className="text-3xl font-bold text-primary">
-                        ₹{course.discount_price || course.price}
-                      </span>
-                      {course.discount_price && (
-                        <span className="text-lg text-muted-foreground line-through ml-2">
-                          ₹{course.price}
-                        </span>
-                      )}
-                      {course.discount_label && (
-                        <Badge variant="destructive" className="ml-2">
-                          {course.discount_label}
-                        </Badge>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-3xl font-bold text-primary mb-4">Free</div>
-                  )}
-
-                  <Button 
-                    className="w-full mb-4" 
-                    size="lg" 
-                    onClick={() => openForm(
-                      cta.primary.type === "enroll-now" ? "enrollment" : "callback",
-                      cta.primary.type === "enroll-now" ? `Enroll in ${course.title}` : undefined
-                    )}
-                  >
-                    {cta.primary.label}
-                  </Button>
-                  {cta.secondary && (
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      onClick={() => openForm("callback")}
+              <TabsContent value="curriculum" className="pt-6">
+                <h2 className="text-xl font-bold mb-4">Course Curriculum</h2>
+                <Accordion type="multiple" className="space-y-2">
+                  {curriculumMock.map((section, i) => (
+                    <AccordionItem
+                      key={i}
+                      value={`section-${i}`}
+                      className="border rounded-lg px-4"
                     >
-                      {cta.secondary.label}
-                    </Button>
-                  )}
+                      <AccordionTrigger className="text-sm font-semibold">
+                        Section {i + 1}: {section.title}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <ul className="space-y-2">
+                          {section.lessons.map((lesson, j) => (
+                            <li
+                              key={j}
+                              className="flex items-center justify-between text-sm py-1"
+                            >
+                              <div className="flex items-center gap-2">
+                                {lesson.free ? (
+                                  <PlayCircle className="h-4 w-4 text-lavender" />
+                                ) : (
+                                  <Lock className="h-4 w-4 text-muted-foreground" />
+                                )}
+                                <span
+                                  className={
+                                    lesson.free
+                                      ? "text-foreground"
+                                      : "text-muted-foreground"
+                                  }
+                                >
+                                  {lesson.name}
+                                </span>
+                                {lesson.free && (
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-success/10 text-success rounded">
+                                    Free
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {lesson.duration}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </TabsContent>
+
+              <TabsContent value="instructor" className="pt-6">
+                <DataCard>
+                  <div className="flex items-start gap-4">
+                    <img
+                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
+                      alt=""
+                      className="h-16 w-16 rounded-full"
+                    />
+                    <div>
+                      <h3 className="text-lg font-bold">
+                        {course.instructorName}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Senior Engineer with 8+ years of industry experience.
+                        Previously at top tech companies, now dedicated to
+                        training the next wave of developers.
+                      </p>
+                      <div className="flex gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3 w-3 text-warning" />
+                          {course.avgRating} rating
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {course.enrollmentCount} students
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </DataCard>
+              </TabsContent>
+
+              <TabsContent value="faq" className="pt-6">
+                <Accordion type="single" collapsible className="space-y-2">
+                  {faqMock.map((item, i) => (
+                    <AccordionItem
+                      key={i}
+                      value={`faq-${i}`}
+                      className="border rounded-lg px-4"
+                    >
+                      <AccordionTrigger className="text-sm font-semibold">
+                        {item.q}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground">
+                        {item.a}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Sticky sidebar */}
+          <div className="lg:col-span-4">
+            <div className="sticky top-24 space-y-4">
+              <DataCard>
+                <div className="mb-4">
+                  <span className="text-3xl font-extrabold text-magenta">
+                    ₹{course.discountedPrice.toLocaleString()}
+                  </span>
+                  <span className="text-base text-muted-foreground line-through ml-2">
+                    ₹{course.price.toLocaleString()}
+                  </span>
                 </div>
 
-                {/* Course Highlights */}
-                {course.highlights && course.highlights.length > 0 && (
-                  <div className="rounded-2xl border border-border bg-card p-6">
-                    <h3 className="text-lg font-bold text-foreground mb-4">Course Highlights</h3>
-                    <ul className="space-y-3">
-                      {course.highlights.map((highlight, index) => (
-                        <li 
-                          key={index} 
-                          className="flex items-start gap-3 text-sm text-muted-foreground"
-                        >
-                          <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                          {highlight}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                {/* Primary CTA */}
+                <Button
+                  className="w-full bg-magenta text-white hover:bg-magenta/90 mb-3"
+                  size="lg"
+                  onClick={handlePrimaryCTAClick}
+                >
+                  {cta.primary.label}
+                </Button>
+
+                {/* Secondary CTA */}
+                {cta.secondary && (
+                  <Button
+                    variant="outline"
+                    className="w-full border-lavender text-lavender hover:bg-lavender hover:text-white"
+                    onClick={handleSecondaryCTAClick}
+                  >
+                    {cta.secondary.label}
+                  </Button>
                 )}
 
-                {/* Instructor */}
-                {course.instructor_name && (
-                  <div className="rounded-2xl border border-border bg-card p-6">
-                    <h3 className="text-lg font-bold text-foreground mb-4">Your Instructor</h3>
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Users className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">{course.instructor_name}</p>
-                        {course.instructor_bio && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {course.instructor_bio}
-                          </p>
-                        )}
-                      </div>
+                <div className="mt-6 space-y-3 text-sm">
+                  <h4 className="font-semibold">What's included</h4>
+                  {[
+                    `${course.durationHours} hours of video`,
+                    `${course.totalLessons} lessons`,
+                    "Certificate of completion",
+                    "Mentor sessions",
+                    "Lifetime access",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2 text-muted-foreground"
+                    >
+                      <Check className="h-4 w-4 text-magenta flex-shrink-0" />
+                      <span>{item}</span>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
+              </DataCard>
+
+              {/* Share */}
+              <div className="flex items-center gap-2 justify-center">
+                <span className="text-xs text-muted-foreground">Share:</span>
+                <button
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      const shareUrl = `https://wa.me/?text=${encodeURIComponent(
+                        course.title + " " + window.location.href
+                      )}`;
+                      window.open(shareUrl, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Share2 className="h-4 w-4 text-lavender" />
+                </button>
+                <button
+                  onClick={handleCopyLink}
+                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Copy className="h-4 w-4 text-lavender" />
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </Section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-primary">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4 text-primary-foreground">
-            Ready to Start Learning?
+      {/* Final CTA */}
+      <Section variant="graphite">
+        <div className="text-center py-8">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4">
+            Ready to start learning?
           </h2>
-          <p className="text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
-            Join thousands of students who have transformed their careers with our courses.
+          <p className="text-white/60 mb-6">
+            Join {course.enrollmentCount.toLocaleString()}+ students already
+            enrolled.
           </p>
-          <Button 
-            size="lg" 
-            className="bg-primary-foreground text-primary hover:bg-primary-foreground/90" 
-            onClick={() => openForm(
-              cta.primary.type === "enroll-now" ? "enrollment" : "callback",
-              cta.primary.type === "enroll-now" ? `Enroll in ${course.title}` : undefined
-            )}
+          <Button
+            className="bg-magenta text-white hover:bg-magenta/90"
+            size="lg"
+            onClick={handlePrimaryCTAClick}
           >
-            {cta.primary.label} <ArrowRight className="ml-2 h-5 w-5" />
+            {cta.primary.label} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
-      </section>
+      </Section>
     </>
   );
 }

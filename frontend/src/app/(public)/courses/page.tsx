@@ -1,342 +1,322 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import Image, { StaticImageData } from "next/image";
-import { Clock, BookOpen, ArrowRight, Star, CheckCircle, Filter, Search } from "lucide-react";
+import { Clock, BookOpen, Star, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PopupForm } from "@/components/common/PopupForm";
-import { TechLogos } from "@/components/common/TechLogos";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useCourses, useCategories } from "@/hooks/useCourses";
-import courseWebDev from "@/assets/course-web-dev.jpg";
-import courseDataScience from "@/assets/course-data-science.jpg";
-import courseCloud from "@/assets/course-cloud.jpg";
-import courseMobile from "@/assets/course-mobile.jpg";
-import courseSecurity from "@/assets/course-security.jpg";
+import { PageHeader } from "@/components/ui/page-header";
+import { DataCard } from "@/components/ui/data-card";
+import { Section } from "@/components/ui/section";
+import { coursesMock } from "@/data/courses.mock";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const categoryImages: Record<string, StaticImageData> = {
-  "Web Development": courseWebDev,
-  "Programming Languages": courseWebDev,
-  "Programming": courseWebDev,
-  "Data Science & AI": courseDataScience,
-  "Data Science": courseDataScience,
-  "Cloud & DevOps": courseCloud,
-  "Cloud Computing": courseCloud,
-  "DevOps": courseCloud,
-  "Mobile Development": courseMobile,
-  "Cybersecurity": courseSecurity,
-  "Design": courseWebDev,
-};
-
-const getLevelColor = (level: string) => {
-  const lowerLevel = level?.toLowerCase() || "";
-  if (lowerLevel.includes("beginner")) return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-  if (lowerLevel.includes("intermediate")) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
-  if (lowerLevel.includes("advanced")) return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-  return "bg-secondary text-secondary-foreground";
-};
+const categories = ["MERN", "UI/UX", "DataScience", "DevOps", "Other"] as const;
+const levels = ["Beginner", "Intermediate", "Advanced"] as const;
+const ITEMS_PER_PAGE = 6;
 
 export default function CoursesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showEnrollForm, setShowEnrollForm] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState("");
-  
-  const { courses, isLoading } = useCourses();
-  const categories = useCategories();
+  const [sortBy, setSortBy] = useState("popular");
+  const [page, setPage] = useState(1);
 
-  const filteredCourses = courses.filter(course => {
-    const matchesCategory = !selectedCategory || course.category === selectedCategory;
-    const matchesLevel = !selectedLevel || course.level?.toLowerCase().includes(selectedLevel.toLowerCase());
-    const matchesSearch = !searchQuery || 
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (course.topics && course.topics.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())));
-    return matchesCategory && matchesLevel && matchesSearch;
-  });
+  const filtered = useMemo(() => {
+    let result = coursesMock.filter((c) => {
+      const matchCat = !selectedCategory || c.category === selectedCategory;
+      const matchLvl = !selectedLevel || c.level === selectedLevel;
+      const matchSearch =
+        !searchQuery ||
+        c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchCat && matchLvl && matchSearch;
+    });
 
-  const handleEnroll = (courseName: string) => {
-    setSelectedCourse(courseName);
-    setShowEnrollForm(true);
+    switch (sortBy) {
+      case "newest":
+        result = [...result].reverse();
+        break;
+      case "price-low":
+        result = [...result].sort((a, b) => a.discountedPrice - b.discountedPrice);
+        break;
+      case "price-high":
+        result = [...result].sort((a, b) => b.discountedPrice - a.discountedPrice);
+        break;
+      case "rating":
+        result = [...result].sort((a, b) => b.avgRating - a.avgRating);
+        break;
+      default:
+        result = [...result].sort((a, b) => b.enrollmentCount - a.enrollmentCount);
+    }
+
+    return result;
+  }, [selectedCategory, selectedLevel, searchQuery, sortBy]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case "Beginner":
+        return "bg-success/10 text-success";
+      case "Intermediate":
+        return "bg-warning/10 text-warning";
+      case "Advanced":
+        return "bg-danger/10 text-danger";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategory(null);
+    setSelectedLevel(null);
+    setSearchQuery("");
+    setPage(1);
   };
 
   return (
-    <>
-      {/* Hero Section */}
-      <section className="py-12 md:py-16 lg:py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <span className="text-primary font-semibold mb-3 md:mb-4 block text-xs md:text-sm uppercase tracking-wide">
-              Course Catalog
-            </span>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 text-foreground leading-tight">
-              {courses.length}+ Courses to Power Your{" "}
-              <span className="text-primary">Tech Career</span>
-            </h1>
-            <p className="text-sm md:text-lg lg:text-xl text-muted-foreground mb-6 md:mb-8 px-2">
-              From Python basics to advanced AI, from frontend to DevOps — master in-demand skills with our comprehensive course library.
-            </p>
-            <div className="flex items-center justify-center gap-4 md:gap-6 text-xs md:text-sm text-muted-foreground flex-wrap">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                <span>{courses.length}+ Courses</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Star className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                <span>4.8 Avg Rating</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+    <Section variant="white">
+      <PageHeader
+        breadcrumb={
+          <span>
+            <Link href="/" className="hover:text-magenta transition-colors">
+              Home
+            </Link>{" "}
+            / Courses
+          </span>
+        }
+        title="All Courses"
+        description="Master in-demand skills with industry-vetted curriculum taught by engineers who ship."
+      />
 
-      <TechLogos />
+      {/* Filter row */}
+      <div className="flex flex-col gap-4 mb-8">
+        <div className="flex flex-wrap items-center gap-2">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => {
+                setSelectedCategory(selectedCategory === cat ? null : cat);
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                selectedCategory === cat
+                  ? "bg-magenta text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
 
-      {/* Search & Filters */}
-      <section className="py-4 md:py-8 border-b border-border sticky top-16 bg-background/95 backdrop-blur z-40">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col gap-4">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search courses, topics, tools..." 
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
-              {["Beginner", "Intermediate", "Advanced"].map(level => (
-                <button
-                  key={level}
-                  onClick={() => setSelectedLevel(selectedLevel === level ? null : level)}
-                  className={`cursor-pointer px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-medium transition-all ${
-                    selectedLevel === level 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }`}
-                >
-                  {level}
-                </button>
-              ))}
-              {(selectedCategory || selectedLevel || searchQuery) && (
-                <button
-                  onClick={() => { 
-                    setSelectedCategory(null); 
-                    setSelectedLevel(null); 
-                    setSearchQuery(""); 
-                  }}
-                  className="px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all"
-                >
-                  Clear All
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+          <span className="w-px h-6 bg-border mx-1 hidden sm:block" />
 
-      {/* Categories */}
-      <section className="py-4 md:py-8 border-b border-border overflow-x-auto">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-2 pb-2 md:pb-0">
-            {categories.map((category) => (
-              <button 
-                key={category.name} 
-                onClick={() => setSelectedCategory(selectedCategory === category.name ? null : category.name)}
-                className={`cursor-pointer flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border text-xs md:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
-                  selectedCategory === category.name
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-card border-border hover:border-primary/40"
-                }`}
-              >
-                <span className="font-medium">{category.name}</span>
-                <span className={selectedCategory === category.name ? "text-primary-foreground/70" : "text-muted-foreground"}>
-                  ({category.count})
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+          {levels.map((lvl) => (
+            <button
+              key={lvl}
+              onClick={() => {
+                setSelectedLevel(selectedLevel === lvl ? null : lvl);
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                selectedLevel === lvl
+                  ? "bg-magenta text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {lvl}
+            </button>
+          ))}
 
-      {/* Courses Grid */}
-      <section className="py-8 md:py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-8 gap-2">
-            <h2 className="text-lg md:text-2xl font-bold text-foreground">
-              {selectedCategory || "All Courses"} 
-              <span className="text-muted-foreground font-normal ml-2 text-sm md:text-base">
-                ({filteredCourses.length})
-              </span>
-            </h2>
-          </div>
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="rounded-xl bg-card border border-border overflow-hidden">
-                  <Skeleton className="h-28 md:h-32 w-full" />
-                  <div className="p-3 md:p-4">
-                    <Skeleton className="h-4 w-1/3 mb-2" />
-                    <Skeleton className="h-5 w-full mb-3" />
-                    <Skeleton className="h-3 w-1/2 mb-3" />
-                    <Skeleton className="h-9 w-full" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filteredCourses.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
-              {filteredCourses.map((course) => (
-                <Link 
-                  href={`/courses/${course.slug}`}
-                  key={course.id} 
-                  className="group rounded-xl bg-card border border-border overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="h-28 md:h-32 overflow-hidden relative">
-                    <Image 
-                      src={categoryImages[course.category] || courseWebDev} 
-                      alt={course.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      width={400}
-                      height={200}
-                    />
-                    <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] md:text-xs font-medium ${getLevelColor(course.level || "Beginner")}`}>
-                      {course.level}
-                    </span>
-                  </div>
-                  <div className="p-3 md:p-4">
-                    <span className="text-[10px] md:text-xs text-primary font-medium">
-                      {course.subcategory || course.category}
-                    </span>
-                    <h3 className="text-xs md:text-sm font-bold mt-1 mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                      {course.title}
-                    </h3>
-                    <div className="flex items-center gap-3 text-[10px] md:text-xs text-muted-foreground mb-2 md:mb-3">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {course.duration || "Self-paced"}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mb-2 md:mb-3">
-                      {course.topics?.slice(0, 2).map(topic => (
-                        <span key={topic} className="px-1.5 md:px-2 py-0.5 bg-secondary text-secondary-foreground rounded text-[8px] md:text-[10px]">
-                          {topic}
-                        </span>
-                      ))}
-                      {course.topics && course.topics.length > 2 && (
-                        <span className="px-1.5 md:px-2 py-0.5 bg-secondary text-secondary-foreground rounded text-[8px] md:text-[10px]">
-                          +{course.topics.length - 2}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      {course.price ? (
-                        <span className="text-xs md:text-sm font-bold text-primary">
-                          ₹{course.discount_price || course.price}
-                        </span>
-                      ) : (
-                        <span className="text-xs md:text-sm font-bold text-primary">Free</span>
-                      )}
-                      <Button 
-                        size="sm" 
-                        className="text-[10px] md:text-xs h-7 md:h-9 px-2 md:px-4"
-                        onClick={(e) => { 
-                          e.preventDefault(); 
-                          handleEnroll(course.title); 
-                        }}
-                      >
-                        Enroll
-                      </Button>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground text-lg mb-4">
-                No courses found matching your criteria.
-              </p>
-              <Button 
-                variant="outline" 
-                onClick={() => { 
-                  setSelectedCategory(null); 
-                  setSelectedLevel(null); 
-                  setSearchQuery(""); 
-                }}
-              >
-                Clear Filters
-              </Button>
-            </div>
+          {(selectedCategory || selectedLevel || searchQuery) && (
+            <button
+              onClick={handleClearFilters}
+              className="px-3 py-1.5 rounded-full text-xs font-medium bg-danger/10 text-danger hover:bg-danger/20 transition-all"
+            >
+              Clear All
+            </button>
           )}
         </div>
-      </section>
 
-      {/* Features */}
-      <section className="py-10 md:py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-center mb-6 md:mb-12 text-foreground">
-              What You Get With Every Course
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              {[
-                "Lifetime access to course content",
-                "Real-world projects & assignments",
-                "Certificate of completion",
-                "Mentor support & Q&A",
-                "Downloadable resources",
-                "Community access",
-                "Job placement assistance",
-                "Industry-recognized curriculum"
-              ].map((feature) => (
-                <div key={feature} className="flex items-center gap-2 md:gap-3 p-3 md:p-4 rounded-xl bg-card border border-border">
-                  <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
-                  <span className="text-foreground text-sm md:text-base">{feature}</span>
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search courses..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="popular">Popular</SelectItem>
+              <SelectItem value="newest">Newest</SelectItem>
+              <SelectItem value="price-low">Price: Low → High</SelectItem>
+              <SelectItem value="price-high">Price: High → Low</SelectItem>
+              <SelectItem value="rating">Rating</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Course grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {paginated.map((course) => (
+          <Link
+            href={`/courses/${course.slug}`}
+            key={course._id}
+            className="group"
+          >
+            <DataCard className="h-full flex flex-col">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-magenta/10 text-magenta">
+                  {course.category}
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getLevelColor(
+                    course.level
+                  )}`}
+                >
+                  {course.level}
+                </span>
+              </div>
+
+              <h3 className="text-base font-bold text-foreground group-hover:text-magenta transition-colors mb-2 line-clamp-2">
+                {course.title}
+              </h3>
+
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
+                {course.description}
+              </p>
+
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {course.durationHours}h
+                </span>
+                <span className="flex items-center gap-1">
+                  <BookOpen className="h-3 w-3" />
+                  {course.totalLessons} lessons
+                </span>
+                <span className="flex items-center gap-1">
+                  <Star className="h-3 w-3 text-warning" />
+                  {course.avgRating}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 mb-3">
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
+                  alt=""
+                  className="h-6 w-6 rounded-full"
+                />
+                <span className="text-xs text-muted-foreground">
+                  {course.instructorName}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <div>
+                  <span className="text-lg font-extrabold text-magenta">
+                    ₹{course.discountedPrice.toLocaleString()}
+                  </span>
+                  <span className="text-xs text-muted-foreground line-through ml-2">
+                    ₹{course.price.toLocaleString()}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+                <span className="text-xs text-magenta font-medium group-hover:underline">
+                  View Curriculum →
+                </span>
+              </div>
+            </DataCard>
+          </Link>
+        ))}
+      </div>
 
-      {/* CTA Section */}
-      <section className="py-10 md:py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-3 md:mb-4 text-foreground">
-              Not sure where to start?
-            </h2>
-            <p className="text-muted-foreground mb-6 md:mb-8 text-sm md:text-base">
-              Talk to our career counselors and get personalized course recommendations based on your goals.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
-              <Button 
-                size="lg" 
-                className="w-full sm:w-auto cursor-pointer" 
-                onClick={() => setShowEnrollForm(true)}
-              >
-                Get Career Guidance <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
-                <Link href="/for-students">Explore Student Programs</Link>
-              </Button>
-            </div>
-          </div>
+      {/* Empty state */}
+      {filtered.length === 0 && (
+        <div className="text-center py-16">
+          <p className="text-muted-foreground mb-4">
+            No courses match your filters.
+          </p>
+          <Button variant="outline" onClick={handleClearFilters}>
+            Clear Filters
+          </Button>
         </div>
-      </section>
+      )}
 
-      <PopupForm 
-        isOpen={showEnrollForm} 
-        onClose={() => setShowEnrollForm(false)} 
-        type="enrollment" 
-        title={selectedCourse ? `Enroll in ${selectedCourse}` : "Course Enrollment"} 
-      />
-    </>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            {page > 1 && (
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage(page - 1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                />
+              </PaginationItem>
+            )}
+
+            {Array.from({ length: totalPages }, (_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink
+                  href="#"
+                  isActive={page === i + 1}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage(i + 1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+
+            {page < totalPages && (
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage(page + 1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                />
+              </PaginationItem>
+            )}
+          </PaginationContent>
+        </Pagination>
+      )}
+    </Section>
   );
 }

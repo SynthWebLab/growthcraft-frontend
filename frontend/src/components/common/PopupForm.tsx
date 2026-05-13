@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Send, Phone, GraduationCap, Briefcase, School, UserCheck } from "lucide-react";
 import { z } from "zod";
+import { FormType } from "@/lib/ctaPolicy";
 
 // Validation schemas
 const enrollmentSchema = z.object({
@@ -28,7 +29,7 @@ const enquirySchema = z.object({
 interface PopupFormProps {
   isOpen: boolean;
   onClose: () => void;
-  type: "enrollment" | "enquiry" | "callback" | "mentor" | "partner";
+  type: FormType | "enquiry" | "mentor" | "partner";
   title?: string;
 }
 
@@ -57,10 +58,16 @@ export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
 
   const getIcon = () => {
     switch (type) {
-      case "enrollment": return <GraduationCap className="h-6 w-6" />;
+      case "enrollment": 
+      case "reserve-seat":
+      case "join-waitlist":
+        return <GraduationCap className="h-6 w-6" />;
       case "mentor": return <UserCheck className="h-6 w-6" />;
       case "partner": return <School className="h-6 w-6" />;
-      case "callback": return <Phone className="h-6 w-6" />;
+      case "callback": 
+      case "register-interest":
+      case "notify-next-batch":
+        return <Phone className="h-6 w-6" />;
       default: return <Briefcase className="h-6 w-6" />;
     }
   };
@@ -71,6 +78,10 @@ export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
       case "enrollment": return "Enroll Now";
       case "enquiry": return "Quick Enquiry";
       case "callback": return "Request Callback";
+      case "register-interest": return "Register Interest";
+      case "reserve-seat": return "Reserve Your Seat";
+      case "join-waitlist": return "Join Waitlist";
+      case "notify-next-batch": return "Get Notified";
       case "mentor": return "Apply as Mentor";
       case "partner": return "Partner With Us";
       default: return "Get in Touch";
@@ -82,6 +93,10 @@ export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
       case "enrollment": return "Fill in your details to enroll in your preferred course or bootcamp.";
       case "enquiry": return "Have questions? Send us a quick message and we'll get back to you.";
       case "callback": return "Leave your number and we'll call you back within 24 hours.";
+      case "register-interest": return "Register your interest and we'll notify you when this becomes available.";
+      case "reserve-seat": return "Reserve your seat now. Limited spots available!";
+      case "join-waitlist": return "Join the waitlist and we'll notify you when a spot opens up.";
+      case "notify-next-batch": return "Get notified when the next batch is announced.";
       case "mentor": return "Join our team of mentors and inspire the next generation.";
       case "partner": return "Let's discuss how we can collaborate with your institution.";
       default: return "";
@@ -94,7 +109,7 @@ export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
     setIsSubmitting(true);
 
     try {
-      if (type === "enrollment") {
+      if (type === "enrollment" || type === "reserve-seat" || type === "join-waitlist") {
         enrollmentSchema.parse(formData);
       } else {
         enquirySchema.parse(formData);
@@ -103,7 +118,15 @@ export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      toast.success("Thank you! We'll get back to you soon.");
+      const successMessage = type === "register-interest" 
+        ? "Interest registered! We'll notify you soon."
+        : type === "join-waitlist"
+        ? "You're on the waitlist! We'll contact you when a spot opens."
+        : type === "notify-next-batch"
+        ? "You'll be notified about the next batch!"
+        : "Thank you! We'll get back to you soon.";
+
+      toast.success(successMessage);
       setFormData({ name: "", email: "", phone: "", course: "", message: "", organization: "", role: "" });
       onClose();
     } catch (err) {
@@ -171,7 +194,7 @@ export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
             {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
           </div>
 
-          {type === "enrollment" && (
+          {(type === "enrollment" || type === "reserve-seat" || type === "join-waitlist") && (
             <div>
               <Select value={formData.course} onValueChange={(value) => setFormData({ ...formData, course: value })}>
                 <SelectTrigger className={errors.course ? "border-destructive" : ""}>
@@ -234,7 +257,7 @@ export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
 // Export hook for managing popup state
 export const usePopupForm = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [formType, setFormType] = useState<"enrollment" | "enquiry" | "callback" | "mentor" | "partner">("enquiry");
+  const [formType, setFormType] = useState<FormType | "enquiry" | "mentor" | "partner">("enquiry");
   const [formTitle, setFormTitle] = useState<string | undefined>();
 
   const openForm = (type: typeof formType, title?: string) => {

@@ -5,6 +5,8 @@
 
 export type CTAType = "enroll-now" | "request-callback" | "register-interest" | "reserve-seat" | "join-waitlist" | "notify-next-batch";
 
+export type FormType = "enrollment" | "callback" | "register-interest" | "reserve-seat" | "join-waitlist" | "notify-next-batch";
+
 export interface CTAConfig {
   type: CTAType;
   label: string;
@@ -33,6 +35,28 @@ interface BootcampItem {
 }
 
 export type CatalogueItem = CourseItem | BootcampItem;
+
+/**
+ * Map CTA type to form type for popup forms
+ */
+export function ctaTypeToFormType(ctaType: CTAType): FormType {
+  switch (ctaType) {
+    case "enroll-now":
+      return "enrollment";
+    case "request-callback":
+      return "callback";
+    case "register-interest":
+      return "register-interest";
+    case "reserve-seat":
+      return "reserve-seat";
+    case "join-waitlist":
+      return "join-waitlist";
+    case "notify-next-batch":
+      return "notify-next-batch";
+    default:
+      return "callback";
+  }
+}
 
 /**
  * Get primary and secondary CTAs for a catalogue item
