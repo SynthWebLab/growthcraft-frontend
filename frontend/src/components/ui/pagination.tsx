@@ -48,21 +48,25 @@ const PaginationLink = ({
   href,
   ...props
 }: PaginationLinkProps) => {
-  const Component = href ? Link : "span";
-  
+  const sharedProps = {
+    "aria-current": isActive ? ("page" as const) : undefined,
+    className: cn(
+      buttonVariants({
+        variant: isActive ? "outline" : "ghost",
+        size,
+      }),
+      className
+    ),
+  };
+
+  if (href) {
+    return (
+      <Link href={href} {...sharedProps} {...props} />
+    );
+  }
+
   return (
-    <Component
-      aria-current={isActive ? "page" : undefined}
-      className={cn(
-        buttonVariants({
-          variant: isActive ? "outline" : "ghost",
-          size,
-        }),
-        className
-      )}
-      {...(href ? { href } : {})}
-      {...props}
-    />
+    <span {...sharedProps} {...props} />
   );
 };
 PaginationLink.displayName = "PaginationLink";

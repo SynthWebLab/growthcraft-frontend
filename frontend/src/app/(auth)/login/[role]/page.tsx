@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -59,19 +59,12 @@ const roleLabels = {
   employer: "Employer",
 } as const;
 
-export default function LoginPage({ params }: { params: Promise<{ role: string }> }) {
-  const { role: roleParam } = use(params);
+function LoginPageContent({ role }: { role: keyof typeof roleConfig }) {
   const searchParams = useSearchParams();
   const verified = searchParams.get("verified");
   const registered = searchParams.get("registered");
   
-  const role = roleParam as keyof typeof roleConfig;
   const config = roleConfig[role];
-
-  if (!config) {
-    notFound();
-  }
-
   const { icon: Icon, title, subtitle, redirectPath, RegisterForm } = config;
 
   return (
@@ -144,5 +137,21 @@ export default function LoginPage({ params }: { params: Promise<{ role: string }
         ))}
       </p>
     </AuthPageLayout>
+  );
+}
+
+export default function LoginPage({ params }: { params: Promise<{ role: string }> }) {
+  const { role: roleParam } = use(params);
+  const role = roleParam as keyof typeof roleConfig;
+  const config = roleConfig[role];
+
+  if (!config) {
+    notFound();
+  }
+
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginPageContent role={role} />
+    </Suspense>
   );
 }
