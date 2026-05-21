@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Clock, BookOpen, Star, Search } from "lucide-react";
+import { Clock, BookOpen, Star, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataCard } from "@/components/ui/data-card";
 import { Section } from "@/components/ui/section";
-import { coursesMock } from "@/data/courses.mock";
+import { useCourses, useCourseConfig } from "@/hooks/queries/useCourses";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   Pagination,
   PaginationContent,
@@ -25,10 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const categories = ["MERN", "UI/UX", "DataScience", "DevOps", "Other"] as const;
-const levels = ["Beginner", "Intermediate", "Advanced"] as const;
-const ITEMS_PER_PAGE = 6;
-
 export default function CoursesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
@@ -36,39 +33,53 @@ export default function CoursesPage() {
   const [sortBy, setSortBy] = useState("popular");
   const [page, setPage] = useState(1);
 
-  const filtered = useMemo(() => {
-    let result = coursesMock.filter((c) => {
-      const matchCat = !selectedCategory || c.category === selectedCategory;
-      const matchLvl = !selectedLevel || c.level === selectedLevel;
-      const matchSearch =
-        !searchQuery ||
-        c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.description.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchCat && matchLvl && matchSearch;
-    });
+  // Debounce search query to avoid too many API calls
+  const debouncedSearch = useDebounce(searchQuery, 1000);
 
-    switch (sortBy) {
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCategory, selectedLevel, debouncedSearch, sortBy]);
+
+  // Fetch course configuration
+  const { data: configData } = useCourseConfig();
+  const categories = configData?.data?.categories || [];
+  const levels = configData?.data?.difficultyLevels || [];
+
+  // Map sort options to API parameters
+  const getSortParams = (sortValue: string): { sortBy?: "title" | "price" | "rating" | "enrollmentCount" | "createdAt" | "duration"; sortOrder?: "asc" | "desc" } => {
+    switch (sortValue) {
       case "newest":
-        result = [...result].reverse();
-        break;
+        return { sortBy: "createdAt", sortOrder: "desc" };
       case "price-low":
-        result = [...result].sort((a, b) => a.discountedPrice - b.discountedPrice);
-        break;
+        return { sortBy: "price", sortOrder: "asc" };
       case "price-high":
-        result = [...result].sort((a, b) => b.discountedPrice - a.discountedPrice);
-        break;
+        return { sortBy: "price", sortOrder: "desc" };
       case "rating":
-        result = [...result].sort((a, b) => b.avgRating - a.avgRating);
-        break;
+        return { sortBy: "rating", sortOrder: "desc" };
+      case "popular":
       default:
-        result = [...result].sort((a, b) => b.enrollmentCount - a.enrollmentCount);
+        // Don't send sort params for default/popular - let backend use its default
+        return {};
     }
+  };
 
-    return result;
-  }, [selectedCategory, selectedLevel, searchQuery, sortBy]);
+  const sortParams = getSortParams(sortBy);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  // Fetch courses from API with all filters
+  const { data: coursesData, isLoading, error } = useCourses({
+    category: selectedCategory || undefined,
+    difficultyLevel: selectedLevel || undefined,
+    search: debouncedSearch || undefined,
+    sortBy: sortParams.sortBy,
+    sortOrder: sortParams.sortOrder,
+    page,
+    limit: 6,
+  });
+
+  const courses = coursesData?.data || [];
+  const totalPages = coursesData?.meta?.pagination?.totalPages || 1;
+  const totalCourses = coursesData?.meta?.pagination?.total || 0;
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -87,8 +98,58 @@ export default function CoursesPage() {
     setSelectedCategory(null);
     setSelectedLevel(null);
     setSearchQuery("");
-    setPage(1);
   };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Section variant="white">
+        <PageHeader
+          breadcrumb={
+            <span>
+              <Link href="/" className="hover:text-magenta transition-colors">
+                Home
+              </Link>{" "}
+              / Courses
+            </span>
+          }
+          title="All Courses"
+          description="Master in-demand skills with industry-vetted curriculum taught by engineers who ship."
+        />
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-magenta" />
+        </div>
+      </Section>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Section variant="white">
+        <PageHeader
+          breadcrumb={
+            <span>
+              <Link href="/" className="hover:text-magenta transition-colors">
+                Home
+              </Link>{" "}
+              / Courses
+            </span>
+          }
+          title="All Courses"
+          description="Master in-demand skills with industry-vetted curriculum taught by engineers who ship."
+        />
+        <div className="text-center py-16">
+          <p className="text-danger mb-4">Failed to load courses. Please try again.</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </Section>
+    );
+  }
 
   return (
     <Section variant="white">
@@ -113,7 +174,6 @@ export default function CoursesPage() {
               key={cat}
               onClick={() => {
                 setSelectedCategory(selectedCategory === cat ? null : cat);
-                setPage(1);
               }}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                 selectedCategory === cat
@@ -132,7 +192,6 @@ export default function CoursesPage() {
               key={lvl}
               onClick={() => {
                 setSelectedLevel(selectedLevel === lvl ? null : lvl);
-                setPage(1);
               }}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                 selectedLevel === lvl
@@ -163,29 +222,35 @@ export default function CoursesPage() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setPage(1);
               }}
             />
           </div>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={handleSortChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="popular">Popular</SelectItem>
-              <SelectItem value="newest">Newest</SelectItem>
+              <SelectItem value="popular">Most Popular</SelectItem>
+              <SelectItem value="rating">Highest Rated</SelectItem>
+              <SelectItem value="newest">Newest First</SelectItem>
               <SelectItem value="price-low">Price: Low → High</SelectItem>
               <SelectItem value="price-high">Price: High → Low</SelectItem>
-              <SelectItem value="rating">Rating</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
+      {/* Results count */}
+      {totalCourses > 0 && (
+        <div className="text-sm text-muted-foreground mb-4">
+          Showing {courses.length} of {totalCourses} courses
+        </div>
+      )}
+
       {/* Course grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {paginated.map((course) => (
+        {courses.map((course) => (
           <Link
             href={`/courses/${course.slug}`}
             key={course._id}
@@ -198,10 +263,10 @@ export default function CoursesPage() {
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getLevelColor(
-                    course.level
+                    course.difficultyLevel
                   )}`}
                 >
-                  {course.level}
+                  {course.difficultyLevel}
                 </span>
               </div>
 
@@ -216,22 +281,22 @@ export default function CoursesPage() {
               <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {course.durationHours}h
+                  {course.duration}h
                 </span>
                 <span className="flex items-center gap-1">
                   <BookOpen className="h-3 w-3" />
-                  {course.totalLessons} lessons
+                  {course.lessonsCount} lessons
                 </span>
                 <span className="flex items-center gap-1">
                   <Star className="h-3 w-3 text-warning" />
-                  {course.avgRating}
+                  {course.rating}
                 </span>
               </div>
 
               <div className="flex items-center gap-3 mb-3">
                 <img
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
-                  alt=""
+                  src={course.instructor.avatar}
+                  alt={course.instructorName}
                   className="h-6 w-6 rounded-full"
                 />
                 <span className="text-xs text-muted-foreground">
@@ -242,11 +307,13 @@ export default function CoursesPage() {
               <div className="flex items-center justify-between pt-3 border-t border-border">
                 <div>
                   <span className="text-lg font-extrabold text-magenta">
-                    ₹{course.discountedPrice.toLocaleString()}
-                  </span>
-                  <span className="text-xs text-muted-foreground line-through ml-2">
                     ₹{course.price.toLocaleString()}
                   </span>
+                  {course.originalPrice && course.originalPrice > course.price && (
+                    <span className="text-xs text-muted-foreground line-through ml-2">
+                      ₹{course.originalPrice.toLocaleString()}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-magenta font-medium group-hover:underline">
                   View Curriculum →
@@ -258,7 +325,7 @@ export default function CoursesPage() {
       </div>
 
       {/* Empty state */}
-      {filtered.length === 0 && (
+      {!isLoading && courses.length === 0 && (
         <div className="text-center py-16">
           <p className="text-muted-foreground mb-4">
             No courses match your filters.

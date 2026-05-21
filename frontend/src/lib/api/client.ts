@@ -115,24 +115,15 @@ export async function apiFetch<T = any>(
 
     // Check for errors
     if (!response.ok) {
-      const errorMessage = data?.error?.message || data?.message || `Request failed with status ${response.status}`;
-      const errorDetails = data?.error?.details || data?.details || null;
-
-      let fullError = errorMessage;
-      if (errorDetails) {
-        if (Array.isArray(errorDetails)) {
-          fullError += "\n" + errorDetails.map((d: any) => {
-            if (typeof d === 'object' && d.msg) {
-              return `- ${d.msg}`;
-            }
-            return `- ${d.message || JSON.stringify(d)}`;
-          }).join("\n");
-        } else if (typeof errorDetails === "object") {
-          fullError += "\n" + JSON.stringify(errorDetails, null, 2);
-        }
-      }
-
-      throw new Error(fullError);
+      // Create an error object that mimics axios error structure
+      // This allows error handlers to access error.response.data.error.code
+      const error: any = new Error(data?.error?.message || data?.message || `Request failed with status ${response.status}`);
+      error.response = {
+        status: response.status,
+        statusText: response.statusText,
+        data: data,
+      };
+      throw error;
     }
 
     return data;

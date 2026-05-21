@@ -51,7 +51,7 @@ export function useRegister() {
  * Hook to login user
  * Uses direct backend authentication with httpOnly cookies
  */
-export function useLogin() {
+export function useLogin(callbackUrl?: string) {
   const router = useRouter();
 
   return useMutation({
@@ -90,13 +90,19 @@ export function useLogin() {
           description: "You've been logged in successfully.",
         });
         
-        // Role-based redirect
-        const dashboardRoute = DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES];
-        if (dashboardRoute) {
-          router.push(dashboardRoute);
+        // Check for callback URL first
+        if (callbackUrl && callbackUrl !== '/') {
+          router.push(callbackUrl);
           router.refresh(); // Refresh to update middleware auth state
         } else {
-          router.push('/');
+          // Role-based redirect to dashboard
+          const dashboardRoute = DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES];
+          if (dashboardRoute) {
+            router.push(dashboardRoute);
+            router.refresh(); // Refresh to update middleware auth state
+          } else {
+            router.push('/');
+          }
         }
       }
     },

@@ -63,6 +63,7 @@ function LoginPageContent({ role }: { role: keyof typeof roleConfig }) {
   const searchParams = useSearchParams();
   const verified = searchParams.get("verified");
   const registered = searchParams.get("registered");
+  const callbackUrl = searchParams.get("callbackUrl");
   
   const config = roleConfig[role];
   const { icon: Icon, title, subtitle, redirectPath, RegisterForm } = config;
@@ -112,7 +113,7 @@ function LoginPageContent({ role }: { role: keyof typeof roleConfig }) {
 
           <CardContent>
             <TabsContent value="login" className="mt-0">
-              <LoginForm role={role} redirectPath={redirectPath} />
+              <LoginForm role={role} redirectPath={redirectPath} callbackUrl={callbackUrl || undefined} />
             </TabsContent>
 
             <TabsContent value="register" className="mt-0">

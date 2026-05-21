@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { DataCard } from "@/components/ui/data-card";
-import { coursesMock } from "@/data/courses.mock";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -24,73 +23,70 @@ import {
   Lock,
   PlayCircle,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getPrimaryCta, ctaTypeToFormType } from "@/lib/ctaPolicy";
+import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
 import { toast } from "sonner";
-
-const curriculumMock = [
-  {
-    title: "Getting Started",
-    lessons: [
-      { name: "Introduction & Setup", duration: "15 min", free: true },
-      { name: "Environment Configuration", duration: "20 min", free: true },
-    ],
-  },
-  {
-    title: "Core Fundamentals",
-    lessons: [
-      { name: "Key Concepts Deep Dive", duration: "45 min", free: false },
-      { name: "Hands-on Exercise 1", duration: "30 min", free: false },
-    ],
-  },
-  {
-    title: "Advanced Patterns",
-    lessons: [
-      { name: "Architecture & Design", duration: "40 min", free: false },
-      { name: "Real-World Project", duration: "60 min", free: false },
-    ],
-  },
-  {
-    title: "Deployment & Production",
-    lessons: [
-      { name: "CI/CD Pipeline", duration: "35 min", free: false },
-      { name: "Final Capstone", duration: "90 min", free: false },
-    ],
-  },
-];
-
-const faqMock = [
-  {
-    q: "Is this course suitable for beginners?",
-    a: "The prerequisites section above outlines what you need. If you meet those, you're good to go.",
-  },
-  {
-    q: "Do I get lifetime access?",
-    a: "Yes. Once enrolled, you have lifetime access to all course materials and future updates.",
-  },
-  {
-    q: "Is there a certificate?",
-    a: "Yes, you receive a verifiable certificate of completion.",
-  },
-  {
-    q: "Can I get a refund?",
-    a: "We offer a 7-day no-questions-asked refund policy.",
-  },
-];
+import { useCourseBySlug, useEnrollmentStatus, useEnrollCourse, useRequestCallback } from "@/hooks/queries/useCourses";
 
 export default function CourseDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { isOpen, formType, formTitle, openForm, closeForm } = usePopupForm();
-  const { data: user, isLoading } = useCurrentUser();
+  const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } = usePopupForm();
+  const { data: user, isLoading: userLoading } = useCurrentUser();
 
   const { slug } = use(params);
-  const course = coursesMock.find((c) => c.slug === slug);
+  
+  // Fetch course by slug using the new API
+  const { data: courseData, isLoading, error } = useCourseBySlug(slug);
+  const course = courseData?.data?.course;
+  const overview = courseData?.data?.overview;
+  const curriculum = courseData?.data?.curriculum || [];
+  const instructorDetails = courseData?.data?.instructorDetails;
+  const faqs = courseData?.data?.faqs || [];
 
+  // Check enrollment status (only if user is authenticated)
+  const isAuthenticated = user && user.isEmailVerified;
+  const { data: enrollmentStatus, isLoading: statusLoading } = useEnrollmentStatus(
+    course?._id || "",
+    !!course?._id && !!isAuthenticated
+  );
+
+  // Enrollment and callback mutations - must be called unconditionally (Rules of Hooks)
+  const enrollMutation = useEnrollCourse();
+  const callbackMutation = useRequestCallback("callback"); // Default context
+  const registerInterestMutation = useRequestCallback("register-interest");
+  const notifyBatchMutation = useRequestCallback("notify-next-batch");
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Section variant="white">
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-magenta" />
+        </div>
+      </Section>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Section variant="white">
+        <div className="text-center py-16">
+          <p className="text-danger mb-4">Failed to load course. Please try again.</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </Section>
+    );
+  }
+
+  // Not found
   if (!course) {
     notFound();
   }
@@ -103,42 +99,163 @@ export default function CourseDetailPage({
   };
 
   // Check if user is logged in and verified
-  const isAuthenticated = user && user.isEmailVerified;
   const isStudent = user?.role === "student";
+
+  // Get enrollment status flags
+  const isEnrolled = enrollmentStatus?.data?.isEnrolled || false;
+  const hasCallbackRequest = enrollmentStatus?.data?.hasCallbackRequest || false;
+
+  // Map backend status to CTA policy status
+  const getCourseStatus = (status: string): "active" | "coming-soon" | "draft" => {
+    if (status === "Active") return "active";
+    if (status === "Coming Soon") return "coming-soon";
+    return "draft";
+  };
 
   // Get CTA configuration based on course status
   const cta = getPrimaryCta({
     type: "course",
-    status: course.status || "active",
+    status: getCourseStatus(course.status),
   });
 
-  // Handle primary CTA click
-  const handlePrimaryCTAClick = () => {
-    if (isAuthenticated && isStudent && cta.primary.type === "enroll-now") {
-      // Logged in as student and enrolling - redirect to payment
-      toast.success("Redirecting to payment...");
-      // TODO: Redirect to actual payment/enrollment page
-    } else if (isAuthenticated && cta.primary.type === "enroll-now") {
-      // Logged in but not a student
+  // Select the appropriate mutation based on CTA type
+  const getCallbackMutation = () => {
+    if (cta.primary.type === "register-interest") return registerInterestMutation;
+    if (cta.primary.type === "notify-next-batch") return notifyBatchMutation;
+    return callbackMutation;
+  };
+
+  const activeMutation = getCallbackMutation();
+
+  // Handle primary CTA click (Enroll Now / Register Interest)
+  const handlePrimaryCTAClick = async () => {
+    // For "Register Interest" - treat like callback (no login required)
+    if (cta.primary.type === "register-interest") {
+      if (!isAuthenticated) {
+        // Not logged in - show form popup (no authentication required)
+        const formType = ctaTypeToFormType(cta.primary.type);
+        openForm(formType, `${cta.primary.label} - ${course.title}`, course._id, course.title);
+        return;
+      }
+
+      // Logged in - auto-submit using user data
+      if (user && course) {
+        try {
+          await activeMutation.mutateAsync({
+            courseId: course._id,
+            data: {
+              fullName: user.fullName,
+              email: user.email,
+              phone: user.phone,
+            },
+          });
+        } catch (error) {
+          console.error("Register interest error:", error);
+        }
+      }
+      return;
+    }
+
+    // For "Enroll Now" - require login
+    if (!isAuthenticated) {
+      // Not logged in - redirect to login with callback URL
+      if (typeof window !== "undefined") {
+        const currentUrl = window.location.pathname;
+        toast.info("Please login to continue");
+        window.location.href = `${AUTH_ROUTES.login.student}?callbackUrl=${encodeURIComponent(currentUrl)}`;
+      }
+      return;
+    }
+
+    if (!isStudent) {
       toast.error("Please login as a student to enroll");
-    } else {
-      // Show popup form with dynamic type based on CTA
-      const formType = ctaTypeToFormType(cta.primary.type);
-      openForm(formType, `${cta.primary.label} - ${course.title}`);
+      return;
+    }
+
+    if (isEnrolled) {
+      toast.info("You are already enrolled in this course");
+      return;
+    }
+
+    // Auto-enroll using user data (no form popup)
+    if (user && course) {
+      try {
+        await enrollMutation.mutateAsync({
+          courseId: course._id,
+          data: {
+            fullName: user.fullName,
+            email: user.email,
+            phone: user.phone,
+          },
+        });
+      } catch (error) {
+        // Error handling is done in the mutation hook
+        console.error("Enrollment error:", error);
+      }
     }
   };
 
-  // Handle secondary CTA click
-  const handleSecondaryCTAClick = () => {
-    if (cta.secondary) {
-      const formType = ctaTypeToFormType(cta.secondary.type);
-      openForm(formType, `${cta.secondary.label} - ${course.title}`);
+  // Handle secondary CTA click (Request Callback)
+  const handleSecondaryCTAClick = async () => {
+    if (!isAuthenticated) {
+      // Not logged in - show form popup (no authentication required for callback)
+      if (cta.secondary) {
+        const formType = ctaTypeToFormType(cta.secondary.type);
+        openForm(formType, `${cta.secondary.label} - ${course.title}`, course._id, course.title);
+      }
+      return;
+    }
+
+    if (hasCallbackRequest) {
+      toast.info("You already have a pending callback request for this course");
+      return;
+    }
+
+    // Auto-submit callback request using user data (no form popup)
+    if (user && course) {
+      try {
+        await callbackMutation.mutateAsync({
+          courseId: course._id,
+          data: {
+            fullName: user.fullName,
+            email: user.email,
+            phone: user.phone,
+          },
+        });
+      } catch (error) {
+        // Error handling is done in the mutation hook
+        console.error("Callback request error:", error);
+      }
     }
   };
+
+  // Determine button states
+  const isPrimaryButtonDisabled = 
+    cta.primary.type === "enroll-now" 
+      ? isEnrolled || enrollMutation.isPending
+      : cta.primary.type === "register-interest"
+      ? hasCallbackRequest || activeMutation.isPending
+      : activeMutation.isPending;
+      
+  const isSecondaryButtonDisabled = hasCallbackRequest || callbackMutation.isPending;
+
+  // Button labels
+  const primaryButtonLabel = 
+    cta.primary.type === "enroll-now"
+      ? (isEnrolled ? "Already Enrolled" : enrollMutation.isPending ? "Enrolling..." : cta.primary.label)
+      : cta.primary.type === "register-interest"
+      ? (hasCallbackRequest ? "Interest Registered" : activeMutation.isPending ? "Submitting..." : cta.primary.label)
+      : (activeMutation.isPending ? "Submitting..." : cta.primary.label);
+
+  const secondaryButtonLabel = hasCallbackRequest 
+    ? "Callback Requested" 
+    : callbackMutation.isPending 
+    ? "Requesting..." 
+    : cta.secondary?.label || "Request Callback";
 
   return (
     <>
-      <PopupForm isOpen={isOpen} onClose={closeForm} type={formType} title={formTitle} />
+      <PopupForm isOpen={isOpen} onClose={closeForm} type={formType} title={formTitle} courseId={courseId} courseTitle={courseTitle} />
       
       <Section variant="white">
         <Link
@@ -166,7 +283,7 @@ export default function CourseDetailPage({
                   {course.category}
                 </span>
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-lavender/10 text-lavender">
-                  {course.level}
+                  {course.difficultyLevel}
                 </span>
               </div>
 
@@ -176,14 +293,14 @@ export default function CourseDetailPage({
 
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <img
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
+                  src={course.instructor?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
                   alt=""
                   className="h-8 w-8 rounded-full"
                 />
                 <span>{course.instructorName}</span>
                 <span className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-warning" />
-                  {course.avgRating}
+                  {course.rating}
                 </span>
                 <span>{course.enrollmentCount.toLocaleString()} enrolled</span>
               </div>
@@ -201,23 +318,16 @@ export default function CourseDetailPage({
               <TabsContent value="overview" className="space-y-8 pt-6">
                 <div>
                   <h2 className="text-xl font-bold mb-4">About this course</h2>
-                  <p className="text-muted-foreground">{course.description}</p>
+                  <p className="text-muted-foreground">{overview?.aboutCourse || course.description}</p>
                 </div>
 
                 <div>
                   <h2 className="text-xl font-bold mb-4">What you'll learn</h2>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {[
-                      "Build production-ready applications",
-                      "Master core concepts and patterns",
-                      "Write clean, maintainable code",
-                      "Deploy and scale applications",
-                      "Implement best practices",
-                      "Pass technical interviews",
-                    ].map((item) => (
-                      <div key={item} className="flex items-start gap-2">
+                    {overview?.whatYouWillLearn?.map((item) => (
+                      <div key={item._id} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-magenta mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-foreground">{item}</span>
+                        <span className="text-sm text-foreground">{item.text}</span>
                       </div>
                     ))}
                   </div>
@@ -226,18 +336,12 @@ export default function CourseDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">Prerequisites</h2>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-lavender mt-0.5" />
-                      Basic programming knowledge
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-lavender mt-0.5" />
-                      Familiarity with HTML/CSS
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-lavender mt-0.5" />A
-                      laptop with internet access
-                    </li>
+                    {overview?.prerequisites?.map((item) => (
+                      <li key={item._id} className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-lavender mt-0.5" />
+                        {item.text}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </TabsContent>
@@ -245,45 +349,45 @@ export default function CourseDetailPage({
               <TabsContent value="curriculum" className="pt-6">
                 <h2 className="text-xl font-bold mb-4">Course Curriculum</h2>
                 <Accordion type="multiple" className="space-y-2">
-                  {curriculumMock.map((section, i) => (
+                  {curriculum.map((section) => (
                     <AccordionItem
-                      key={i}
-                      value={`section-${i}`}
+                      key={section._id}
+                      value={`section-${section.sectionNumber}`}
                       className="border rounded-lg px-4"
                     >
                       <AccordionTrigger className="text-sm font-semibold">
-                        Section {i + 1}: {section.title}
+                        Section {section.sectionNumber}: {section.title}
                       </AccordionTrigger>
                       <AccordionContent>
                         <ul className="space-y-2">
-                          {section.lessons.map((lesson, j) => (
+                          {section.lessons.map((lesson) => (
                             <li
-                              key={j}
+                              key={lesson._id}
                               className="flex items-center justify-between text-sm py-1"
                             >
                               <div className="flex items-center gap-2">
-                                {lesson.free ? (
+                                {lesson.isFree ? (
                                   <PlayCircle className="h-4 w-4 text-lavender" />
                                 ) : (
                                   <Lock className="h-4 w-4 text-muted-foreground" />
                                 )}
                                 <span
                                   className={
-                                    lesson.free
+                                    lesson.isFree
                                       ? "text-foreground"
                                       : "text-muted-foreground"
                                   }
                                 >
-                                  {lesson.name}
+                                  {lesson.title}
                                 </span>
-                                {lesson.free && (
+                                {lesson.isFree && (
                                   <span className="text-[10px] px-1.5 py-0.5 bg-success/10 text-success rounded">
                                     Free
                                   </span>
                                 )}
                               </div>
                               <span className="text-xs text-muted-foreground">
-                                {lesson.duration}
+                                {lesson.duration} min
                               </span>
                             </li>
                           ))}
@@ -298,28 +402,29 @@ export default function CourseDetailPage({
                 <DataCard>
                   <div className="flex items-start gap-4">
                     <img
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
-                      alt=""
+                      src={instructorDetails?.avatar || course.instructor?.avatar}
+                      alt={instructorDetails?.name}
                       className="h-16 w-16 rounded-full"
                     />
                     <div>
                       <h3 className="text-lg font-bold">
-                        {course.instructorName}
+                        {instructorDetails?.name || course.instructorName}
                       </h3>
                       <p className="text-sm text-muted-foreground mb-3">
-                        Senior Engineer with 8+ years of industry experience.
-                        Previously at top tech companies, now dedicated to
-                        training the next wave of developers.
+                        {instructorDetails?.bio || "Senior Engineer with 8+ years of industry experience. Previously at top tech companies, now dedicated to training the next wave of developers."}
                       </p>
                       <div className="flex gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Star className="h-3 w-3 text-warning" />
-                          {course.avgRating} rating
+                          {instructorDetails?.rating || course.rating} rating
                         </span>
                         <span className="flex items-center gap-1">
                           <Users className="h-3 w-3" />
-                          {course.enrollmentCount} students
+                          {instructorDetails?.studentsCount || course.enrollmentCount} students
                         </span>
+                        {instructorDetails?.coursesCount && (
+                          <span>{instructorDetails.coursesCount} courses</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -328,17 +433,17 @@ export default function CourseDetailPage({
 
               <TabsContent value="faq" className="pt-6">
                 <Accordion type="single" collapsible className="space-y-2">
-                  {faqMock.map((item, i) => (
+                  {faqs.map((item) => (
                     <AccordionItem
-                      key={i}
-                      value={`faq-${i}`}
+                      key={item._id}
+                      value={`faq-${item._id}`}
                       className="border rounded-lg px-4"
                     >
                       <AccordionTrigger className="text-sm font-semibold">
-                        {item.q}
+                        {item.question}
                       </AccordionTrigger>
                       <AccordionContent className="text-sm text-muted-foreground">
-                        {item.a}
+                        {item.answer}
                       </AccordionContent>
                     </AccordionItem>
                   ))}
@@ -353,11 +458,13 @@ export default function CourseDetailPage({
               <DataCard>
                 <div className="mb-4">
                   <span className="text-3xl font-extrabold text-magenta">
-                    ₹{course.discountedPrice.toLocaleString()}
-                  </span>
-                  <span className="text-base text-muted-foreground line-through ml-2">
                     ₹{course.price.toLocaleString()}
                   </span>
+                  {course.originalPrice && course.originalPrice > course.price && (
+                    <span className="text-base text-muted-foreground line-through ml-2">
+                      ₹{course.originalPrice.toLocaleString()}
+                    </span>
+                  )}
                 </div>
 
                 {/* Primary CTA */}
@@ -365,8 +472,12 @@ export default function CourseDetailPage({
                   className="w-full bg-magenta text-white hover:bg-magenta/90 mb-3"
                   size="lg"
                   onClick={handlePrimaryCTAClick}
+                  disabled={isPrimaryButtonDisabled}
                 >
-                  {cta.primary.label}
+                  {enrollMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {primaryButtonLabel}
                 </Button>
 
                 {/* Secondary CTA */}
@@ -375,26 +486,24 @@ export default function CourseDetailPage({
                     variant="outline"
                     className="w-full border-lavender text-lavender hover:bg-lavender hover:text-white"
                     onClick={handleSecondaryCTAClick}
+                    disabled={isSecondaryButtonDisabled}
                   >
-                    {cta.secondary.label}
+                    {callbackMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {secondaryButtonLabel}
                   </Button>
                 )}
 
                 <div className="mt-6 space-y-3 text-sm">
                   <h4 className="font-semibold">What's included</h4>
-                  {[
-                    `${course.durationHours} hours of video`,
-                    `${course.totalLessons} lessons`,
-                    "Certificate of completion",
-                    "Mentor sessions",
-                    "Lifetime access",
-                  ].map((item) => (
+                  {overview?.whatsIncluded?.map((item) => (
                     <div
-                      key={item}
+                      key={item._id}
                       className="flex items-center gap-2 text-muted-foreground"
                     >
                       <Check className="h-4 w-4 text-magenta flex-shrink-0" />
-                      <span>{item}</span>
+                      <span>{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -442,8 +551,12 @@ export default function CourseDetailPage({
             className="bg-magenta text-white hover:bg-magenta/90"
             size="lg"
             onClick={handlePrimaryCTAClick}
+            disabled={isPrimaryButtonDisabled}
           >
-            {cta.primary.label} <ArrowRight className="ml-2 h-4 w-4" />
+            {enrollMutation.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            {primaryButtonLabel} {!isPrimaryButtonDisabled && <ArrowRight className="ml-2 h-4 w-4" />}
           </Button>
         </div>
       </Section>

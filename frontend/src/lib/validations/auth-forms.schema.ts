@@ -49,7 +49,8 @@ export const collegeRegisterSchema = z.object({
   designation: z.string().min(2, "Designation is required"),
   email: emailSchema,
   phone: phoneSchema,
-  city: z.string().min(2, "City/State is required"),
+  city: z.string().min(2, "City is required"),
+  state: z.string().min(2, "State is required"),
   website: z.string()
     .optional()
     .refine((val) => !val || val === "" || /^https?:\/\/.+\..+/.test(val), {

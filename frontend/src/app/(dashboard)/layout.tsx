@@ -1,8 +1,14 @@
-export default async function DashboardLayout({
+"use client";
+
+import { usePendingAction } from "@/hooks/usePendingAction";
+
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // TODO: Add middleware.ts for route protection
+  // Handle pending actions after login (enrollment, callback)
+  usePendingAction();
+  
   return <>{children}</>;
 }

@@ -24,8 +24,6 @@ export function CollegeRegisterForm() {
   });
 
   const onSubmit = async (data: CollegeRegisterFormData) => {
-    const [city, state] = data.city.split(",").map(s => s.trim());
-    
     registerMutation.mutate({
       fullName: data.contactPerson,
       email: data.email,
@@ -38,8 +36,8 @@ export function CollegeRegisterForm() {
         designation: data.designation,
         officialEmail: data.email,
         phone: data.phone,
-        city: city || data.city,
-        state: state || "",
+        city: data.city,
+        state: data.state,
         website: data.website || undefined,
       },
     });
@@ -110,13 +108,19 @@ export function CollegeRegisterForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="reg-city">City / State</Label>
+          <Label htmlFor="reg-city">City</Label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input id="reg-city" placeholder="Guwahati, Assam" className="pl-10" {...register("city")} />
+            <Input id="reg-city" placeholder="Guwahati" className="pl-10" {...register("city")} />
           </div>
           {errors.city && <p className="text-sm text-destructive">{errors.city.message}</p>}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="reg-state">State</Label>
+        <Input id="reg-state" placeholder="Assam" {...register("state")} />
+        {errors.state && <p className="text-sm text-destructive">{errors.state.message}</p>}
       </div>
 
       <div className="space-y-2">
