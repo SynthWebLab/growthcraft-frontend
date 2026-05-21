@@ -257,9 +257,11 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle 
                   placeholder={type === "enquiry" ? "Your Message *" : "Tell us about yourself and your expertise"}
                   {...register("message")}
                   rows={4}
-                  className={errors.message ? "border-destructive" : ""}
+                  className={"message" in errors && errors.message ? "border-destructive" : ""}
                 />
-                {errors.message && <p className="text-xs text-destructive mt-1">{errors.message.message}</p>}
+                {"message" in errors && errors.message && (
+                  <p className="text-xs text-destructive mt-1">{errors.message.message}</p>
+                )}
               </div>
             </>
           )}
