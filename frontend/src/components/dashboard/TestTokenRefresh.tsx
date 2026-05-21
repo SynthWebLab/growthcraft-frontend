@@ -48,7 +48,8 @@ export function TestTokenRefresh() {
   };
 
   return (
-    <div className="border rounded-lg p-4 space-y-4">
+    <>
+    {/* <div className="border rounded-lg p-4 space-y-4">
       <div>
         <h3 className="font-semibold mb-2">Test Token Refresh</h3>
         <p className="text-sm text-muted-foreground mb-4">
@@ -101,6 +102,7 @@ export function TestTokenRefresh() {
           <li>Open DevTools Console for detailed logs</li>
         </ul>
       </div>
-    </div>
+    </div> */}
+    </>
   );
 }

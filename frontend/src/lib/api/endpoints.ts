@@ -20,7 +20,11 @@ export const API_ENDPOINTS = {
   courses: {
     list: "/courses",
     detail: (id: string) => `/courses/${id}`,
+    detailBySlug: (slug: string) => `/courses/slug/${slug}`,
     enroll: (id: string) => `/courses/${id}/enroll`,
+    requestCallback: (id: string) => `/courses/${id}/request-callback`,
+    enrollmentStatus: (id: string) => `/courses/${id}/enrollment-status`,
+    config: "/courses/config",
   },
   bootcamps: {
     list: "/bootcamps",

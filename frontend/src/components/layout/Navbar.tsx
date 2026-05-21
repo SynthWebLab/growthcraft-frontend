@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, LayoutDashboard } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Menu, X, ChevronDown, LayoutDashboard, Search, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,12 +15,57 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NAV_ROUTES, LOGIN_ROUTES, REGISTER_ROUTES, DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useCourses } from "@/hooks/queries/useCourses";
 import logoMain from "@/assets/logo-main.png";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
   const { data: user, isLoading } = useCurrentUser();
+
+  // Debounce search query
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Fetch search results
+  const { data: searchResults, isLoading: isSearching } = useCourses({
+    q: debouncedSearch || undefined,
+    limit: 5,
+  });
+
+  const courses = searchResults?.data || [];
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Show results when there's a search query
+  useEffect(() => {
+    if (debouncedSearch && debouncedSearch.length > 0) {
+      setShowSearchResults(true);
+    }
+  }, [debouncedSearch]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/courses?q=${encodeURIComponent(searchQuery)}`);
+      setShowSearchResults(false);
+      setSearchQuery("");
+    }
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">

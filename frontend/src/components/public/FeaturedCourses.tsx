@@ -2,13 +2,14 @@
 
 import { Section } from "@/components/ui/section";
 import { DataCard } from "@/components/ui/data-card";
-import { coursesMock } from "@/data/courses.mock";
-import { Clock, BookOpen, Star, User } from "lucide-react";
+import { useCourses } from "@/hooks/queries/useCourses";
+import { Clock, BookOpen, Star, User, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { getPrimaryCta } from "@/lib/ctaPolicy";
 
 export const FeaturedCourses = () => {
-  const featured = coursesMock.slice(0, 6);
+  const { data: coursesData, isLoading } = useCourses({ limit: 6 });
+  const featured = coursesData?.data || [];
 
   return (
     <Section variant="graphite" className="relative overflow-hidden !py-8 sm:!py-12 md:!py-16 lg:!py-20">
@@ -31,94 +32,105 @@ export const FeaturedCourses = () => {
           </h2>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-white" />
+          </div>
+        )}
+
         {/* Course Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {featured.map((course) => {
-            const cta = getPrimaryCta({
-              type: "course",
-              status: course.status,
-            });
+        {!isLoading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {featured.map((course) => {
+              const cta = getPrimaryCta({
+                type: "course",
+                status: course.status.toLowerCase() as "active" | "draft",
+              });
 
-            return (
-              <DataCard
-                key={course._id}
-                variant="dark"
-                className="h-full flex flex-col"
-              >
-                {/* Tags */}
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <span className="px-2.5 py-0.5 rounded-full bg-primary text-white text-xs font-semibold">
-                    {course.category}
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full border border-white/20 text-white/70 text-xs">
-                    {course.level}
-                  </span>
-                  {course.status === "coming-soon" && (
-                    <span className="px-2.5 py-0.5 rounded-full bg-secondary text-white text-xs font-semibold">
-                      Coming Soon
+              return (
+                <DataCard
+                  key={course._id}
+                  variant="dark"
+                  className="h-full flex flex-col"
+                >
+                  {/* Tags */}
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <span className="px-2.5 py-0.5 rounded-full bg-primary text-white text-xs font-semibold">
+                      {course.category}
                     </span>
-                  )}
-                </div>
-
-                {/* Title */}
-                <h3 className="text-base sm:text-lg font-bold font-display text-white mb-2 sm:mb-3">
-                  {course.title}
-                </h3>
-
-                {/* Description */}
-                <p className="text-xs sm:text-sm text-white/60 leading-relaxed mb-3 sm:mb-4 flex-grow">
-                  {course.description}
-                </p>
-
-                {/* Meta Info */}
-                <div className="flex items-center gap-2 sm:gap-3 text-xs text-white/50 mb-3 sm:mb-4 flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <User className="h-3.5 w-3.5 text-secondary" />
-                    {course.instructorName}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 text-secondary" />
-                    {course.durationHours}h
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <BookOpen className="h-3.5 w-3.5 text-secondary" />
-                    {course.totalLessons} lessons
-                  </span>
-                </div>
-
-                {/* Price & CTA */}
-                <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-white/10">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-base sm:text-lg font-bold text-white">
-                      ₹{course.discountedPrice.toLocaleString()}
+                    <span className="px-2.5 py-0.5 rounded-full border border-white/20 text-white/70 text-xs">
+                      {course.difficultyLevel}
                     </span>
-                    <span className="text-xs sm:text-sm line-through text-white/40">
-                      ₹{course.price.toLocaleString()}
+                    {course.status === "Draft" && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-secondary text-white text-xs font-semibold">
+                        Coming Soon
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-base sm:text-lg font-bold font-display text-white mb-2 sm:mb-3">
+                    {course.title}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-xs sm:text-sm text-white/60 leading-relaxed mb-3 sm:mb-4 flex-grow">
+                    {course.description}
+                  </p>
+
+                  {/* Meta Info */}
+                  <div className="flex items-center gap-2 sm:gap-3 text-xs text-white/50 mb-3 sm:mb-4 flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <User className="h-3.5 w-3.5 text-secondary" />
+                      {course.instructorName}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-secondary" />
+                      {course.duration}h
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <BookOpen className="h-3.5 w-3.5 text-secondary" />
+                      {course.lessonsCount} lessons
                     </span>
                   </div>
-                  <Link
-                    href={`/courses/${course.slug}`}
-                    className="text-xs sm:text-sm font-medium text-secondary hover:text-white transition-colors"
-                  >
-                    {cta.primary.label} →
-                  </Link>
-                </div>
 
-                {/* Rating */}
-                <div className="flex items-center gap-1 mt-2 sm:mt-3">
-                  <Star
-                    className="h-3.5 w-3.5 fill-current"
-                    style={{ color: "#fbbf24" }}
-                  />
-                  <span className="text-xs text-white/60">
-                    {course.avgRating} · {course.enrollmentCount.toLocaleString()}{" "}
-                    enrolled
-                  </span>
-                </div>
-              </DataCard>
-            );
-          })}
-        </div>
+                  {/* Price & CTA */}
+                  <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-white/10">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-base sm:text-lg font-bold text-white">
+                        ₹{course.price.toLocaleString()}
+                      </span>
+                      {course.originalPrice && course.originalPrice > course.price && (
+                        <span className="text-xs sm:text-sm line-through text-white/40">
+                          ₹{course.originalPrice.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                    <Link
+                      href={`/courses/${course.slug}`}
+                      className="text-xs sm:text-sm font-medium text-secondary hover:text-white transition-colors"
+                    >
+                      {cta.primary.label} →
+                    </Link>
+                  </div>
+
+                  {/* Rating */}
+                  <div className="flex items-center gap-1 mt-2 sm:mt-3">
+                    <Star
+                      className="h-3.5 w-3.5 fill-current"
+                      style={{ color: "#fbbf24" }}
+                    />
+                    <span className="text-xs text-white/60">
+                      {course.rating} · {course.enrollmentCount.toLocaleString()}{" "}
+                      enrolled
+                    </span>
+                  </div>
+                </DataCard>
+              );
+            })}
+          </div>
+        )}
       </div>
     </Section>
   );

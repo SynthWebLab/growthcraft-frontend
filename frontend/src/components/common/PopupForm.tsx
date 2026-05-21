@@ -1,22 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Send, Phone, GraduationCap, Briefcase, School, UserCheck } from "lucide-react";
 import { z } from "zod";
 import { FormType } from "@/lib/ctaPolicy";
+import { useEnrollCourse, useRequestCallback } from "@/hooks/queries/useCourses";
 
 // Validation schemas
 const enrollmentSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(100),
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
   email: z.string().trim().email("Invalid email address").max(255),
   phone: z.string().trim().min(10, "Phone number must be at least 10 digits").max(15),
-  course: z.string().min(1, "Please select a course"),
+});
+
+const callbackSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().trim().email("Invalid email address").max(255),
+  phone: z.string().trim().min(10, "Phone number must be at least 10 digits").max(15),
 });
 
 const enquirySchema = z.object({
@@ -24,37 +31,55 @@ const enquirySchema = z.object({
   email: z.string().trim().email("Invalid email address").max(255),
   phone: z.string().trim().min(10, "Phone number must be at least 10 digits").max(15),
   message: z.string().trim().min(1, "Message is required").max(1000),
+  organization: z.string().optional(),
 });
+
+type EnrollmentFormData = z.infer<typeof enrollmentSchema>;
+type CallbackFormData = z.infer<typeof callbackSchema>;
+type EnquiryFormData = z.infer<typeof enquirySchema>;
 
 interface PopupFormProps {
   isOpen: boolean;
   onClose: () => void;
   type: FormType | "enquiry" | "mentor" | "partner";
   title?: string;
+  courseId?: string; // Optional: pre-select a course
+  courseTitle?: string; // Optional: course title for enrollment
 }
 
-const courseOptions = [
-  "Full Stack Development Bootcamp",
-  "Data Science & AI Bootcamp",
-  "UI/UX Design Crash Program",
-  "Complete React Developer",
-  "Python for Data Science",
-  "AWS Cloud Practitioner",
-];
+export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle }: PopupFormProps) => {
+  // Mutations for enroll and callback
+  const enrollMutation = useEnrollCourse();
+  
+  // Determine context for callback mutation based on form type
+  const callbackContext = 
+    type === "register-interest" ? "register-interest" :
+    type === "notify-next-batch" ? "notify-next-batch" :
+    "callback";
+  
+  const callbackMutation = useRequestCallback(callbackContext);
 
-export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    course: "",
-    message: "",
-    organization: "",
-    role: "",
+  // Determine which schema to use
+  const getSchema = () => {
+    if (type === "enrollment" || type === "reserve-seat" || type === "join-waitlist") {
+      return enrollmentSchema;
+    } else if (type === "callback" || type === "register-interest" || type === "notify-next-batch") {
+      return callbackSchema;
+    } else {
+      return enquirySchema;
+    }
+  };
+
+  // React Hook Form setup
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<EnrollmentFormData | CallbackFormData | EnquiryFormData>({
+    resolver: zodResolver(getSchema()),
+    mode: "onChange",
   });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getIcon = () => {
     switch (type) {
@@ -103,44 +128,69 @@ export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
-    setIsSubmitting(true);
-
+  const onSubmit = async (data: EnrollmentFormData | CallbackFormData | EnquiryFormData) => {
     try {
+      // Validate based on form type
       if (type === "enrollment" || type === "reserve-seat" || type === "join-waitlist") {
-        enrollmentSchema.parse(formData);
-      } else {
-        enquirySchema.parse(formData);
-      }
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const successMessage = type === "register-interest" 
-        ? "Interest registered! We'll notify you soon."
-        : type === "join-waitlist"
-        ? "You're on the waitlist! We'll contact you when a spot opens."
-        : type === "notify-next-batch"
-        ? "You'll be notified about the next batch!"
-        : "Thank you! We'll get back to you soon.";
-
-      toast.success(successMessage);
-      setFormData({ name: "", email: "", phone: "", course: "", message: "", organization: "", role: "" });
-      onClose();
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
-        err.issues.forEach((error) => {
-          if (error.path[0]) {
-            fieldErrors[error.path[0].toString()] = error.message;
-          }
+        // courseId must be provided for enrollment (pre-selected from course page)
+        if (!courseId) {
+          toast.error("Course not selected. Please try again.");
+          return;
+        }
+        
+        // Use the provided courseTitle (it's always passed from course page)
+        const courseTitleToSend = courseTitle || "";
+        
+        // Call enroll API - use collegeName field to store course title
+        await enrollMutation.mutateAsync({
+          courseId: courseId,
+          data: {
+            fullName: data.name,
+            email: data.email,
+            phone: data.phone,
+            collegeName: courseTitleToSend, // Store course title in collegeName field
+          },
         });
-        setErrors(fieldErrors);
+
+        reset();
+        onClose();
+      } else if (type === "callback" || type === "register-interest" || type === "notify-next-batch") {
+        // courseId must be provided for callback (pre-selected from course page)
+        if (!courseId) {
+          toast.error("Course not selected. Please try again.");
+          return;
+        }
+
+        // Call callback API
+        await callbackMutation.mutateAsync({
+          courseId: courseId,
+          data: {
+            fullName: data.name,
+            email: data.email,
+            phone: data.phone,
+          },
+        });
+
+        reset();
+        onClose();
+      } else {
+        // For enquiry, mentor, partner - just validate and show success
+        // Simulate API call for non-course forms
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const successMessage = type === "mentor"
+          ? "Application submitted! We'll review and get back to you."
+          : type === "partner"
+          ? "Partnership request received! We'll contact you soon."
+          : "Thank you! We'll get back to you soon.";
+
+        toast.success(successMessage);
+        reset();
+        onClose();
       }
-    } finally {
-      setIsSubmitting(false);
+    } catch (err) {
+      // API errors are handled by the mutation hooks (toast notifications)
+      console.error("Form submission error:", err);
     }
   };
 
@@ -161,86 +211,65 @@ export const PopupForm = ({ isOpen, onClose, type, title }: PopupFormProps) => {
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div>
             <Input
               placeholder="Your Name *"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              {...register("name")}
               className={errors.name ? "border-destructive" : ""}
             />
-            {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
+            {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
           </div>
 
           <div>
             <Input
               type="email"
               placeholder="Email Address *"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              {...register("email")}
               className={errors.email ? "border-destructive" : ""}
             />
-            {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
+            {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
             <Input
               type="tel"
               placeholder="Phone Number *"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              {...register("phone")}
               className={errors.phone ? "border-destructive" : ""}
             />
-            {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
+            {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone.message}</p>}
           </div>
 
-          {(type === "enrollment" || type === "reserve-seat" || type === "join-waitlist") && (
-            <div>
-              <Select value={formData.course} onValueChange={(value) => setFormData({ ...formData, course: value })}>
-                <SelectTrigger className={errors.course ? "border-destructive" : ""}>
-                  <SelectValue placeholder="Select Course/Bootcamp *" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courseOptions.map((course) => (
-                    <SelectItem key={course} value={course}>
-                      {course}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.course && <p className="text-xs text-destructive mt-1">{errors.course}</p>}
-            </div>
-          )}
-
-          {(type === "partner" || type === "mentor") && (
-            <div>
-              <Input
-                placeholder={type === "partner" ? "Organization Name" : "Current Role/Company"}
-                value={formData.organization}
-                onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-              />
-            </div>
-          )}
-
           {(type === "enquiry" || type === "mentor" || type === "partner") && (
-            <div>
-              <Textarea
-                placeholder={type === "enquiry" ? "Your Message *" : "Tell us about yourself and your expertise"}
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                rows={4}
-                className={errors.message ? "border-destructive" : ""}
-              />
-              {errors.message && <p className="text-xs text-destructive mt-1">{errors.message}</p>}
-            </div>
+            <>
+              {(type === "partner" || type === "mentor") && (
+                <div>
+                  <Input
+                    placeholder={type === "partner" ? "Organization Name" : "Current Role/Company"}
+                    {...register("organization")}
+                  />
+                </div>
+              )}
+              
+              <div>
+                <Textarea
+                  placeholder={type === "enquiry" ? "Your Message *" : "Tell us about yourself and your expertise"}
+                  {...register("message")}
+                  rows={4}
+                  className={errors.message ? "border-destructive" : ""}
+                />
+                {errors.message && <p className="text-xs text-destructive mt-1">{errors.message.message}</p>}
+              </div>
+            </>
           )}
 
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button type="submit" variant="default" className="flex-1" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : (
+            <Button type="submit" variant="default" className="flex-1" disabled={isSubmitting || enrollMutation.isPending || callbackMutation.isPending}>
+              {isSubmitting || enrollMutation.isPending || callbackMutation.isPending ? "Submitting..." : (
                 <>
                   <Send className="mr-2 h-4 w-4" />
                   Submit
@@ -259,14 +288,18 @@ export const usePopupForm = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [formType, setFormType] = useState<FormType | "enquiry" | "mentor" | "partner">("enquiry");
   const [formTitle, setFormTitle] = useState<string | undefined>();
+  const [courseId, setCourseId] = useState<string | undefined>();
+  const [courseTitle, setCourseTitle] = useState<string | undefined>();
 
-  const openForm = (type: typeof formType, title?: string) => {
+  const openForm = (type: typeof formType, title?: string, courseIdParam?: string, courseTitleParam?: string) => {
     setFormType(type);
     setFormTitle(title);
+    setCourseId(courseIdParam);
+    setCourseTitle(courseTitleParam);
     setIsOpen(true);
   };
 
   const closeForm = () => setIsOpen(false);
 
-  return { isOpen, formType, formTitle, openForm, closeForm };
+  return { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm };
 };

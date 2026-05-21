@@ -64,6 +64,7 @@ export default function LoginPage({ params }: { params: Promise<{ role: string }
   const searchParams = useSearchParams();
   const verified = searchParams.get("verified");
   const registered = searchParams.get("registered");
+  const callbackUrl = searchParams.get("callbackUrl");
   
   const role = roleParam as keyof typeof roleConfig;
   const config = roleConfig[role];
@@ -119,7 +120,7 @@ export default function LoginPage({ params }: { params: Promise<{ role: string }
 
           <CardContent>
             <TabsContent value="login" className="mt-0">
-              <LoginForm role={role} redirectPath={redirectPath} />
+              <LoginForm role={role} redirectPath={redirectPath} callbackUrl={callbackUrl || undefined} />
             </TabsContent>
 
             <TabsContent value="register" className="mt-0">

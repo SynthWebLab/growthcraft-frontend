@@ -13,11 +13,12 @@ import { useLogin } from "@/hooks/queries/useAuthentication";
 interface LoginFormProps {
   role: string;
   redirectPath: string;
+  callbackUrl?: string;
 }
 
-export function LoginForm({ role, redirectPath }: LoginFormProps) {
+export function LoginForm({ role, redirectPath, callbackUrl }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const loginMutation = useLogin();
+  const loginMutation = useLogin(callbackUrl);
   
   const {
     register,
