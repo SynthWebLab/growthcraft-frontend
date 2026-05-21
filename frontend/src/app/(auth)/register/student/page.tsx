@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { AuthPageLayout } from "@/components/auth/AuthPageLayout";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { StudentRegisterForm } from "@/components/auth/StudentRegisterForm";
 
-export default function StudentAuthPage() {
+function StudentAuthContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   
@@ -59,5 +60,13 @@ export default function StudentAuthPage() {
         </Link>
       </p>
     </AuthPageLayout>
+  );
+}
+
+export default function StudentAuthPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <StudentAuthContent />
+    </Suspense>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { AuthPageLayout } from "@/components/auth/AuthPageLayout";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { MentorRegisterForm } from "@/components/auth/MentorRegisterForm";
 
-export default function MentorAuthPage() {
+function MentorAuthContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   
@@ -58,5 +59,13 @@ export default function MentorAuthPage() {
         </Link>
       </p>
     </AuthPageLayout>
+  );
+}
+
+export default function MentorAuthPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MentorAuthContent />
+    </Suspense>
   );
 }

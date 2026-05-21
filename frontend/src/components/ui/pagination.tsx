@@ -48,19 +48,29 @@ const PaginationLink = ({
   href,
   ...props
 }: PaginationLinkProps) => {
-  const Component = href ? Link : "span";
+  const baseClassName = cn(
+    buttonVariants({
+      variant: isActive ? "outline" : "ghost",
+      size,
+    }),
+    className
+  );
+  
+  if (href) {
+    return (
+      <Link
+        href={href}
+        aria-current={isActive ? "page" : undefined}
+        className={baseClassName}
+        {...props}
+      />
+    );
+  }
   
   return (
-    <Component
+    <span
       aria-current={isActive ? "page" : undefined}
-      className={cn(
-        buttonVariants({
-          variant: isActive ? "outline" : "ghost",
-          size,
-        }),
-        className
-      )}
-      {...(href ? { href } : {})}
+      className={baseClassName}
       {...props}
     />
   );
