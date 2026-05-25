@@ -1,0 +1,73 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - dev-frontend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Generate .env file
+        working-directory: ./frontend
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Build Next.js app
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Zip files for transfer
+        run: |
+          cd frontend
+          zip -r ../deploy.zip .next public package.json package-lock.json next.config.ts .env
+
+      - name: Copy Zip to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "deploy.zip"
+          target: "/tmp"
+
+      - name: Execute Deployment on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            FRONTEND_DIR="/home/ubuntu/growthcraft-frontend/frontend"
+            
+            # Ensure the directory exists
+            mkdir -p $FRONTEND_DIR
+            
+            # Extract everything into the frontend folder
+            unzip -o /tmp/deploy.zip -d $FRONTEND_DIR
+            
+            # Install production dependencies
+            cd $FRONTEND_DIR
+            npm ci --production
+            
+            # Restart the systemd service
+            sudo systemctl restart growth-frontend
+            
+            # Clean up the zip file from tmp
+            rm /tmp/deploy.zip
