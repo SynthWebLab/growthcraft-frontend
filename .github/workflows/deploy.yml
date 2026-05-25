@@ -1,4 +1,4 @@
-name: Deploy Dev Frontend
+name: Deploy Frontend
 
 on:
   push:
@@ -33,33 +33,41 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-      - name: Pull latest code on EC2
+      - name: Zip files for transfer
+        run: |
+          cd frontend
+          zip -r ../deploy.zip .next public package.json package-lock.json next.config.ts .env
+
+      - name: Copy Zip to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "deploy.zip"
+          target: "/tmp"
+
+      - name: Execute Deployment on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ubuntu/growthcraft-frontend
-            git pull origin dev-frontend
-
-      - name: Copy build artifacts to EC2 via SCP
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "frontend/.next,frontend/.env"
-          target: "/home/ubuntu/growthcraft-frontend/frontend" 
-          strip_components: 1
-
-      - name: Install dependencies & Restart Service via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd /home/ubuntu/growthcraft-frontend/frontend
+            FRONTEND_DIR="/home/ubuntu/growthcraft-frontend/frontend"
+            
+            # Ensure the directory exists
+            mkdir -p $FRONTEND_DIR
+            
+            # Extract everything into the frontend folder
+            unzip -o /tmp/deploy.zip -d $FRONTEND_DIR
+            
+            # Install production dependencies
+            cd $FRONTEND_DIR
             npm ci --production
+            
+            # Restart the systemd service
             sudo systemctl restart growth-frontend
+            
+            # Clean up the zip file from tmp
+            rm /tmp/deploy.zip
