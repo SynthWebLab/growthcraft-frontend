@@ -3,24 +3,20 @@
 import { Section } from "@/components/ui/section";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { bootcampsMock } from "@/data/bootcamps.mock";
-import { Calendar, MapPin, Users } from "lucide-react";
-import { getPrimaryCta } from "@/lib/ctaPolicy";
+import { useBootcamps } from "@/hooks/queries/useBootcamps";
+import { Calendar, MapPin, Users, Loader2 } from "lucide-react";
 
 export const BootcampHighlight = () => {
-  const openBootcamp = bootcampsMock.find((b) => b.status === "Open");
-
-  if (!openBootcamp) return null;
-
-  const seatsLeft = openBootcamp.maxSeats - openBootcamp.enrolledCount;
-  
-  const cta = getPrimaryCta({
-    type: "bootcamp",
-    status: openBootcamp.status,
-    maxSeats: openBootcamp.maxSeats,
-    enrolledCount: openBootcamp.enrolledCount,
-    startDate: openBootcamp.startDate,
+  // Fetch open bootcamps
+  const { data: bootcampsData, isLoading } = useBootcamps({
+    status: "Open",
+    limit: 1,
   });
+
+  const openBootcamp = bootcampsData?.items?.[0];
+
+  // Don't render if loading or no open bootcamp
+  if (isLoading || !openBootcamp) return null;
 
   return (
     <Section variant="white" className="!py-8 sm:!py-12 md:!py-16 lg:!py-20">
@@ -64,7 +60,7 @@ export const BootcampHighlight = () => {
               <div className="flex items-center gap-3 text-sm sm:text-base text-muted-foreground">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-secondary flex-shrink-0" />
                 <span>
-                  {openBootcamp.startDate} — {openBootcamp.endDate}
+                  {new Date(openBootcamp.startDate).toLocaleDateString()} — {new Date(openBootcamp.endDate).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm sm:text-base text-muted-foreground">
@@ -73,7 +69,9 @@ export const BootcampHighlight = () => {
               </div>
               <div className="flex items-center gap-3 text-sm sm:text-base">
                 <Users className="h-4 w-4 sm:h-5 sm:w-5 text-secondary flex-shrink-0" />
-                <span className="text-primary font-bold">{seatsLeft} seats left</span>
+                <span className="text-primary font-bold">
+                  {openBootcamp.availableSeats} seat{openBootcamp.availableSeats !== 1 ? "s" : ""} left
+                </span>
                 <span className="text-muted-foreground">
                   out of {openBootcamp.maxSeats}
                 </span>
@@ -104,20 +102,25 @@ export const BootcampHighlight = () => {
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:w-auto" asChild>
                   <Link href={`/bootcamps/${openBootcamp.slug}`}>
-                    {cta.primary.label}
+                    Reserve Seat
                   </Link>
                 </Button>
-                {cta.secondary && (
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-                    <Link href={`/bootcamps/${openBootcamp.slug}`}>
-                      {cta.secondary.label}
-                    </Link>
-                  </Button>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
+                  <Link href="/bootcamps">
+                    View All Bootcamps
+                  </Link>
+                </Button>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl sm:text-2xl font-bold font-display">
+                  ₹{openBootcamp.price.toLocaleString()}
+                </span>
+                {openBootcamp.originalPrice && openBootcamp.originalPrice > openBootcamp.price && (
+                  <span className="text-sm text-muted-foreground line-through">
+                    ₹{openBootcamp.originalPrice.toLocaleString()}
+                  </span>
                 )}
               </div>
-              <span className="text-xl sm:text-2xl font-bold font-display">
-                ₹{openBootcamp.price.toLocaleString()}
-              </span>
             </div>
           </div>
         </div>
