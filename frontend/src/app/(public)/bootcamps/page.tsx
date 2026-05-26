@@ -227,7 +227,7 @@ const BootcampsPage = () => {
 
         {/* Results count */}
         {bootcamps.length > 0 && (
-          <div className="text-sm text-muted-foreground mb-4">
+          <div className="text-sm text-muted-foreground ">
             Showing {bootcamps.length} of {totalItems} bootcamp{totalItems !== 1 ? "s" : ""}
             {totalPages > 1 && ` — Page ${currentPage} of ${totalPages}`}
           </div>
@@ -385,7 +385,7 @@ const BootcampsPage = () => {
 
       {/* Page-based Pagination */}
       {totalPages > 1 && (
-        <Section variant="white">
+        <Section variant="white" className="pt-8 pb-12 md:pt-10 md:pb-16">
           <Pagination>
             <PaginationContent>
               {hasPreviousPage && (
