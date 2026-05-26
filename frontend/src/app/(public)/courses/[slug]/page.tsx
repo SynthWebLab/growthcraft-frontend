@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { getPrimaryCta, ctaTypeToFormType } from "@/lib/ctaPolicy";
 import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
 import { toast } from "sonner";
 import { useCourseBySlug, useEnrollmentStatus, useEnrollCourse, useRequestCallback } from "@/hooks/queries/useCourses";
@@ -105,36 +104,24 @@ export default function CourseDetailPage({
   const isEnrolled = enrollmentStatus?.data?.isEnrolled || false;
   const hasCallbackRequest = enrollmentStatus?.data?.hasCallbackRequest || false;
 
-  // Map backend status to CTA policy status
-  const getCourseStatus = (status: string): "active" | "coming-soon" | "draft" => {
-    if (status === "Active") return "active";
-    if (status === "Coming Soon") return "coming-soon";
-    return "draft";
-  };
+  // Use backend-provided CTAs
+  const primaryCTA = course.primaryCTA || "View Details";
+  const secondaryCTA = course.secondaryCTA;
 
-  // Get CTA configuration based on course status
-  const cta = getPrimaryCta({
-    type: "course",
-    status: getCourseStatus(course.status),
-  });
+  // Determine CTA behavior based on the label text
+  const isPrimaryEnrollment = primaryCTA.toLowerCase().includes("enroll");
+  const isPrimaryRegisterInterest = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("interest");
 
   // Select the appropriate mutation based on CTA type
-  const getCallbackMutation = () => {
-    if (cta.primary.type === "register-interest") return registerInterestMutation;
-    if (cta.primary.type === "notify-next-batch") return notifyBatchMutation;
-    return callbackMutation;
-  };
-
-  const activeMutation = getCallbackMutation();
+  const activeMutation = isPrimaryRegisterInterest ? registerInterestMutation : callbackMutation;
 
   // Handle primary CTA click (Enroll Now / Register Interest)
   const handlePrimaryCTAClick = async () => {
     // For "Register Interest" - treat like callback (no login required)
-    if (cta.primary.type === "register-interest") {
+    if (isPrimaryRegisterInterest) {
       if (!isAuthenticated) {
         // Not logged in - show form popup (no authentication required)
-        const formType = ctaTypeToFormType(cta.primary.type);
-        openForm(formType, `${cta.primary.label} - ${course.title}`, course._id, course.title);
+        openForm("register-interest", `${primaryCTA} - ${course.title}`, course._id, course.title);
         return;
       }
 
@@ -199,9 +186,8 @@ export default function CourseDetailPage({
   const handleSecondaryCTAClick = async () => {
     if (!isAuthenticated) {
       // Not logged in - show form popup (no authentication required for callback)
-      if (cta.secondary) {
-        const formType = ctaTypeToFormType(cta.secondary.type);
-        openForm(formType, `${cta.secondary.label} - ${course.title}`, course._id, course.title);
+      if (secondaryCTA) {
+        openForm("callback", `${secondaryCTA} - ${course.title}`, course._id, course.title);
       }
       return;
     }
@@ -231,9 +217,9 @@ export default function CourseDetailPage({
 
   // Determine button states
   const isPrimaryButtonDisabled = 
-    cta.primary.type === "enroll-now" 
+    isPrimaryEnrollment 
       ? isEnrolled || enrollMutation.isPending
-      : cta.primary.type === "register-interest"
+      : isPrimaryRegisterInterest
       ? hasCallbackRequest || activeMutation.isPending
       : activeMutation.isPending;
       
@@ -241,17 +227,17 @@ export default function CourseDetailPage({
 
   // Button labels
   const primaryButtonLabel = 
-    cta.primary.type === "enroll-now"
-      ? (isEnrolled ? "Already Enrolled" : enrollMutation.isPending ? "Enrolling..." : cta.primary.label)
-      : cta.primary.type === "register-interest"
-      ? (hasCallbackRequest ? "Interest Registered" : activeMutation.isPending ? "Submitting..." : cta.primary.label)
-      : (activeMutation.isPending ? "Submitting..." : cta.primary.label);
+    isPrimaryEnrollment
+      ? (isEnrolled ? "Already Enrolled" : enrollMutation.isPending ? "Enrolling..." : primaryCTA)
+      : isPrimaryRegisterInterest
+      ? (hasCallbackRequest ? "Interest Registered" : activeMutation.isPending ? "Submitting..." : primaryCTA)
+      : (activeMutation.isPending ? "Submitting..." : primaryCTA);
 
   const secondaryButtonLabel = hasCallbackRequest 
     ? "Callback Requested" 
     : callbackMutation.isPending 
     ? "Requesting..." 
-    : cta.secondary?.label || "Request Callback";
+    : secondaryCTA || "Request Callback";
 
   return (
     <>
@@ -481,7 +467,7 @@ export default function CourseDetailPage({
                 </Button>
 
                 {/* Secondary CTA */}
-                {cta.secondary && (
+                {secondaryCTA && (
                   <Button
                     variant="outline"
                     className="w-full border-lavender text-lavender hover:bg-lavender hover:text-white"
