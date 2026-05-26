@@ -8,6 +8,7 @@ export interface BootcampCTA {
   seatsAvailable: boolean;
   primaryCTA: string;
   secondaryCTA: string | null;
+  disabled: boolean;
   codeLocation: string;
 }
 
