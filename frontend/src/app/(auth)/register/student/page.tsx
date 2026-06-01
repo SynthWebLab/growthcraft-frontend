@@ -17,6 +17,9 @@ function StudentAuthContent() {
   // Check if URL contains "login" or has tab=login parameter
   const isLoginPage = pathname.includes("/login") || searchParams.get("tab") === "login";
   const defaultTab = isLoginPage ? "login" : "register";
+  
+  // Get callbackUrl from search params
+  const callbackUrl = searchParams.get("callbackUrl") || undefined;
 
   return (
     <AuthPageLayout
@@ -35,11 +38,11 @@ function StudentAuthContent() {
 
           <CardContent>
             <TabsContent value="login" className="mt-0">
-              <LoginForm role="student" redirectPath="/student" />
+              <LoginForm role="student" redirectPath="/student" callbackUrl={callbackUrl} />
             </TabsContent>
 
             <TabsContent value="register" className="mt-0">
-              <StudentRegisterForm />
+              <StudentRegisterForm callbackUrl={callbackUrl} />
             </TabsContent>
           </CardContent>
         </Tabs>

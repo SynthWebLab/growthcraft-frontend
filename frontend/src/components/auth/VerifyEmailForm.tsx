@@ -9,14 +9,15 @@ import { useVerifyEmail, useResendOTP } from "@/hooks/queries/useAuthentication"
 
 interface VerifyEmailFormProps {
   email: string;
+  callbackUrl?: string;
 }
 
-export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
+export function VerifyEmailForm({ email, callbackUrl }: VerifyEmailFormProps) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [countdown, setCountdown] = useState(0);
 
-  const verifyMutation = useVerifyEmail();
+  const verifyMutation = useVerifyEmail(callbackUrl);
   const resendMutation = useResendOTP();
 
   // Countdown timer for resend button

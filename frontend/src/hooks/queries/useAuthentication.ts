@@ -20,7 +20,7 @@ export const authKeys = {
 /**
  * Hook to register a new user
  */
-export function useRegister() {
+export function useRegister(callbackUrl?: string) {
   const router = useRouter();
 
   return useMutation({
@@ -31,8 +31,12 @@ export function useRegister() {
           description: "Please check your email to verify your account.",
         });
         
-        // Redirect to email verification page with email
-        router.push(AUTH_ROUTES.verifyEmail(variables.email));
+        // Redirect to email verification page with email and callbackUrl
+        const verifyUrl = AUTH_ROUTES.verifyEmail(variables.email);
+        const finalUrl = callbackUrl 
+          ? `${verifyUrl}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+          : verifyUrl;
+        router.push(finalUrl);
       } else {
         toast.error("Registration failed", {
           description: response.error?.message || "Please try again.",
@@ -130,7 +134,7 @@ export function useLogin(callbackUrl?: string) {
 /**
  * Hook to verify email with OTP
  */
-export function useVerifyEmail() {
+export function useVerifyEmail(callbackUrl?: string) {
   const router = useRouter();
 
   return useMutation({
@@ -139,12 +143,22 @@ export function useVerifyEmail() {
     onSuccess: (response) => {
       if (response.success) {
         toast.success("Email verified!", {
-          description: "You can now login to your account.",
+          description: callbackUrl 
+            ? "Redirecting you to the course..."
+            : "Taking you to your dashboard...",
         });
         
-        // Redirect to login page
+        // Redirect to callback URL or dashboard
+        // Backend has already logged the user in during verification
         setTimeout(() => {
-          router.push(AUTH_ROUTES.login.student + "?verified=true");
+          if (callbackUrl && callbackUrl !== '/') {
+            router.push(callbackUrl);
+            router.refresh(); // Refresh to update auth state
+          } else {
+            // No callback URL - redirect to student dashboard
+            router.push(DASHBOARD_ROUTES.student);
+            router.refresh(); // Refresh to update auth state
+          }
         }, 1500);
       } else {
         toast.error("Verification failed", {
