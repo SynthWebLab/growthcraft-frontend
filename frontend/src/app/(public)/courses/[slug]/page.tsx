@@ -145,11 +145,11 @@ export default function CourseDetailPage({
 
     // For "Enroll Now" - require login
     if (!isAuthenticated) {
-      // Not logged in - redirect to login with callback URL
+      // Not logged in - redirect to registration with callback URL
       if (typeof window !== "undefined") {
         const currentUrl = window.location.pathname;
-        toast.info("Please login to continue");
-        window.location.href = `${AUTH_ROUTES.login.student}?callbackUrl=${encodeURIComponent(currentUrl)}`;
+        toast.info("Please register to enroll in this course");
+        window.location.href = `/register/student?callbackUrl=${encodeURIComponent(currentUrl)}`;
       }
       return;
     }

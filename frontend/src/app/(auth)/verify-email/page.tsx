@@ -9,6 +9,7 @@ import { AuthPageLayout } from "@/components/auth/AuthPageLayout";
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
+  const callbackUrl = searchParams.get("callbackUrl") || undefined;
 
   if (!email) {
     return (
@@ -38,7 +39,7 @@ function VerifyEmailContent() {
       title="Verify Your Email"
       subtitle=""
     >
-      <VerifyEmailForm email={email} />
+      <VerifyEmailForm email={email} callbackUrl={callbackUrl} />
     </AuthPageLayout>
   );
 }

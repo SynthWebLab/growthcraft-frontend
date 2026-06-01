@@ -10,9 +10,9 @@ import { User, Mail, ArrowRight, Lock, Eye, EyeOff } from "lucide-react";
 import { studentRegisterSchema, type StudentRegisterFormData } from "@/lib/validations/auth-forms.schema";
 import { useRegister } from "@/hooks/queries/useAuthentication";
 
-export function StudentRegisterForm() {
+export function StudentRegisterForm({ callbackUrl }: { callbackUrl?: string }) {
   const [showPassword, setShowPassword] = useState(false);
-  const registerMutation = useRegister();
+  const registerMutation = useRegister(callbackUrl);
 
   const {
     register,

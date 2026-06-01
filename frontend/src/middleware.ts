@@ -114,7 +114,17 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect fully authenticated and verified users away from auth pages (login, register)
+  // EXCEPT if they have a callbackUrl - redirect them to the callback destination
   if (isAuthRoute && isAuthenticated && isEmailVerified && userRole) {
+    // Check if there's a callbackUrl parameter
+    const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+    
+    if (callbackUrl && callbackUrl !== '/') {
+      // User is already authenticated, redirect directly to the callback URL
+      return NextResponse.redirect(new URL(callbackUrl, request.url));
+    }
+    
+    // No callback URL - redirect to dashboard
     const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
     return NextResponse.redirect(new URL(dashboardRoute, request.url));
   }
