@@ -113,7 +113,7 @@ export interface Course {
   type: "Course" | "Bootcamp";
   createdAt: string;
   updatedAt: string;
-  status: "Active" | "Draft";
+  status: "Active" | "Draft" | "Coming Soon";
   primaryCTA: string;
   secondaryCTA: string | null;
   canEnroll: boolean;
