@@ -119,7 +119,7 @@ const BootcampsPage = () => {
             </span>
           }
           title="Live Bootcamps"
-          description="Intensive, mentor-led programs designed to make you job-ready in weeks."
+          description="Intensive, mentor-led programs designed to make you job-ready in weeks"
         />
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-magenta" />
