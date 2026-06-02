@@ -54,7 +54,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            FRONTEND_DIR="/home/ubuntu/growthcraft-frontend/frontend"
+            FRONTEND_DIR="/home/ubuntu/growthcraft-frontend"
             
             # Ensure the directory exists
             mkdir -p $FRONTEND_DIR
@@ -62,11 +62,12 @@ jobs:
             # Extract everything into the frontend folder
             unzip -o /tmp/deploy.zip -d $FRONTEND_DIR
             
-            # Install production dependencies
+            # Install dependencies
             cd $FRONTEND_DIR
-            npm ci --production
+            npm ci
             
             # Restart the systemd service
+            sudo systemctl daemon-reload
             sudo systemctl restart growth-frontend
             
             # Clean up the zip file from tmp
