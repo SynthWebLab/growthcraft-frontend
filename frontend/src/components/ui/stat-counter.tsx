@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion, useInView } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface StatCounterProps {
@@ -12,44 +13,24 @@ interface StatCounterProps {
   className?: string;
 }
 
-export const StatCounter = ({
-  value,
-  prefix = "",
-  suffix = "",
-  label,
-  duration = 2,
-  className,
+const StatCounter = ({ 
+  value, 
+  prefix = "", 
+  suffix = "", 
+  label, 
+  duration = 2, 
+  className 
 }: StatCounterProps) => {
   const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
   const [count, setCount] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1, rootMargin: "-50px" }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
+    if (!isInView) return;
 
     let start = 0;
     const step = value / (duration * 60);
+
     const id = setInterval(() => {
       start += step;
       if (start >= value) {
@@ -61,25 +42,25 @@ export const StatCounter = ({
     }, 1000 / 60);
 
     return () => clearInterval(id);
-  }, [isVisible, value, duration]);
+  }, [isInView, value, duration]);
 
   return (
-    <div
+    <motion.div
       ref={ref}
-      className={cn(
-        "text-center opacity-0 translate-y-5 transition-all duration-500",
-        isVisible && "opacity-100 translate-y-0",
-        className
-      )}
+      className={cn("text-center", className)}
+      initial={{ opacity: 0, y: 20 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5 }}
     >
-      <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-primary font-display">
-        {prefix}
-        {count.toLocaleString()}
-        {suffix}
+      <p className="text-4xl md:text-5xl font-extrabold text-magenta font-display">
+        {prefix}{count.toLocaleString()}{suffix}
       </p>
-      <p className="mt-1 sm:mt-2 text-xs sm:text-sm font-medium text-muted-foreground tracking-wide uppercase">
+      <p className="mt-2 text-sm font-medium text-muted-foreground font-afacad tracking-wide uppercase">
         {label}
       </p>
-    </div>
+    </motion.div>
   );
 };
+
+export { StatCounter };
+export default StatCounter;
