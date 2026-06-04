@@ -1,0 +1,58 @@
+{
+  "team": [
+    {
+      "id": "founder-ceo",
+      "name": "Founder & CEO",
+      "role": "CEO & Lead Instructor",
+      "photo": "founder",
+      "bio": "Building tech education ecosystems",
+      "linkedin": "#",
+      "twitter": "#"
+    },
+    {
+      "id": "tech-lead",
+      "name": "Tech Lead",
+      "role": "Head of Technology",
+      "photo": "techleader",
+      "bio": "Architecting scalable learning platforms",
+      "linkedin": "#",
+      "twitter": "#"
+    },
+    {
+      "id": "ops-lead",
+      "name": "Operations Lead",
+      "role": "Head of Operations",
+      "photo": "opsleader",
+      "bio": "Streamlining processes for growth",
+      "linkedin": "#",
+      "twitter": "#"
+    },
+    {
+      "id": "lead-mentor",
+      "name": "Lead Mentor",
+      "role": "Head of Mentorship",
+      "photo": "leadmentor",
+      "bio": "Guiding students to success",
+      "linkedin": "#",
+      "twitter": "#"
+    }
+  ],
+  "advisors": [
+    {
+      "name": "Industry Expert 1",
+      "company": "Tech Corp"
+    },
+    {
+      "name": "Industry Expert 2",
+      "company": "StartupHub"
+    },
+    {
+      "name": "Industry Expert 3",
+      "company": "Innovation Labs"
+    },
+    {
+      "name": "Industry Expert 4",
+      "company": "Digital Solutions"
+    }
+  ]
+}
