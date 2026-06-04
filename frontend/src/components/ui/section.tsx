@@ -18,7 +18,8 @@ export const Section = ({
   ...props
 }: SectionProps) => (
   <section
-    className={cn("py-24 md:py-30", variantClasses[variant], className)}
+    // className={cn("py-24 md:py-30", variantClasses[variant], className)}
+    className={cn("py-5 md:py-8", variantClasses[variant], className)}
     {...props}
   >
     <div className="container">{children}</div>

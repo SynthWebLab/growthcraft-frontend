@@ -24,10 +24,11 @@ export const bootcampKeys = {
 /**
  * Hook to fetch bootcamps list
  */
-export function useBootcamps(params?: BootcampQueryParams) {
+export function useBootcamps(params?: BootcampQueryParams, enabled: boolean = true) {
   return useQuery({
     queryKey: bootcampKeys.list(params),
     queryFn: () => bootcampService.getBootcamps(params),
+    enabled: enabled, // Only fetch when enabled is true
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnMount: "always",
   });
