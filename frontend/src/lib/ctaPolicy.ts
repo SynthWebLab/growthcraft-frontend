@@ -3,9 +3,9 @@
  * Based on item type, status, and availability
  */
 
-export type CTAType = "enroll-now" | "request-callback" | "register-interest" | "reserve-seat" | "join-waitlist" | "notify-next-batch";
+export type CTAType = "enroll-now" | "request-callback" | "register-interest" | "reserve-seat";
 
-export type FormType = "enrollment" | "callback" | "register-interest" | "reserve-seat" | "join-waitlist" | "notify-next-batch";
+export type FormType = "enrollment" | "callback" | "register-interest" | "reserve-seat";
 
 export interface CTAConfig {
   type: CTAType;
@@ -49,10 +49,6 @@ export function ctaTypeToFormType(ctaType: CTAType): FormType {
       return "register-interest";
     case "reserve-seat":
       return "reserve-seat";
-    case "join-waitlist":
-      return "join-waitlist";
-    case "notify-next-batch":
-      return "notify-next-batch";
     default:
       return "callback";
   }
@@ -125,8 +121,7 @@ function getBootcampCta(bootcamp: BootcampItem): CTAResult {
       
       // Seats full
       return {
-        primary: { type: "join-waitlist", label: "Join Waitlist", variant: "default" },
-        secondary: { type: "request-callback", label: "Request Callback", variant: "outline" },
+        primary: { type: "request-callback", label: "Request Callback", variant: "default" },
       };
 
     case "Closed":
@@ -136,7 +131,7 @@ function getBootcampCta(bootcamp: BootcampItem): CTAResult {
 
     case "Completed":
       return {
-        primary: { type: "notify-next-batch", label: "Notify for Next Batch", variant: "default" },
+        primary: { type: "request-callback", label: "Request Callback", variant: "default" },
       };
 
     case "Draft":

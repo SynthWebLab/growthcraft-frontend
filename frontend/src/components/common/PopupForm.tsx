@@ -53,17 +53,15 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle 
   
   // Determine context for callback mutation based on form type
   const callbackContext = 
-    type === "register-interest" ? "register-interest" :
-    type === "notify-next-batch" ? "notify-next-batch" :
-    "callback";
+    type === "register-interest" ? "register-interest" : "callback";
   
   const callbackMutation = useRequestCallback(callbackContext);
 
   // Determine which schema to use
   const getSchema = () => {
-    if (type === "enrollment" || type === "reserve-seat" || type === "join-waitlist") {
+    if (type === "enrollment" || type === "reserve-seat") {
       return enrollmentSchema;
-    } else if (type === "callback" || type === "register-interest" || type === "notify-next-batch") {
+    } else if (type === "callback" || type === "register-interest") {
       return callbackSchema;
     } else {
       return enquirySchema;
@@ -85,13 +83,11 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle 
     switch (type) {
       case "enrollment": 
       case "reserve-seat":
-      case "join-waitlist":
         return <GraduationCap className="h-6 w-6" />;
       case "mentor": return <UserCheck className="h-6 w-6" />;
       case "partner": return <School className="h-6 w-6" />;
       case "callback": 
       case "register-interest":
-      case "notify-next-batch":
         return <Phone className="h-6 w-6" />;
       default: return <Briefcase className="h-6 w-6" />;
     }
@@ -105,8 +101,6 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle 
       case "callback": return "Request Callback";
       case "register-interest": return "Register Interest";
       case "reserve-seat": return "Reserve Your Seat";
-      case "join-waitlist": return "Join Waitlist";
-      case "notify-next-batch": return "Get Notified";
       case "mentor": return "Apply as Mentor";
       case "partner": return "Partner With Us";
       default: return "Get in Touch";
@@ -120,8 +114,6 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle 
       case "callback": return "Leave your number and we'll call you back within 24 hours.";
       case "register-interest": return "Register your interest and we'll notify you when this becomes available.";
       case "reserve-seat": return "Reserve your seat now. Limited spots available!";
-      case "join-waitlist": return "Join the waitlist and we'll notify you when a spot opens up.";
-      case "notify-next-batch": return "Get notified when the next batch is announced.";
       case "mentor": return "Join our team of mentors and inspire the next generation.";
       case "partner": return "Let's discuss how we can collaborate with your institution.";
       default: return "";
@@ -131,7 +123,7 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle 
   const onSubmit = async (data: EnrollmentFormData | CallbackFormData | EnquiryFormData) => {
     try {
       // Validate based on form type
-      if (type === "enrollment" || type === "reserve-seat" || type === "join-waitlist") {
+      if (type === "enrollment" || type === "reserve-seat") {
         // courseId must be provided for enrollment (pre-selected from course page)
         if (!courseId) {
           toast.error("Course not selected. Please try again.");
@@ -154,7 +146,7 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle 
 
         reset();
         onClose();
-      } else if (type === "callback" || type === "register-interest" || type === "notify-next-batch") {
+      } else if (type === "callback" || type === "register-interest") {
         // courseId must be provided for callback (pre-selected from course page)
         if (!courseId) {
           toast.error("Course not selected. Please try again.");

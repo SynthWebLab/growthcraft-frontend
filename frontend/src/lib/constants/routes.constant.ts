@@ -8,6 +8,7 @@ export const NAV_ROUTES = [
   { name: "Home", path: "/" },
   { name: "Courses", path: "/courses" },
   { name: "Bootcamps", path: "/bootcamps" },
+  { name: "Events", path: "/events" },
   { name: "About", path: "/about" },
   { name: "For Students", path: "/for-students" },
   { name: "For Colleges", path: "/for-colleges" },

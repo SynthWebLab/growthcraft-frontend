@@ -87,12 +87,6 @@ const BootcampsPage = () => {
       case "Reserve Seat":
         openForm("enrollment", `Reserve seat — ${bootcamp.title}`);
         break;
-      case "Join Waitlist":
-        openForm("enrollment", `Join Waitlist — ${bootcamp.title}`);
-        break;
-      case "Notify for Next Batch":
-        openForm("callback", `Notify for Next Batch — ${bootcamp.title}`);
-        break;
       case "Request Callback":
         openForm("callback", `Request Callback — ${bootcamp.title}`);
         break;
