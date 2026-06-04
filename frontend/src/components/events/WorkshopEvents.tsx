@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Section } from "@/components/ui/section";
+import { EventSection } from "@/components/events/EventSection";
 import {
   Pagination,
   PaginationContent,
@@ -14,9 +14,10 @@ import {
 import { EventFilters } from "@/components/events/EventFilters";
 import { WorkshopCard } from "@/components/events/WorkshopCard";
 import { MOCK_WORKSHOPS, type Workshop, getWorkshopCTA } from "@/data/events.mock";
+import { FormType } from "@/lib/ctaPolicy";
 
 interface WorkshopEventsProps {
-  onOpenForm: (type: string, title: string) => void;
+  onOpenForm: (type: FormType | "enquiry" | "mentor" | "partner", title?: string, courseIdParam?: string, courseTitleParam?: string) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -77,8 +78,8 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
 
   return (
     <>
-      <Section variant="white">
-        <div className="mb-8">
+      <EventSection variant="white">
+        <div className="mb-6">
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-3">
             Live Workshops
           </h2>
@@ -118,16 +119,16 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
           Showing {pageItems.length} of {filteredWorkshops.length} workshops
           {totalPages > 1 && ` — Page ${effectivePage} of ${totalPages}`}
         </div>
-      </Section>
+      </EventSection>
 
       {pageItems.length > 0 ? (
         pageItems.map((workshop, i) => (
-          <Section key={workshop.id} variant={i % 2 === 0 ? "white" : "marble"}>
+          <EventSection key={workshop.id} variant={i % 2 === 0 ? "white" : "marble"}>
             <WorkshopCard workshop={workshop} onCTAClick={handleWorkshopCTA} />
-          </Section>
+          </EventSection>
         ))
       ) : (
-        <Section variant="white">
+        <EventSection variant="white">
           <div className="text-center py-16">
             <p className="text-muted-foreground mb-4">
               No upcoming workshops match the current filters.
@@ -136,11 +137,11 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
               Clear Filters
             </Button>
           </div>
-        </Section>
+        </EventSection>
       )}
 
       {totalPages > 1 && (
-        <Section variant="white" className="pt-8 pb-12 md:pt-10 md:pb-16">
+        <EventSection variant="white" className="pt-8 pb-12 md:pt-10 md:pb-16">
           <Pagination>
             <PaginationContent>
               {hasPreviousPage && (
@@ -184,7 +185,7 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
               )}
             </PaginationContent>
           </Pagination>
-        </Section>
+        </EventSection>
       )}
     </>
   );

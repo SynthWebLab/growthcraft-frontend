@@ -20,7 +20,7 @@ export default function EventsPage() {
     <>
       <PopupForm isOpen={isOpen} onClose={closeForm} type={formType} title={formTitle} />
 
-      <Section variant="white">
+      <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <Tabs
           defaultValue="workshops"
           value={activeTab}
@@ -48,7 +48,7 @@ export default function EventsPage() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-      </Section>
+      </div>
 
       {activeTab === "workshops" && <WorkshopEvents onOpenForm={openForm} />}
       {activeTab === "bootcamps" && <BootcampEvents onOpenForm={openForm} enabled={activeTab === "bootcamps"} />}
