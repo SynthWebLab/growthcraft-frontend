@@ -24,3 +24,5 @@ export const DataCard = ({
     {children}
   </div>
 );
+
+export default DataCard;
