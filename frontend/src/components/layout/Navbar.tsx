@@ -39,6 +39,18 @@ export const Navbar = () => {
 
   const courses = searchResults?.data || [];
 
+  // Group navigation routes
+  const mainRoutes = NAV_ROUTES.filter(route => 
+    ["Home", "Courses", "Training Programs", "Events", "About"].includes(route.name)
+    // ["Home", "Courses", "Bootcamps", "Training Programs", "Events", "About"].includes(route.name)
+  );
+  
+  const audienceRoutes = NAV_ROUTES.filter(route => 
+    route.name.startsWith("For ")
+  );
+  
+  const contactRoute = NAV_ROUTES.find(route => route.name === "Contact");
+
   // Close search results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -84,12 +96,12 @@ export const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-1">
-            {NAV_ROUTES.map((link) => (
+          <div className="hidden xl:flex items-center gap-1">
+            {mainRoutes.map((link) => (
               <Link
                 key={link.path}
                 href={link.path}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-2.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                   pathname === link.path
                     ? "text-primary bg-primary/10"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -98,16 +110,51 @@ export const Navbar = () => {
                 {link.name}
               </Link>
             ))}
+            
+            {/* Audience Dropdown */}
+            {audienceRoutes.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={`px-2.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+                    audienceRoutes.some(route => pathname === route.path)
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}>
+                    For You <ChevronDown className="h-3 w-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {audienceRoutes.map((route) => (
+                    <DropdownMenuItem key={route.path} asChild>
+                      <Link href={route.path}>{route.name}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
+            {contactRoute && (
+              <Link
+                href={contactRoute.path}
+                className={`px-2.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                  pathname === contactRoute.path
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                {contactRoute.name}
+              </Link>
+            )}
           </div>
 
           {/* CTA Buttons */}
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="hidden xl:flex items-center gap-2">
             {user && user.isEmailVerified ? (
               // Logged in and verified - Show Dashboard button
               <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'}>
-                <Button size="default">
+                <Button size="sm">
                   <LayoutDashboard className="mr-2 h-4 w-4" />
-                  Go to Dashboard
+                  Dashboard
                 </Button>
               </Link>
             ) : (
@@ -132,8 +179,8 @@ export const Navbar = () => {
                 {/* Get Started Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button size="default">
-                      Get Started <ChevronDown className="ml-1 h-3 w-3" />
+                    <Button size="sm">
+                      Sign Up <ChevronDown className="ml-1 h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -150,7 +197,7 @@ export const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="lg:hidden p-2 rounded-lg hover:bg-muted"
+            className="xl:hidden p-2 rounded-lg hover:bg-muted"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -159,7 +206,7 @@ export const Navbar = () => {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="lg:hidden py-4 border-t border-border animate-fade-in">
+          <div className="xl:hidden py-4 border-t border-border animate-fade-in max-h-[calc(100vh-5rem)] overflow-y-auto">
             <div className="flex flex-col gap-2">
               {NAV_ROUTES.map((link) => (
                 <Link
@@ -176,10 +223,10 @@ export const Navbar = () => {
                 </Link>
               ))}
 
-              <div className="pt-4 px-4 space-y-2">
+              <div className="pt-4 px-4 space-y-2 border-t border-border mt-2">
                 {user && user.isEmailVerified ? (
                   // Logged in and verified - Show Dashboard button
-                  <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'}>
+                  <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'} onClick={() => setIsOpen(false)}>
                     <Button size="default" className="w-full">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Go to Dashboard
