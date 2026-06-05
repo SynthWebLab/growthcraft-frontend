@@ -30,5 +30,8 @@ export const API_ENDPOINTS = {
     list: "/bootcamps",
     detail: (id: string) => `/bootcamps/${id}`,
   },
+  leads: {
+    create: "/leads",
+  },
   // Add more as needed
 } as const;
