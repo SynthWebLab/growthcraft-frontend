@@ -1,4 +1,5 @@
 import { Calendar, ArrowRight, MapPin } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Bootcamp } from "@/types/bootcamp";
 
@@ -29,10 +30,15 @@ export function BootcampEventCard({
   onPrimaryCTAClick,
   onSecondaryCTAClick,
 }: BootcampEventCardProps) {
-  const isPrimaryDisabled = bootcamp.cta.disabled || bootcamp.status === "Completed";
+  const isFinalizedStatus = bootcamp.status === "Closed" || bootcamp.status === "Completed";
+  const isPrimaryDisabled = bootcamp.cta.disabled || isFinalizedStatus;
+  const primaryButtonLabel = isFinalizedStatus ? bootcamp.status : bootcamp.primaryCTA;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 rounded-xl border overflow-hidden bg-card hover:border-primary/30 hover:shadow-lg transition-all">
+    <Link 
+      href={`/events/${bootcamp.slug}`}
+      className="flex flex-col lg:flex-row gap-0 lg:gap-6 rounded-xl border overflow-hidden bg-card hover:border-primary/30 hover:shadow-lg transition-all block"
+    >
       <div className="lg:w-[40%] h-32 sm:h-48 lg:h-auto bg-graphite flex items-center justify-center">
         <div className="text-center text-white/40">
           <MapPin className="h-8 w-8 mx-auto mb-2" />
@@ -129,12 +135,13 @@ export function BootcampEventCard({
                 variant="outline"
                 size="sm"
                 className="w-full sm:w-auto"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   if (onSecondaryCTAClick) {
                     onSecondaryCTAClick(bootcamp);
                     return;
                   }
-
                   onPrimaryCTAClick(bootcamp);
                 }}
               >
@@ -150,20 +157,22 @@ export function BootcampEventCard({
                   : ""
               }`}
               size="default"
-              variant={bootcamp.canRegister ? "default" : "outline"}
+              variant={isFinalizedStatus ? "outline" : bootcamp.canRegister ? "default" : "outline"}
               disabled={isPrimaryDisabled}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 if (!isPrimaryDisabled) {
                   onPrimaryCTAClick(bootcamp);
                 }
               }}
             >
-              {bootcamp.primaryCTA}
-              {bootcamp.canRegister && <ArrowRight className="ml-2 h-4 w-4" />}
+              {primaryButtonLabel}
+              {!isFinalizedStatus && bootcamp.canRegister && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
