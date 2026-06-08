@@ -67,7 +67,7 @@ export function getPrimaryCta(item: CatalogueItem): CTAResult {
   }
 
   return {
-    primary: { type: "request-callback", label: "Request Callback", variant: "default" },
+    primary: { type: "request-callback", label: "Request Callback", variant: "outline" },
   };
 }
 
@@ -90,7 +90,7 @@ function getCourseCta(course: CourseItem): CTAResult {
     case "draft":
     default:
       return {
-        primary: { type: "request-callback", label: "Request Callback", variant: "default" },
+        primary: { type: "request-callback", label: "Request Callback", variant: "outline" },
       };
   }
 }
@@ -107,7 +107,7 @@ function getBootcampCta(bootcamp: BootcampItem): CTAResult {
       if (hasStarted) {
         // Bootcamp already started
         return {
-          primary: { type: "request-callback", label: "Request Callback", variant: "default" },
+          primary: { type: "request-callback", label: "Request Callback", variant: "outline" },
         };
       }
       
@@ -121,17 +121,17 @@ function getBootcampCta(bootcamp: BootcampItem): CTAResult {
       
       // Seats full
       return {
-        primary: { type: "request-callback", label: "Request Callback", variant: "default" },
+        primary: { type: "request-callback", label: "Request Callback", variant: "outline" },
       };
 
     case "Closed":
       return {
-        primary: { type: "request-callback", label: "Request Callback", variant: "default" },
+        primary: { type: "request-callback", label: "Request Callback", variant: "outline" },
       };
 
     case "Completed":
       return {
-        primary: { type: "request-callback", label: "Request Callback", variant: "default" },
+        primary: { type: "request-callback", label: "Request Callback", variant: "outline" },
       };
 
     case "Draft":
@@ -141,7 +141,7 @@ function getBootcampCta(bootcamp: BootcampItem): CTAResult {
 
     default:
       return {
-        primary: { type: "request-callback", label: "Request Callback", variant: "default" },
+        primary: { type: "request-callback", label: "Request Callback", variant: "outline" },
       };
   }
 }

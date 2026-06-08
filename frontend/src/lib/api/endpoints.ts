@@ -30,6 +30,22 @@ export const API_ENDPOINTS = {
     list: "/bootcamps",
     detail: (id: string) => `/bootcamps/${id}`,
   },
+  trainingPrograms: {
+    list: "/training-programs",
+    detail: (id: string) => `/training-programs/${id}`,
+    detailBySlug: (slug: string) => `/training-programs/slug/${slug}`,
+    enroll: (id: string) => `/training-programs/${id}/enroll`,
+    requestCallback: (id: string) => `/training-programs/${id}/request-callback`,
+    config: "/training-programs/config",
+  },
+  events: {
+    list: "/events",
+    detail: (id: string) => `/events/${id}`,
+    detailBySlug: (slug: string) => `/events/slug/${slug}`,
+    register: (id: string) => `/events/${id}/register`,
+    requestCallback: (id: string) => `/events/${id}/request-callback`,
+    config: "/events/config",
+  },
   leads: {
     create: "/leads",
   },

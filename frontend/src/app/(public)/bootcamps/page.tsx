@@ -82,6 +82,14 @@ const BootcampsPage = () => {
     }
   };
 
+  const getPrimaryButtonLabel = (bootcamp: (typeof bootcamps)[0]) => {
+    if (bootcamp.status === "Closed" || bootcamp.status === "Completed") {
+      return bootcamp.status;
+    }
+
+    return bootcamp.primaryCTA;
+  };
+
   const handlePrimaryCTA = (bootcamp: typeof bootcamps[0]) => {
     switch (bootcamp.primaryCTA) {
       case "Reserve Seat":
@@ -339,7 +347,7 @@ const BootcampsPage = () => {
                         ? "bg-primary text-primary-foreground hover:bg-primary/90"
                         : ""
                     }
-                    variant={bootcamp.canRegister ? "default" : "outline"}
+                    variant={bootcamp.status === "Closed" || bootcamp.status === "Completed" ? "outline" : bootcamp.canRegister ? "default" : "outline"}
                     disabled={isPrimaryDisabled}
                     onClick={() => {
                       if (!isPrimaryDisabled) {
@@ -347,7 +355,12 @@ const BootcampsPage = () => {
                       }
                     }}
                   >
-                    {bootcamp.primaryCTA} {bootcamp.canRegister && <ArrowRight className="ml-2 h-4 w-4" />}
+                    {getPrimaryButtonLabel(bootcamp)}{" "}
+                    {bootcamp.status !== "Closed" &&
+                      bootcamp.status !== "Completed" &&
+                      bootcamp.canRegister && (
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      )}
                   </Button>
                 </div>
               </div>
