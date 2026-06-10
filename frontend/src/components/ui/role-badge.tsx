@@ -1,12 +1,14 @@
 import { cn } from "@/lib/utils";
 
-type Role = "Student" | "College" | "Mentor" | "Employer";
+type Role = "Student" | "College" | "Mentor" | "Employer" | "Ambassador" | "HiringPartner";
 
 const roleStyles: Record<Role, string> = {
   Student: "bg-secondary text-white",
   College: "bg-primary text-white",
   Mentor: "bg-accent text-white",
   Employer: "bg-graphite text-white",
+  Ambassador: "bg-magenta text-white",
+  HiringPartner: "bg-graphite text-white",
 };
 
 const roleLabels: Record<Role, string> = {
@@ -14,6 +16,8 @@ const roleLabels: Record<Role, string> = {
   College: "College",
   Mentor: "Mentor",
   Employer: "Employer",
+  Ambassador: "Ambassador",
+  HiringPartner: "Hiring Partner",
 };
 
 interface RoleBadgeProps {
