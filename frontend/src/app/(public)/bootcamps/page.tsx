@@ -31,7 +31,7 @@ const BootcampsPage = () => {
   const [selectedMode, setSelectedMode] = useState<(typeof BOOTCAMP_MODES)[number] | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<(typeof BOOTCAMP_FILTER_STATUSES)[number] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const { isOpen, formType, formTitle, openForm, closeForm } = usePopupForm();
+  const { isOpen, formType, formTitle, courseId, courseTitle, itemType, openForm, closeForm } = usePopupForm();
 
   const queryParams: BootcampQueryParams = {
     limit: ITEMS_PER_PAGE,
@@ -91,20 +91,16 @@ const BootcampsPage = () => {
   };
 
   const handlePrimaryCTA = (bootcamp: typeof bootcamps[0]) => {
-    switch (bootcamp.primaryCTA) {
-      case "Reserve Seat":
-        openForm("enrollment", `Reserve seat — ${bootcamp.title}`);
-        break;
-      case "Request Callback":
-        openForm("callback", `Request Callback — ${bootcamp.title}`);
-        break;
-      default:
-        openForm("callback", `Enquire — ${bootcamp.title}`);
+    if (bootcamp.primaryCTA.toLowerCase().includes("reserve")) {
+      openForm("reserve-seat", `Reserve Seat - ${bootcamp.title}`, bootcamp.id, bootcamp.title, "bootcamp");
+      return;
     }
+
+    openForm("callback", `${bootcamp.primaryCTA || "Request Callback"} - ${bootcamp.title}`, bootcamp.id, bootcamp.title, "bootcamp");
   };
 
   const handleSecondaryCTA = (bootcamp: typeof bootcamps[0]) => {
-    openForm("callback", `Request Callback — ${bootcamp.title}`);
+    openForm("callback", `Request Callback - ${bootcamp.title}`, bootcamp.id, bootcamp.title, "bootcamp");
   };
 
   // Loading state
@@ -161,6 +157,9 @@ const BootcampsPage = () => {
         onClose={closeForm}
         type={formType}
         title={formTitle}
+        courseId={courseId}
+        courseTitle={courseTitle}
+        itemType={itemType}
       />
 
       <Section variant="white">
@@ -238,7 +237,8 @@ const BootcampsPage = () => {
 
       {/* Bootcamp cards — alternating white/marble */}
       {bootcamps.map((bootcamp, i) => {
-        const isPrimaryDisabled = bootcamp.cta.disabled || bootcamp.status === "Completed";
+        const isPrimaryDisabled =
+          bootcamp.cta?.disabled ?? (!bootcamp.canRegister || bootcamp.status === "Completed");
 
         return (
         <Section key={bootcamp.id} variant={i % 2 === 0 ? "white" : "marble"}>

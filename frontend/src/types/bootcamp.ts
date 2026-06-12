@@ -36,7 +36,7 @@ export interface Bootcamp {
   canRegister: boolean;
   primaryCTA: string;
   secondaryCTA: string | null;
-  cta: BootcampCTA;
+  cta?: BootcampCTA;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,4 +60,19 @@ export interface BootcampQueryParams {
   category?: string;
   mode?: (typeof BOOTCAMP_MODES)[number];
   status?: (typeof BOOTCAMP_FILTER_STATUSES)[number];
+}
+
+export interface BootcampActionData {
+  fullName: string;
+  email: string;
+  phone: string;
+}
+
+export interface BootcampActionResponse {
+  success: boolean;
+  message: string;
+  data?: unknown;
+  meta?: {
+    timestamp: string;
+  };
 }

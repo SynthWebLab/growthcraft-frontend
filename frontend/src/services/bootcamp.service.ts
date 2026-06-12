@@ -1,6 +1,12 @@
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
-import type { Bootcamp, BootcampListResponse, BootcampQueryParams } from "@/types/bootcamp";
+import type {
+  Bootcamp,
+  BootcampActionData,
+  BootcampActionResponse,
+  BootcampListResponse,
+  BootcampQueryParams,
+} from "@/types/bootcamp";
 
 /**
  * Bootcamp Service
@@ -28,5 +34,25 @@ export const bootcampService = {
    */
   async getBootcampBySlug(slug: string): Promise<Bootcamp> {
     return apiClient.get<Bootcamp>(`${API_ENDPOINTS.bootcamps.list}/${slug}`);
+  },
+
+  async register(
+    bootcampId: string,
+    data: BootcampActionData
+  ): Promise<BootcampActionResponse> {
+    return apiClient.post<BootcampActionResponse>(
+      API_ENDPOINTS.events.registerByType("Bootcamp", bootcampId),
+      data
+    );
+  },
+
+  async requestCallback(
+    bootcampId: string,
+    data: BootcampActionData
+  ): Promise<BootcampActionResponse> {
+    return apiClient.post<BootcampActionResponse>(
+      API_ENDPOINTS.events.requestCallbackByType("Bootcamp", bootcampId),
+      data
+    );
   },
 };

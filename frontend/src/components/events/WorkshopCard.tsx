@@ -2,38 +2,39 @@ import { Calendar, Clock, MapPin, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
-import { Workshop } from "@/data/events.mock";
-import { getEventDetailBySlug } from "@/data/events-detail.mock";
+import type { Workshop } from "@/types/workshop";
 
 interface WorkshopCardProps {
   workshop: Workshop;
   onCTAClick: (workshop: Workshop) => void;
+  onSecondaryCTAClick: (workshop: Workshop) => void;
 }
 
 const formatEventDate = (date: string) =>
   new Date(date).toLocaleDateString("en-GB");
 
-export function WorkshopCard({ workshop, onCTAClick }: WorkshopCardProps) {
+const formatEventTime = (date: string) =>
+  new Date(date).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick }: WorkshopCardProps) {
   const toneStyles = getEventCardToneStyles("purple");
-  
-  // Get CTAs from detail mock data
-  const eventDetail = getEventDetailBySlug(workshop.slug);
-  const primaryCTA = eventDetail?.data.event.primaryCTA || "Register Now";
-  const secondaryCTA = eventDetail?.data.event.secondaryCTA;
+
+  const primaryCTA = workshop.primaryCTA || "Reserve Seat";
+  const secondaryCTA = workshop.secondaryCTA;
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = workshop.status === "Closed" || workshop.status === "Completed";
   const primaryButtonLabel = isFinalizedStatus ? workshop.status : primaryCTA;
-  
-  // Only disable primary button if it's a registration action AND (seats full OR event completed)
-  // "Request Callback" buttons should always be enabled
+
   const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
   const isPrimaryDisabled = isFinalizedStatus || (isRegistrationAction && (
     workshop.status === "Completed" || 
-    !!(workshop.maxSeats && workshop.enrolledCount && workshop.maxSeats - workshop.enrolledCount === 0)
+    workshop.availableSeats <= 0 ||
+    !workshop.canRegister
   ));
-  const seatsAvailable = workshop.maxSeats && workshop.enrolledCount 
-    ? workshop.maxSeats - workshop.enrolledCount 
-    : null;
+  const seatsAvailable = workshop.availableSeats;
 
   return (
     <Link href={`/events/${workshop.slug}`} className="block">
@@ -42,7 +43,7 @@ export function WorkshopCard({ workshop, onCTAClick }: WorkshopCardProps) {
         banner={
           <div className="text-center">
             <MapPin className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-xs">{workshop.location}</p>
+            <p className="text-xs">{workshop.mode}</p>
           </div>
         }
         badgeRow={
@@ -55,7 +56,7 @@ export function WorkshopCard({ workshop, onCTAClick }: WorkshopCardProps) {
             </span>
             <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
               <Clock className="h-3 w-3 inline mr-1" />
-              {workshop.duration}
+              {formatEventTime(workshop.startDate)}
             </span>
           </>
         }
@@ -69,10 +70,10 @@ export function WorkshopCard({ workshop, onCTAClick }: WorkshopCardProps) {
             </span>
             <span className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              {workshop.startTime} - {workshop.endTime}
+              {formatEventTime(workshop.startDate)} - {formatEventTime(workshop.endDate)}
             </span>
             <span className="flex items-center gap-1 text-muted-foreground">
-              Duration: {workshop.duration}
+              {workshop.mode}
             </span>
           </>
         }
@@ -105,7 +106,7 @@ export function WorkshopCard({ workshop, onCTAClick }: WorkshopCardProps) {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onCTAClick(workshop);
+                  onSecondaryCTAClick(workshop);
                 }}
               >
                 {secondaryCTA}
@@ -143,12 +144,12 @@ export function WorkshopCard({ workshop, onCTAClick }: WorkshopCardProps) {
       >
         <div className="mb-3">
           <div className="text-xs text-muted-foreground mb-1">Domain</div>
-          <div className="text-sm font-medium text-foreground">{workshop.domain}</div>
+          <div className="text-sm font-medium text-foreground">{workshop.category}</div>
         </div>
 
         <div className="flex flex-wrap gap-1.5 mb-4">
           <span className="text-xs text-muted-foreground">Key Tools:</span>
-          {workshop.keyTools.map((tool) => (
+          {workshop.skillsCovered.map((tool) => (
             <span
               key={tool}
               className={`px-2 py-0.5 rounded text-[10px] font-medium border ${toneStyles.chip}`}

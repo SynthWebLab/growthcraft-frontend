@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use, useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -22,16 +22,128 @@ import {
   Copy,
   PlayCircle,
   ArrowRight,
-  Loader2,
   Calendar,
   Clock,
   MapPin,
 } from "lucide-react";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useWorkshopDetails } from "@/hooks/queries/useWorkshops";
+import { useHackathonDetails } from "@/hooks/queries/useHackathons";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getEventDetailBySlug } from "@/data/events-detail.mock";
+import type { WorkshopDetailResponse } from "@/types/workshop";
+import type { HackathonDetailResponse } from "@/types/hackathon";
+
+type EventDetailResponse = WorkshopDetailResponse | HackathonDetailResponse;
+
+const subscribeToClientSnapshot = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
+function getEventDuration(startDate: string, endDate: string, durationDays?: number) {
+  if (durationDays && durationDays > 1) return durationDays * 24;
+
+  const durationMs = new Date(endDate).getTime() - new Date(startDate).getTime();
+  return Math.max(1, Math.round(durationMs / (1000 * 60 * 60)));
+}
+
+function mapEventDetailToEventData(response: EventDetailResponse) {
+  const details = response.data.eventDetails;
+  const event = details.eventId;
+  const primaryCTA = event.primaryCTA || details.primaryCTA || (
+    event.status === "Open" && event.availableSeats > 0 ? "Reserve Seat" : "Request Callback"
+  );
+  const secondaryCTA = event.secondaryCTA ?? details.secondaryCTA ?? (
+    primaryCTA === "Reserve Seat" ? "Request Callback" : null
+  );
+  const venue = details.venue
+    ? {
+        name: details.venue.name || details.venue.mode || details.venue.type,
+        address: details.venue.description,
+        city: details.venue.city || details.venue.country || "",
+        state: details.venue.state || "",
+        zipCode: details.venue.zipCode,
+        googleMapsLink: details.venue.googleMapsLink,
+      }
+    : undefined;
+
+  return {
+    success: response.success,
+    message: response.message,
+    data: {
+      event: {
+        _id: event._id,
+        title: event.title,
+        slug: event.slug,
+        description: event.description,
+        type: event.type,
+        category: event.category,
+        level: "Beginner" as const,
+        duration: getEventDuration(event.startDate, event.endDate, event.durationDays),
+        price: event.price,
+        originalPrice: event.originalPrice,
+        mode: event.mode,
+        venue,
+        zoomLink: undefined,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        maxSeats: event.maxSeats,
+        enrolledCount: event.enrolledCount,
+        status: event.status,
+        rating: event.rating,
+        tools: event.skillsCovered,
+        mentorName: event.mentorNames.join(", "),
+        thumbnail: event.banner,
+        primaryCTA,
+        secondaryCTA,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+      },
+      overview: {
+        aboutEvent: details.overview.aboutEvent,
+        whatYouWillLearn: details.overview.whatYouWillLearn.map((item, index) => ({
+          ...item,
+          _id: `learn-${index}`,
+        })),
+        prerequisites: details.overview.prerequisites.map((item, index) => ({
+          ...item,
+          _id: `prerequisite-${index}`,
+        })),
+        whatsIncluded: details.overview.whatsIncluded.map((item, index) => ({
+          ...item,
+          icon: "Check",
+          _id: `included-${index}`,
+        })),
+      },
+      agenda: details.agenda.map((session, index) => ({
+        sessionNumber: session.step,
+        title: session.title,
+        topics: session.topics.map((topic, topicIndex) => ({
+          text: topic,
+          _id: `agenda-${index}-topic-${topicIndex}`,
+        })),
+        duration: session.duration,
+        _id: `agenda-${index}`,
+      })),
+      mentorDetails: details.mentors.map((mentor, index) => ({
+        name: mentor.name || event.mentorNames[index] || "GrowthCraft Mentor",
+        avatar: mentor.avatar || "",
+        bio: mentor.bio || "Industry expert with extensive experience in training and mentorship.",
+        designation: mentor.designation || "Event Mentor",
+        rating: mentor.rating || event.rating,
+        studentsCount: mentor.studentsCount || event.enrolledCount,
+        expertise: mentor.expertise || event.skillsCovered,
+      })),
+      faqs: details.faqs.map((faq, index) => ({
+        ...faq,
+        _id: `faq-${index}`,
+      })),
+    },
+    meta: response.meta,
+  };
+}
 
 export default function EventDetailPage({
   params,
@@ -41,11 +153,37 @@ export default function EventDetailPage({
   const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
+  const hasMounted = useSyncExternalStore(
+    subscribeToClientSnapshot,
+    getClientSnapshot,
+    getServerSnapshot
+  );
 
   const { slug } = use(params);
+  
+  // First, try to get the event data from mock to determine type
+  const mockEventData = getEventDetailBySlug(slug);
+  const eventType = mockEventData?.data?.event?.type;
+  
+  // Fetch from appropriate API based on event type
+  const { data: workshopDetailData } = useWorkshopDetails(
+    slug, 
+    hasMounted && eventType === "Workshop"
+  );
+  const { data: hackathonDetailData } = useHackathonDetails(
+    slug, 
+    hasMounted && eventType === "Hackathon"
+  );
 
-  // Fetch event from mock data
-  const eventData = useMemo(() => getEventDetailBySlug(slug), [slug]);
+  const eventData = useMemo(
+    () => {
+      // Prioritize API data over mock data
+      if (workshopDetailData) return mapEventDetailToEventData(workshopDetailData);
+      if (hackathonDetailData) return mapEventDetailToEventData(hackathonDetailData);
+      return mockEventData;
+    },
+    [slug, workshopDetailData, hackathonDetailData, mockEventData]
+  );
   const event = eventData?.data?.event;
   const overview = eventData?.data?.overview;
   const agenda = eventData?.data?.agenda || [];
@@ -57,7 +195,10 @@ export default function EventDetailPage({
     notFound();
   }
 
-  const showMentorSection = event.type === "Bootcamp";
+  const showMentorSection = event.type === "Bootcamp" || event.type === "Hackathon";
+  const isWorkshopEvent = event.type === "Workshop";
+  const isBootcampEvent = event.type === "Bootcamp";
+  const isHackathonEvent = event.type === "Hackathon";
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -77,23 +218,75 @@ export default function EventDetailPage({
 
   // Determine CTA behavior
   const isPrimaryCallback = primaryCTA.toLowerCase().includes("callback");
-  const isPrimaryRegistration = primaryCTA.toLowerCase().includes("register");
   const isPrimaryRegisterInterest =
     primaryCTA.toLowerCase().includes("interest");
   const eventStatus = event.status as string;
   const isFinalizedStatus = eventStatus === "Closed" || eventStatus === "Completed";
 
+  const openWorkshopForm = (formType: "callback" | "register-interest" | "reserve-seat") => {
+    const label =
+      formType === "callback"
+        ? secondaryCTA || primaryCTA || "Request Callback"
+        : primaryCTA;
+
+    openForm(
+      formType,
+      `${label} - ${event.title}`,
+      event._id,
+      event.title,
+      "workshop"
+    );
+  };
+
+  const openEventActionForm = (formType: "callback" | "register-interest" | "reserve-seat") => {
+    if (isWorkshopEvent) {
+      openWorkshopForm(formType);
+      return;
+    }
+
+    if (isBootcampEvent) {
+      const label =
+        formType === "callback"
+          ? secondaryCTA || primaryCTA || "Request Callback"
+          : primaryCTA;
+
+      openForm(
+        formType,
+        `${label} - ${event.title}`,
+        event._id,
+        event.title,
+        "bootcamp"
+      );
+      return;
+    }
+
+    if (isHackathonEvent) {
+      const label =
+        formType === "callback"
+          ? secondaryCTA || primaryCTA || "Request Callback"
+          : primaryCTA;
+
+      openForm(
+        formType,
+        `${label} - ${event.title}`,
+        event._id,
+        event.title,
+        "hackathon"
+      );
+    }
+  };
+
   // Handle primary CTA click
-  const handlePrimaryCTAClick = async () => {
+  const handlePrimaryCTAClick = () => {
     // For "Request Callback" - no login required
     if (isPrimaryCallback) {
+      if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
+        openEventActionForm("callback");
+        return;
+      }
+
       if (!isAuthenticated) {
-        openForm(
-          "callback",
-          `${primaryCTA} - ${event.title}`,
-          event._id,
-          event.title
-        );
+        openForm("callback", `${primaryCTA} - ${event.title}`, event._id, event.title);
         return;
       }
 
@@ -103,13 +296,13 @@ export default function EventDetailPage({
 
     // For "Register Interest" - no login required
     if (isPrimaryRegisterInterest) {
+      if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
+        openEventActionForm("register-interest");
+        return;
+      }
+
       if (!isAuthenticated) {
-        openForm(
-          "register-interest",
-          `${primaryCTA} - ${event.title}`,
-          event._id,
-          event.title
-        );
+        openForm("register-interest", `${primaryCTA} - ${event.title}`, event._id, event.title);
         return;
       }
 
@@ -135,25 +328,34 @@ export default function EventDetailPage({
       return;
     }
 
-    // Show success message
+    if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
+      openEventActionForm("reserve-seat");
+      return;
+    }
+
     toast.success("Registration successful! Check your email for details.");
   };
 
   // Handle secondary CTA click
-  const handleSecondaryCTAClick = async () => {
+  const handleSecondaryCTAClick = () => {
+    if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
+      openEventActionForm("callback");
+      return;
+    }
+
     if (!isAuthenticated) {
       if (secondaryCTA) {
         openForm(
           "callback",
           `${secondaryCTA} - ${event.title}`,
           event._id,
-          event.title
+          event.title,
+          isWorkshopEvent ? "workshop" : isHackathonEvent ? "hackathon" : "course"
         );
       }
       return;
     }
 
-    // Show success message
     toast.success("Callback request submitted! We'll contact you soon.");
   };
 
@@ -180,6 +382,7 @@ export default function EventDetailPage({
         title={formTitle}
         courseId={courseId}
         courseTitle={courseTitle}
+        itemType={isWorkshopEvent ? "workshop" : isBootcampEvent ? "bootcamp" : isHackathonEvent ? "hackathon" : "course"}
       />
 
       <Section variant="white" className="overflow-hidden">
@@ -260,7 +463,7 @@ export default function EventDetailPage({
                 </div>
 
                 <div>
-                  <h2 className="text-xl font-bold mb-4">What you'll learn</h2>
+                  <h2 className="text-xl font-bold mb-4">What you&apos;ll learn</h2>
                   <div className="grid sm:grid-cols-2 gap-3">
                     {overview?.whatYouWillLearn?.map((item) => (
                       <div key={item._id} className="flex items-start gap-2">
@@ -313,7 +516,7 @@ export default function EventDetailPage({
                           <h3 className="font-semibold mb-1">{session.title}</h3>
                           <p className="text-xs text-muted-foreground mb-2">
                             <Clock className="h-3 w-3 inline mr-1" />
-                            {session.duration} min
+                            {session.duration}
                           </p>
                           <ul className="space-y-1">
                             {session.topics.map((topic) => (
@@ -412,46 +615,82 @@ export default function EventDetailPage({
 
               {showMentorSection && (
                 <TabsContent value="mentor" className="pt-6">
-                  <DataCard>
-                    <div className="flex items-start gap-4">
-                      <img
-                        src={mentorDetails?.avatar}
-                        alt={mentorDetails?.name}
-                        className="h-16 w-16 rounded-full"
-                      />
-                      <div>
-                        <h3 className="text-lg font-bold">
-                          {mentorDetails?.name || event.mentorName}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {mentorDetails?.bio ||
-                            "Industry expert with extensive experience in training and mentorship."}
-                        </p>
-                        <div className="flex gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-warning" />
-                            {displayRating} rating
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {mentorDetails?.studentsCount} students
-                          </span>
-                        </div>
-                        {mentorDetails?.expertise && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {mentorDetails.expertise.map((exp, idx) => (
-                              <span
-                                key={idx}
-                                className="px-2 py-1 rounded text-xs bg-muted"
-                              >
-                                {exp}
-                              </span>
-                            ))}
+                  <h2 className="text-xl font-bold mb-4">Meet Your Mentors</h2>
+                  <div className="space-y-4">
+                    {mentorDetails && mentorDetails.length > 0 ? (
+                      mentorDetails.map((mentor, index) => (
+                        <DataCard key={index}>
+                          <div className="flex items-start gap-4">
+                            {mentor.avatar && (
+                              <img
+                                src={mentor.avatar}
+                                alt={mentor.name}
+                                className="h-16 w-16 rounded-full object-cover flex-shrink-0"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-bold">
+                                {mentor.name}
+                              </h3>
+                              {mentor.designation && (
+                                <p className="text-sm text-magenta mb-2">
+                                  {mentor.designation}
+                                </p>
+                              )}
+                              <p className="text-sm text-muted-foreground mb-3">
+                                {mentor.bio}
+                              </p>
+                              <div className="flex gap-4 text-xs text-muted-foreground mb-3">
+                                <span className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 text-warning" />
+                                  {mentor.rating?.toFixed(1) || displayRating} rating
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {mentor.studentsCount || event.enrolledCount} students
+                                </span>
+                              </div>
+                              {mentor.expertise && mentor.expertise.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {mentor.expertise.map((exp, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-1 rounded text-xs bg-muted"
+                                    >
+                                      {exp}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </DataCard>
+                        </DataCard>
+                      ))
+                    ) : (
+                      <DataCard>
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold">
+                              {event.mentorName}
+                            </h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Industry expert with extensive experience in training and mentorship.
+                            </p>
+                            <div className="flex gap-4 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3 text-warning" />
+                                {displayRating} rating
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {event.enrolledCount} students
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </DataCard>
+                    )}
+                  </div>
                 </TabsContent>
               )}
 
@@ -514,7 +753,7 @@ export default function EventDetailPage({
                 )}
 
                 <div className="mt-6 space-y-3 text-sm">
-                  <h4 className="font-semibold">What's included</h4>
+                  <h4 className="font-semibold">What&apos;s included</h4>
                   {overview?.whatsIncluded?.map((item) => (
                     <div
                       key={item._id}
@@ -559,7 +798,7 @@ export default function EventDetailPage({
       <Section variant="graphite">
         <div className="text-center py-8">
           <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4">
-            Don't miss this event!
+            Don&apos;t miss this event!
           </h2>
           <p className="text-white/60 mb-6">
             {event.maxSeats - event.enrolledCount} seats remaining

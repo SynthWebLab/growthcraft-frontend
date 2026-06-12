@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EventSection } from "@/components/events/EventSection";
+import { Loader2 } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -13,11 +14,18 @@ import {
 } from "@/components/ui/pagination";
 import { EventFilters } from "@/components/events/EventFilters";
 import { HackathonCard } from "@/components/events/HackathonCard";
-import { MOCK_HACKATHONS, type Hackathon, getHackathonCTA } from "@/data/events.mock";
+import { useHackathons } from "@/hooks/queries/useHackathons";
 import { FormType } from "@/lib/ctaPolicy";
+import type { Hackathon, HackathonMode, HackathonStatus } from "@/types/hackathon";
 
 interface HackathonEventsProps {
-  onOpenForm: (type: FormType | "enquiry" | "mentor" | "partner", title?: string, courseIdParam?: string, courseTitleParam?: string) => void;
+  onOpenForm: (
+    type: FormType | "enquiry" | "mentor" | "partner",
+    title?: string,
+    courseIdParam?: string,
+    courseTitleParam?: string,
+    itemTypeParam?: "course" | "workshop" | "hackathon"
+  ) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -26,39 +34,46 @@ const HACKATHON_STATUSES = ["Open", "Closed", "Completed"] as const;
 
 export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
   const [hackathonMode, setHackathonMode] = useState<typeof HACKATHON_MODES[number] | null>(null);
-  const [hackathonStatus, setHackathonStatus] = useState<typeof HACKATHON_STATUSES[number] | null>(null);
+  const [hackathonStatus, setHackathonStatus] = useState<typeof HACKATHON_STATUSES[number] | null>("Open");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredHackathons = MOCK_HACKATHONS.filter((hackathon) => {
-    if (hackathonMode && hackathon.mode !== hackathonMode) {
-      return false;
-    }
-
-    if (hackathonStatus && hackathon.status !== hackathonStatus) {
-      return false;
-    }
-
-    return true;
+  const { data, isLoading, error, refetch } = useHackathons({
+    limit: ITEMS_PER_PAGE,
+    page: currentPage,
+    mode: hackathonMode as HackathonMode | undefined,
+    status: hackathonStatus as HackathonStatus | undefined,
   });
 
-  const totalPages = Math.max(1, Math.ceil(filteredHackathons.length / ITEMS_PER_PAGE));
-  const effectivePage = Math.min(currentPage, totalPages);
-  const pageItems = filteredHackathons.slice((effectivePage - 1) * ITEMS_PER_PAGE, effectivePage * ITEMS_PER_PAGE);
-  const hasNextPage = effectivePage < totalPages;
-  const hasPreviousPage = effectivePage > 1;
+  const pageItems = data?.items || [];
+  const totalItems = data?.pagination.total || 0;
+  const totalPages = data?.pagination.totalPages || 1;
+  const hasNextPage = currentPage < totalPages;
+  const hasPreviousPage = currentPage > 1;
 
   const handleHackathonCTA = (hackathon: Hackathon) => {
-    const ctaText = getHackathonCTA(hackathon);
-    if (ctaText === "Register Interest") {
-      onOpenForm("register-interest", `${ctaText} — ${hackathon.title}`);
-    } else {
-      onOpenForm("callback", `${ctaText} — ${hackathon.title}`);
+    const ctaText = hackathon.primaryCTA || "Register Now";
+
+    if (ctaText.toLowerCase().includes("callback")) {
+      onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+      return;
     }
+
+    if (ctaText.toLowerCase().includes("interest")) {
+      onOpenForm("register-interest", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+      return;
+    }
+
+    onOpenForm("reserve-seat", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+  };
+
+  const handleHackathonSecondaryCTA = (hackathon: Hackathon) => {
+    const ctaText = hackathon.secondaryCTA || "Request Callback";
+    onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
   };
 
   const clearHackathonFilters = () => {
     setHackathonMode(null);
-    setHackathonStatus(null);
+    setHackathonStatus("Open");
     setCurrentPage(1);
   };
 
@@ -75,6 +90,27 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
+
+  if (isLoading && !pageItems.length) {
+    return (
+      <EventSection variant="white">
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-magenta" />
+        </div>
+      </EventSection>
+    );
+  }
+
+  if (error) {
+    return (
+      <EventSection variant="white">
+        <div className="text-center py-16">
+          <p className="text-danger mb-4">Failed to load hackathons. Please try again.</p>
+          <Button onClick={() => refetch()}>Retry</Button>
+        </div>
+      </EventSection>
+    );
+  }
 
   return (
     <>
@@ -116,15 +152,19 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
           onClearAll={clearHackathonFilters}
         />
         <div className="text-sm text-muted-foreground">
-          Showing {pageItems.length} of {filteredHackathons.length} hackathons
-          {totalPages > 1 && ` — Page ${effectivePage} of ${totalPages}`}
+          Showing {pageItems.length} of {totalItems} hackathons
+          {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
         </div>
       </EventSection>
 
       {pageItems.length > 0 ? (
         pageItems.map((hackathon, i) => (
           <EventSection key={hackathon.id} variant={i % 2 === 0 ? "white" : "marble"}>
-            <HackathonCard hackathon={hackathon} onCTAClick={handleHackathonCTA} />
+            <HackathonCard
+              hackathon={hackathon}
+              onCTAClick={handleHackathonCTA}
+              onSecondaryCTAClick={handleHackathonSecondaryCTA}
+            />
           </EventSection>
         ))
       ) : (
@@ -160,7 +200,7 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
                 <PaginationItem key={i}>
                   <PaginationLink
                     href="#"
-                    isActive={effectivePage === i + 1}
+                    isActive={currentPage === i + 1}
                     onClick={(e) => {
                       e.preventDefault();
                       setCurrentPage(i + 1);
