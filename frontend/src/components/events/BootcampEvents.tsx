@@ -24,8 +24,14 @@ import {
 import { FormType } from "@/lib/ctaPolicy";
 
 interface BootcampEventsProps {
-  onOpenForm: (type: FormType | "enquiry" | "mentor" | "partner", title?: string, courseIdParam?: string, courseTitleParam?: string) => void;
-  enabled?: boolean; // Control when to fetch
+  onOpenForm: (
+    type: FormType | "enquiry" | "mentor" | "partner",
+    title?: string,
+    courseIdParam?: string,
+    courseTitleParam?: string,
+    itemTypeParam?: "course" | "workshop" | "bootcamp"
+  ) => void;
+  enabled?: boolean;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -35,7 +41,6 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
   const [bootcampStatus, setBootcampStatus] = useState<(typeof BOOTCAMP_FILTER_STATUSES)[number] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Build query params with filters
   const queryParams: BootcampQueryParams = {
     limit: ITEMS_PER_PAGE,
     page: currentPage,
@@ -43,9 +48,8 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
     status: bootcampStatus ?? undefined,
   };
 
-  // Fetch bootcamps from API with filters
-  const { data: bootcampsData, isLoading, error } = useBootcamps(queryParams, enabled);
-  
+  const { data: bootcampsData, isLoading, error, refetch } = useBootcamps(queryParams, enabled);
+
   const bootcamps = bootcampsData?.items || [];
   const pagination = bootcampsData?.pagination;
   const totalPages = pagination?.totalPages ?? 1;
@@ -53,17 +57,18 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
   const hasNextPage = currentPage < totalPages;
   const hasPreviousPage = currentPage > 1;
 
+  const openBootcampForm = (bootcamp: Bootcamp, type: "reserve-seat" | "callback") => {
+    const label = type === "reserve-seat" ? bootcamp.primaryCTA || "Reserve Seat" : bootcamp.secondaryCTA || "Request Callback";
+    onOpenForm(type, `${label} - ${bootcamp.title}`, bootcamp.id, bootcamp.title, "bootcamp");
+  };
+
   const handleBootcampCTA = (bootcamp: Bootcamp) => {
-    switch (bootcamp.primaryCTA) {
-      case "Reserve Seat":
-        onOpenForm("enrollment", `Reserve seat — ${bootcamp.title}`);
-        break;
-      case "Request Callback":
-        onOpenForm("callback", `Request Callback — ${bootcamp.title}`);
-        break;
-      default:
-        onOpenForm("callback", `Enquire — ${bootcamp.title}`);
+    if (bootcamp.primaryCTA.toLowerCase().includes("reserve")) {
+      openBootcampForm(bootcamp, "reserve-seat");
+      return;
     }
+
+    openBootcampForm(bootcamp, "callback");
   };
 
   const clearBootcampFilters = () => {
@@ -86,7 +91,6 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
     }
   };
 
-  // Loading state
   if (isLoading && !bootcamps.length) {
     return (
       <EventSection variant="white">
@@ -97,13 +101,12 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
     );
   }
 
-  // Error state
   if (error) {
     return (
       <EventSection variant="white">
         <div className="text-center py-16">
           <p className="text-danger mb-4">Failed to load bootcamps. Please try again.</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
+          <Button onClick={() => refetch()}>Retry</Button>
         </div>
       </EventSection>
     );
@@ -150,7 +153,7 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
         />
         <div className="text-sm text-muted-foreground">
           Showing {bootcamps.length} of {totalItems} bootcamp{totalItems !== 1 ? "s" : ""}
-          {totalPages > 1 && ` — Page ${currentPage} of ${totalPages}`}
+          {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
         </div>
       </EventSection>
 
@@ -160,7 +163,7 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
             <BootcampEventCard
               bootcamp={bootcamp}
               onPrimaryCTAClick={handleBootcampCTA}
-              onSecondaryCTAClick={() => onOpenForm("callback", `Request Callback — ${bootcamp.title}`)}
+              onSecondaryCTAClick={() => openBootcampForm(bootcamp, "callback")}
             />
           </EventSection>
         ))

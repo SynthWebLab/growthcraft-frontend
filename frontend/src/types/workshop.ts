@@ -61,11 +61,11 @@ export interface WorkshopActionResponse {
   data?: unknown;
 }
 
-export interface WorkshopDetailEvent {
+export interface EventCatalogueDetail {
   _id: string;
   slug: string;
   title: string;
-  type: "Workshop";
+  type: "Workshop" | "Bootcamp";
   domain: string;
   durationDays: number;
   keyTopics: string[];
@@ -85,6 +85,9 @@ export interface WorkshopDetailEvent {
   status: WorkshopStatus;
   rating: number;
   tags: string[];
+  canRegister?: boolean;
+  primaryCTA?: string;
+  secondaryCTA?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -96,8 +99,8 @@ export interface WorkshopDetailResponse {
     eventDetails: {
       _id: string;
       slug: string;
-      type: "Workshop";
-      eventId: WorkshopDetailEvent;
+      type: "Workshop" | "Bootcamp";
+      eventId: EventCatalogueDetail;
       overview: {
         aboutEvent: string;
         whatYouWillLearn: Array<{ text: string }>;
@@ -110,6 +113,13 @@ export interface WorkshopDetailResponse {
         description: string;
         date: string;
         time: string;
+        name?: string;
+        address?: string;
+        city?: string;
+        state?: string;
+        zipCode?: string;
+        country?: string;
+        googleMapsLink?: string;
       };
       agenda: Array<{
         step: number;
@@ -119,6 +129,7 @@ export interface WorkshopDetailResponse {
       }>;
       mentors: Array<{
         name?: string;
+        designation?: string;
         avatar?: string;
         bio?: string;
         rating?: number;
@@ -131,6 +142,10 @@ export interface WorkshopDetailResponse {
       }>;
       createdAt: string;
       updatedAt: string;
+      availableSeats?: number;
+      canRegister?: boolean;
+      primaryCTA?: string;
+      secondaryCTA?: string | null;
     };
   };
   meta: {

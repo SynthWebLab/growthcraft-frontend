@@ -61,3 +61,18 @@ export interface BootcampQueryParams {
   mode?: (typeof BOOTCAMP_MODES)[number];
   status?: (typeof BOOTCAMP_FILTER_STATUSES)[number];
 }
+
+export interface BootcampActionData {
+  fullName: string;
+  email: string;
+  phone: string;
+}
+
+export interface BootcampActionResponse {
+  success: boolean;
+  message: string;
+  data?: unknown;
+  meta?: {
+    timestamp: string;
+  };
+}

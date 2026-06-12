@@ -38,49 +38,64 @@ const subscribeToClientSnapshot = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-function getWorkshopDurationHours(startDate: string, endDate: string) {
+function getEventDuration(startDate: string, endDate: string, durationDays?: number) {
+  if (durationDays && durationDays > 1) return durationDays * 24;
+
   const durationMs = new Date(endDate).getTime() - new Date(startDate).getTime();
   return Math.max(1, Math.round(durationMs / (1000 * 60 * 60)));
 }
 
-function mapWorkshopDetailToEventData(response: WorkshopDetailResponse) {
+function mapEventDetailToEventData(response: WorkshopDetailResponse) {
   const details = response.data.eventDetails;
-  const workshop = details.eventId;
-  const primaryCTA = workshop.status === "Open" && workshop.availableSeats > 0
-    ? "Reserve Seat"
-    : "Request Callback";
+  const event = details.eventId;
+  const primaryCTA = event.primaryCTA || details.primaryCTA || (
+    event.status === "Open" && event.availableSeats > 0 ? "Reserve Seat" : "Request Callback"
+  );
+  const secondaryCTA = event.secondaryCTA ?? details.secondaryCTA ?? (
+    primaryCTA === "Reserve Seat" ? "Request Callback" : null
+  );
+  const venue = details.venue
+    ? {
+        name: details.venue.name || details.venue.mode || details.venue.type,
+        address: details.venue.description,
+        city: details.venue.city || details.venue.country || "",
+        state: details.venue.state || "",
+        zipCode: details.venue.zipCode,
+        googleMapsLink: details.venue.googleMapsLink,
+      }
+    : undefined;
 
   return {
     success: response.success,
     message: response.message,
     data: {
       event: {
-        _id: workshop._id,
-        title: workshop.title,
-        slug: workshop.slug,
-        description: workshop.description,
-        type: "Workshop" as const,
-        category: workshop.category,
+        _id: event._id,
+        title: event.title,
+        slug: event.slug,
+        description: event.description,
+        type: event.type,
+        category: event.category,
         level: "Beginner" as const,
-        duration: getWorkshopDurationHours(workshop.startDate, workshop.endDate),
-        price: workshop.price,
-        originalPrice: workshop.originalPrice,
-        mode: workshop.mode,
-        venue: undefined,
+        duration: getEventDuration(event.startDate, event.endDate, event.durationDays),
+        price: event.price,
+        originalPrice: event.originalPrice,
+        mode: event.mode,
+        venue,
         zoomLink: undefined,
-        startDate: workshop.startDate,
-        endDate: workshop.endDate,
-        maxSeats: workshop.maxSeats,
-        enrolledCount: workshop.enrolledCount,
-        status: workshop.status,
-        rating: workshop.rating,
-        tools: workshop.skillsCovered,
-        mentorName: workshop.mentorNames.join(", "),
-        thumbnail: workshop.banner,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        maxSeats: event.maxSeats,
+        enrolledCount: event.enrolledCount,
+        status: event.status,
+        rating: event.rating,
+        tools: event.skillsCovered,
+        mentorName: event.mentorNames.join(", "),
+        thumbnail: event.banner,
         primaryCTA,
-        secondaryCTA: primaryCTA === "Reserve Seat" ? "Request Callback" : null,
-        createdAt: workshop.createdAt,
-        updatedAt: workshop.updatedAt,
+        secondaryCTA,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
       },
       overview: {
         aboutEvent: details.overview.aboutEvent,
@@ -105,17 +120,18 @@ function mapWorkshopDetailToEventData(response: WorkshopDetailResponse) {
           text: topic,
           _id: `agenda-${index}-topic-${topicIndex}`,
         })),
-        duration: Number.parseInt(session.duration, 10) || 0,
+        duration: session.duration,
         _id: `agenda-${index}`,
       })),
-      mentorDetails: {
-        name: details.mentors[0]?.name || workshop.mentorNames[0] || "GrowthCraft Mentor",
-        avatar: details.mentors[0]?.avatar || "",
-        bio: details.mentors[0]?.bio || "Industry expert with extensive experience in training and mentorship.",
-        rating: details.mentors[0]?.rating || workshop.rating,
-        studentsCount: details.mentors[0]?.studentsCount || workshop.enrolledCount,
-        expertise: details.mentors[0]?.expertise || workshop.skillsCovered,
-      },
+      mentorDetails: details.mentors.map((mentor, index) => ({
+        name: mentor.name || event.mentorNames[index] || "GrowthCraft Mentor",
+        avatar: mentor.avatar || "",
+        bio: mentor.bio || "Industry expert with extensive experience in training and mentorship.",
+        designation: mentor.designation || "Event Mentor",
+        rating: mentor.rating || event.rating,
+        studentsCount: mentor.studentsCount || event.enrolledCount,
+        expertise: mentor.expertise || event.skillsCovered,
+      })),
       faqs: details.faqs.map((faq, index) => ({
         ...faq,
         _id: `faq-${index}`,
@@ -143,7 +159,7 @@ export default function EventDetailPage({
   const { data: workshopDetailData } = useWorkshopDetails(slug, hasMounted);
 
   const eventData = useMemo(
-    () => workshopDetailData ? mapWorkshopDetailToEventData(workshopDetailData) : getEventDetailBySlug(slug),
+    () => workshopDetailData ? mapEventDetailToEventData(workshopDetailData) : getEventDetailBySlug(slug),
     [slug, workshopDetailData]
   );
   const event = eventData?.data?.event;
@@ -159,6 +175,7 @@ export default function EventDetailPage({
 
   const showMentorSection = event.type === "Bootcamp";
   const isWorkshopEvent = event.type === "Workshop";
+  const isBootcampEvent = event.type === "Bootcamp";
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -198,12 +215,34 @@ export default function EventDetailPage({
     );
   };
 
+  const openEventActionForm = (formType: "callback" | "register-interest" | "reserve-seat") => {
+    if (isWorkshopEvent) {
+      openWorkshopForm(formType);
+      return;
+    }
+
+    if (isBootcampEvent) {
+      const label =
+        formType === "callback"
+          ? secondaryCTA || primaryCTA || "Request Callback"
+          : primaryCTA;
+
+      openForm(
+        formType,
+        `${label} - ${event.title}`,
+        event._id,
+        event.title,
+        "bootcamp"
+      );
+    }
+  };
+
   // Handle primary CTA click
   const handlePrimaryCTAClick = () => {
     // For "Request Callback" - no login required
     if (isPrimaryCallback) {
-      if (isWorkshopEvent) {
-        openWorkshopForm("callback");
+      if (isWorkshopEvent || isBootcampEvent) {
+        openEventActionForm("callback");
         return;
       }
 
@@ -218,8 +257,8 @@ export default function EventDetailPage({
 
     // For "Register Interest" - no login required
     if (isPrimaryRegisterInterest) {
-      if (isWorkshopEvent) {
-        openWorkshopForm("register-interest");
+      if (isWorkshopEvent || isBootcampEvent) {
+        openEventActionForm("register-interest");
         return;
       }
 
@@ -250,8 +289,8 @@ export default function EventDetailPage({
       return;
     }
 
-    if (isWorkshopEvent) {
-      openWorkshopForm("reserve-seat");
+    if (isWorkshopEvent || isBootcampEvent) {
+      openEventActionForm("reserve-seat");
       return;
     }
 
@@ -260,8 +299,8 @@ export default function EventDetailPage({
 
   // Handle secondary CTA click
   const handleSecondaryCTAClick = () => {
-    if (isWorkshopEvent) {
-      openWorkshopForm("callback");
+    if (isWorkshopEvent || isBootcampEvent) {
+      openEventActionForm("callback");
       return;
     }
 
@@ -304,7 +343,7 @@ export default function EventDetailPage({
         title={formTitle}
         courseId={courseId}
         courseTitle={courseTitle}
-        itemType={isWorkshopEvent ? "workshop" : "course"}
+        itemType={isWorkshopEvent ? "workshop" : isBootcampEvent ? "bootcamp" : "course"}
       />
 
       <Section variant="white" className="overflow-hidden">
@@ -438,7 +477,7 @@ export default function EventDetailPage({
                           <h3 className="font-semibold mb-1">{session.title}</h3>
                           <p className="text-xs text-muted-foreground mb-2">
                             <Clock className="h-3 w-3 inline mr-1" />
-                            {session.duration} min
+                            {session.duration}
                           </p>
                           <ul className="space-y-1">
                             {session.topics.map((topic) => (
@@ -537,46 +576,82 @@ export default function EventDetailPage({
 
               {showMentorSection && (
                 <TabsContent value="mentor" className="pt-6">
-                  <DataCard>
-                    <div className="flex items-start gap-4">
-                      <img
-                        src={mentorDetails?.avatar}
-                        alt={mentorDetails?.name}
-                        className="h-16 w-16 rounded-full"
-                      />
-                      <div>
-                        <h3 className="text-lg font-bold">
-                          {mentorDetails?.name || event.mentorName}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {mentorDetails?.bio ||
-                            "Industry expert with extensive experience in training and mentorship."}
-                        </p>
-                        <div className="flex gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-warning" />
-                            {displayRating} rating
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {mentorDetails?.studentsCount} students
-                          </span>
-                        </div>
-                        {mentorDetails?.expertise && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {mentorDetails.expertise.map((exp, idx) => (
-                              <span
-                                key={idx}
-                                className="px-2 py-1 rounded text-xs bg-muted"
-                              >
-                                {exp}
-                              </span>
-                            ))}
+                  <h2 className="text-xl font-bold mb-4">Meet Your Mentors</h2>
+                  <div className="space-y-4">
+                    {mentorDetails && mentorDetails.length > 0 ? (
+                      mentorDetails.map((mentor, index) => (
+                        <DataCard key={index}>
+                          <div className="flex items-start gap-4">
+                            {mentor.avatar && (
+                              <img
+                                src={mentor.avatar}
+                                alt={mentor.name}
+                                className="h-16 w-16 rounded-full object-cover flex-shrink-0"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-bold">
+                                {mentor.name}
+                              </h3>
+                              {mentor.designation && (
+                                <p className="text-sm text-magenta mb-2">
+                                  {mentor.designation}
+                                </p>
+                              )}
+                              <p className="text-sm text-muted-foreground mb-3">
+                                {mentor.bio}
+                              </p>
+                              <div className="flex gap-4 text-xs text-muted-foreground mb-3">
+                                <span className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 text-warning" />
+                                  {mentor.rating?.toFixed(1) || displayRating} rating
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {mentor.studentsCount || event.enrolledCount} students
+                                </span>
+                              </div>
+                              {mentor.expertise && mentor.expertise.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {mentor.expertise.map((exp, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-1 rounded text-xs bg-muted"
+                                    >
+                                      {exp}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </DataCard>
+                        </DataCard>
+                      ))
+                    ) : (
+                      <DataCard>
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold">
+                              {event.mentorName}
+                            </h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Industry expert with extensive experience in training and mentorship.
+                            </p>
+                            <div className="flex gap-4 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3 text-warning" />
+                                {displayRating} rating
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {event.enrolledCount} students
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </DataCard>
+                    )}
+                  </div>
                 </TabsContent>
               )}
 

@@ -12,6 +12,7 @@ import { Send, Phone, GraduationCap, Briefcase, School, UserCheck } from "lucide
 import { z } from "zod";
 import { FormType } from "@/lib/ctaPolicy";
 import { useEnrollCourse, useRequestCallback } from "@/hooks/queries/useCourses";
+import { useRegisterBootcamp, useRequestBootcampCallback } from "@/hooks/queries/useBootcamps";
 import { useRegisterWorkshop, useRequestWorkshopCallback } from "@/hooks/queries/useWorkshops";
 
 // Validation schemas
@@ -46,12 +47,14 @@ interface PopupFormProps {
   title?: string;
   courseId?: string; // Optional: pre-select a course
   courseTitle?: string; // Optional: course title for enrollment
-  itemType?: "course" | "workshop";
+  itemType?: "course" | "workshop" | "bootcamp";
 }
 
 export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle, itemType = "course" }: PopupFormProps) => {
   // Mutations for enroll and callback
   const enrollMutation = useEnrollCourse();
+  const bootcampRegisterMutation = useRegisterBootcamp();
+  const bootcampCallbackMutation = useRequestBootcampCallback();
   const workshopRegisterMutation = useRegisterWorkshop();
   const workshopCallbackMutation = useRequestWorkshopCallback();
   
@@ -130,7 +133,22 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
       if (type === "enrollment" || type === "reserve-seat") {
         // courseId must be provided for enrollment (pre-selected from course page)
         if (!courseId) {
-          toast.error(`${itemType === "workshop" ? "Workshop" : "Course"} not selected. Please try again.`);
+          toast.error(`${itemType === "workshop" ? "Workshop" : itemType === "bootcamp" ? "Bootcamp" : "Course"} not selected. Please try again.`);
+          return;
+        }
+
+        if (itemType === "bootcamp") {
+          await bootcampRegisterMutation.mutateAsync({
+            bootcampId: courseId,
+            data: {
+              fullName: data.name,
+              email: data.email,
+              phone: data.phone,
+            },
+          });
+
+          reset();
+          onClose();
           return;
         }
 
@@ -168,7 +186,22 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
       } else if (type === "callback" || type === "register-interest") {
         // courseId must be provided for callback (pre-selected from course page)
         if (!courseId) {
-          toast.error(`${itemType === "workshop" ? "Workshop" : "Course"} not selected. Please try again.`);
+          toast.error(`${itemType === "workshop" ? "Workshop" : itemType === "bootcamp" ? "Bootcamp" : "Course"} not selected. Please try again.`);
+          return;
+        }
+
+        if (itemType === "bootcamp") {
+          await bootcampCallbackMutation.mutateAsync({
+            bootcampId: courseId,
+            data: {
+              fullName: data.name,
+              email: data.email,
+              phone: data.phone,
+            },
+          });
+
+          reset();
+          onClose();
           return;
         }
 
@@ -303,6 +336,8 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
                 isSubmitting ||
                 enrollMutation.isPending ||
                 callbackMutation.isPending ||
+                bootcampRegisterMutation.isPending ||
+                bootcampCallbackMutation.isPending ||
                 workshopRegisterMutation.isPending ||
                 workshopCallbackMutation.isPending
               }
@@ -310,6 +345,8 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
               {isSubmitting ||
               enrollMutation.isPending ||
               callbackMutation.isPending ||
+              bootcampRegisterMutation.isPending ||
+              bootcampCallbackMutation.isPending ||
               workshopRegisterMutation.isPending ||
               workshopCallbackMutation.isPending ? "Submitting..." : (
                 <>
@@ -332,14 +369,14 @@ export const usePopupForm = () => {
   const [formTitle, setFormTitle] = useState<string | undefined>();
   const [courseId, setCourseId] = useState<string | undefined>();
   const [courseTitle, setCourseTitle] = useState<string | undefined>();
-  const [itemType, setItemType] = useState<"course" | "workshop">("course");
+  const [itemType, setItemType] = useState<"course" | "workshop" | "bootcamp">("course");
 
   const openForm = (
     type: typeof formType,
     title?: string,
     courseIdParam?: string,
     courseTitleParam?: string,
-    itemTypeParam: "course" | "workshop" = "course"
+    itemTypeParam: "course" | "workshop" | "bootcamp" = "course"
   ) => {
     setFormType(type);
     setFormTitle(title);
