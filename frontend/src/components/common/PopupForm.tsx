@@ -14,6 +14,7 @@ import { FormType } from "@/lib/ctaPolicy";
 import { useEnrollCourse, useRequestCallback } from "@/hooks/queries/useCourses";
 import { useRegisterBootcamp, useRequestBootcampCallback } from "@/hooks/queries/useBootcamps";
 import { useRegisterWorkshop, useRequestWorkshopCallback } from "@/hooks/queries/useWorkshops";
+import { useRegisterHackathon, useRequestHackathonCallback } from "@/hooks/queries/useHackathons";
 
 // Validation schemas
 const enrollmentSchema = z.object({
@@ -47,7 +48,7 @@ interface PopupFormProps {
   title?: string;
   courseId?: string; // Optional: pre-select a course
   courseTitle?: string; // Optional: course title for enrollment
-  itemType?: "course" | "workshop" | "bootcamp";
+  itemType?: "course" | "workshop" | "bootcamp" | "hackathon";
 }
 
 export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle, itemType = "course" }: PopupFormProps) => {
@@ -57,6 +58,8 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
   const bootcampCallbackMutation = useRequestBootcampCallback();
   const workshopRegisterMutation = useRegisterWorkshop();
   const workshopCallbackMutation = useRequestWorkshopCallback();
+  const hackathonRegisterMutation = useRegisterHackathon();
+  const hackathonCallbackMutation = useRequestHackathonCallback();
   
   // Determine context for callback mutation based on form type
   const callbackContext = 
@@ -133,7 +136,7 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
       if (type === "enrollment" || type === "reserve-seat") {
         // courseId must be provided for enrollment (pre-selected from course page)
         if (!courseId) {
-          toast.error(`${itemType === "workshop" ? "Workshop" : itemType === "bootcamp" ? "Bootcamp" : "Course"} not selected. Please try again.`);
+          toast.error(`${itemType === "workshop" ? "Workshop" : itemType === "bootcamp" ? "Bootcamp" : itemType === "hackathon" ? "Hackathon" : "Course"} not selected. Please try again.`);
           return;
         }
 
@@ -166,6 +169,21 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
           onClose();
           return;
         }
+
+        if (itemType === "hackathon") {
+          await hackathonRegisterMutation.mutateAsync({
+            hackathonId: courseId,
+            data: {
+              fullName: data.name,
+              email: data.email,
+              phone: data.phone,
+            },
+          });
+
+          reset();
+          onClose();
+          return;
+        }
         
         // Use the provided courseTitle (it's always passed from course page)
         const courseTitleToSend = courseTitle || "";
@@ -186,7 +204,7 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
       } else if (type === "callback" || type === "register-interest") {
         // courseId must be provided for callback (pre-selected from course page)
         if (!courseId) {
-          toast.error(`${itemType === "workshop" ? "Workshop" : itemType === "bootcamp" ? "Bootcamp" : "Course"} not selected. Please try again.`);
+          toast.error(`${itemType === "workshop" ? "Workshop" : itemType === "bootcamp" ? "Bootcamp" : itemType === "hackathon" ? "Hackathon" : "Course"} not selected. Please try again.`);
           return;
         }
 
@@ -208,6 +226,21 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
         if (itemType === "workshop") {
           await workshopCallbackMutation.mutateAsync({
             workshopId: courseId,
+            data: {
+              fullName: data.name,
+              email: data.email,
+              phone: data.phone,
+            },
+          });
+
+          reset();
+          onClose();
+          return;
+        }
+
+        if (itemType === "hackathon") {
+          await hackathonCallbackMutation.mutateAsync({
+            hackathonId: courseId,
             data: {
               fullName: data.name,
               email: data.email,
@@ -339,7 +372,9 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
                 bootcampRegisterMutation.isPending ||
                 bootcampCallbackMutation.isPending ||
                 workshopRegisterMutation.isPending ||
-                workshopCallbackMutation.isPending
+                workshopCallbackMutation.isPending ||
+                hackathonRegisterMutation.isPending ||
+                hackathonCallbackMutation.isPending
               }
             >
               {isSubmitting ||
@@ -348,7 +383,9 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
               bootcampRegisterMutation.isPending ||
               bootcampCallbackMutation.isPending ||
               workshopRegisterMutation.isPending ||
-              workshopCallbackMutation.isPending ? "Submitting..." : (
+              workshopCallbackMutation.isPending ||
+              hackathonRegisterMutation.isPending ||
+              hackathonCallbackMutation.isPending ? "Submitting..." : (
                 <>
                   <Send className="mr-2 h-4 w-4" />
                   Submit
@@ -369,14 +406,14 @@ export const usePopupForm = () => {
   const [formTitle, setFormTitle] = useState<string | undefined>();
   const [courseId, setCourseId] = useState<string | undefined>();
   const [courseTitle, setCourseTitle] = useState<string | undefined>();
-  const [itemType, setItemType] = useState<"course" | "workshop" | "bootcamp">("course");
+  const [itemType, setItemType] = useState<"course" | "workshop" | "bootcamp" | "hackathon">("course");
 
   const openForm = (
     type: typeof formType,
     title?: string,
     courseIdParam?: string,
     courseTitleParam?: string,
-    itemTypeParam: "course" | "workshop" | "bootcamp" = "course"
+    itemTypeParam: "course" | "workshop" | "bootcamp" | "hackathon" = "course"
   ) => {
     setFormType(type);
     setFormTitle(title);

@@ -39,7 +39,7 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: Ha
         banner={
           <div className="text-center">
             <MapPin className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-xs">{hackathon.location}</p>
+            <p className="text-xs">{hackathon.mode}</p>
           </div>
         }
         badgeRow={

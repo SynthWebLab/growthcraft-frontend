@@ -617,7 +617,7 @@ export default function EventDetailPage({
                 <TabsContent value="mentor" className="pt-6">
                   <h2 className="text-xl font-bold mb-4">Meet Your Mentors</h2>
                   <div className="space-y-4">
-                    {mentorDetails && mentorDetails.length > 0 ? (
+                    {mentorDetails && Array.isArray(mentorDetails) && mentorDetails.length > 0 ? (
                       mentorDetails.map((mentor, index) => (
                         <DataCard key={index}>
                           <div className="flex items-start gap-4">
@@ -666,6 +666,48 @@ export default function EventDetailPage({
                           </div>
                         </DataCard>
                       ))
+                    ) : mentorDetails && !Array.isArray(mentorDetails) ? (
+                      <DataCard>
+                        <div className="flex items-start gap-4">
+                          {mentorDetails.avatar && (
+                            <img
+                              src={mentorDetails.avatar}
+                              alt={mentorDetails.name}
+                              className="h-16 w-16 rounded-full object-cover flex-shrink-0"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold">
+                              {mentorDetails.name}
+                            </h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              {mentorDetails.bio}
+                            </p>
+                            <div className="flex gap-4 text-xs text-muted-foreground mb-3">
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3 text-warning" />
+                                {mentorDetails.rating?.toFixed(1) || displayRating} rating
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {mentorDetails.studentsCount || event.enrolledCount} students
+                              </span>
+                            </div>
+                            {mentorDetails.expertise && mentorDetails.expertise.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {mentorDetails.expertise.map((exp, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-2 py-1 rounded text-xs bg-muted"
+                                  >
+                                    {exp}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </DataCard>
                     ) : (
                       <DataCard>
                         <div className="flex items-start gap-4">
