@@ -2,24 +2,23 @@ import { Calendar, Clock, MapPin, ArrowRight, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
-import { Hackathon } from "@/data/events.mock";
-import { getEventDetailBySlug } from "@/data/events-detail.mock";
+import type { Hackathon } from "@/types/hackathon";
 
 interface HackathonCardProps {
   hackathon: Hackathon;
   onCTAClick: (hackathon: Hackathon) => void;
+  onSecondaryCTAClick?: (hackathon: Hackathon) => void;
 }
 
 const formatEventDate = (date: string) =>
   new Date(date).toLocaleDateString("en-GB");
 
-export function HackathonCard({ hackathon, onCTAClick }: HackathonCardProps) {
+export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: HackathonCardProps) {
   const toneStyles = getEventCardToneStyles("orange");
   
-  // Get CTAs from detail mock data
-  const eventDetail = getEventDetailBySlug(hackathon.slug);
-  const primaryCTA = eventDetail?.data.event.primaryCTA || "Register Now";
-  const secondaryCTA = eventDetail?.data.event.secondaryCTA;
+  // Get CTAs from hackathon data
+  const primaryCTA = hackathon.primaryCTA || "Register Now";
+  const secondaryCTA = hackathon.secondaryCTA;
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = hackathon.status === "Closed" || hackathon.status === "Completed";
   const primaryButtonLabel = isFinalizedStatus ? hackathon.status : primaryCTA;
@@ -29,11 +28,9 @@ export function HackathonCard({ hackathon, onCTAClick }: HackathonCardProps) {
   const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
   const isPrimaryDisabled = isFinalizedStatus || (isRegistrationAction && (
     hackathon.status === "Completed" || 
-    !!(hackathon.maxSeats && hackathon.enrolledCount && hackathon.maxSeats - hackathon.enrolledCount === 0)
+    hackathon.availableSeats === 0
   ));
-  const seatsAvailable = hackathon.maxSeats && hackathon.enrolledCount 
-    ? hackathon.maxSeats - hackathon.enrolledCount 
-    : null;
+  const seatsAvailable = hackathon.availableSeats;
 
   return (
     <Link href={`/events/${hackathon.slug}`} className="block">
@@ -55,7 +52,7 @@ export function HackathonCard({ hackathon, onCTAClick }: HackathonCardProps) {
             </span>
             <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
               <Clock className="h-3 w-3 inline mr-1" />
-              {hackathon.duration}
+              {hackathon.mode}
             </span>
           </>
         }
@@ -68,13 +65,14 @@ export function HackathonCard({ hackathon, onCTAClick }: HackathonCardProps) {
               {formatEventDate(hackathon.startDate)} - {formatEventDate(hackathon.endDate)}
             </span>
             <span className="flex items-center gap-1 text-muted-foreground">
-              Duration: {hackathon.duration}
+              <MapPin className="h-4 w-4" />
+              {hackathon.mode}
             </span>
           </>
         }
         footerLeft={
           <div>
-            {seatsAvailable !== null && seatsAvailable > 0 && hackathon.status === "Open" && (
+            {seatsAvailable > 0 && hackathon.status === "Open" && (
               <p className="text-xs sm:text-sm font-bold text-primary mb-1">
                 {seatsAvailable} seat{seatsAvailable !== 1 ? "s" : ""} left of {hackathon.maxSeats}
               </p>
@@ -82,21 +80,15 @@ export function HackathonCard({ hackathon, onCTAClick }: HackathonCardProps) {
             {seatsAvailable === 0 && hackathon.status === "Open" && (
               <p className="text-xs sm:text-sm font-bold text-danger mb-1">Seats Full</p>
             )}
-            {hackathon.prizePool ? (
-              <>
-                <p className="text-xs text-muted-foreground">Prize Pool</p>
-                <p className="text-lg font-extrabold text-primary">
-                  {hackathon.prizePool}
-                </p>
-              </>
-            ) : (
-              <p className="text-lg font-extrabold text-foreground">Team Event</p>
-            )}
+            <p className="text-xs text-muted-foreground">Entry Fee</p>
+            <p className="text-lg font-extrabold text-primary">
+              {hackathon.price === 0 ? "Free" : `₹${hackathon.price.toLocaleString()}`}
+            </p>
           </div>
         }
         footerRight={
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {secondaryCTA && (
+            {secondaryCTA && onSecondaryCTAClick && (
               <Button
                 variant="outline"
                 size="default"
@@ -104,7 +96,7 @@ export function HackathonCard({ hackathon, onCTAClick }: HackathonCardProps) {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onCTAClick(hackathon);
+                  onSecondaryCTAClick(hackathon);
                 }}
               >
                 {secondaryCTA}
@@ -140,24 +132,14 @@ export function HackathonCard({ hackathon, onCTAClick }: HackathonCardProps) {
           </div>
         }
       >
-        {hackathon.prizePool && (
-          <div className="mb-3 p-2 bg-muted border border-border rounded inline-flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-primary" />
-            <div>
-              <div className="text-xs text-muted-foreground">Prize Pool</div>
-              <div className="text-sm font-bold text-foreground">{hackathon.prizePool}</div>
-            </div>
-          </div>
-        )}
-
         <div className="mb-3">
           <div className="text-xs text-muted-foreground mb-1">Domain</div>
-          <div className="text-sm font-medium text-foreground">{hackathon.domain}</div>
+          <div className="text-sm font-medium text-foreground">{hackathon.category}</div>
         </div>
 
         <div className="flex flex-wrap gap-1.5 mb-4">
           <span className="text-xs text-muted-foreground">Key Tools:</span>
-          {hackathon.keyTools.map((tool) => (
+          {hackathon.skillsCovered.map((tool) => (
             <span
               key={tool}
               className={`px-2 py-0.5 rounded text-[10px] font-medium border ${toneStyles.chip}`}

@@ -52,6 +52,9 @@ export const API_ENDPOINTS = {
   workshops: {
     list: "/workshops",
   },
+  hackathons: {
+    list: "/hackathons",
+  },
   leads: {
     create: "/leads",
   },

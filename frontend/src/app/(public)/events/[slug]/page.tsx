@@ -29,10 +29,14 @@ import {
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useWorkshopDetails } from "@/hooks/queries/useWorkshops";
+import { useHackathonDetails } from "@/hooks/queries/useHackathons";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getEventDetailBySlug } from "@/data/events-detail.mock";
 import type { WorkshopDetailResponse } from "@/types/workshop";
+import type { HackathonDetailResponse } from "@/types/hackathon";
+
+type EventDetailResponse = WorkshopDetailResponse | HackathonDetailResponse;
 
 const subscribeToClientSnapshot = () => () => {};
 const getClientSnapshot = () => true;
@@ -45,7 +49,7 @@ function getEventDuration(startDate: string, endDate: string, durationDays?: num
   return Math.max(1, Math.round(durationMs / (1000 * 60 * 60)));
 }
 
-function mapEventDetailToEventData(response: WorkshopDetailResponse) {
+function mapEventDetailToEventData(response: EventDetailResponse) {
   const details = response.data.eventDetails;
   const event = details.eventId;
   const primaryCTA = event.primaryCTA || details.primaryCTA || (
@@ -156,11 +160,29 @@ export default function EventDetailPage({
   );
 
   const { slug } = use(params);
-  const { data: workshopDetailData } = useWorkshopDetails(slug, hasMounted);
+  
+  // First, try to get the event data from mock to determine type
+  const mockEventData = getEventDetailBySlug(slug);
+  const eventType = mockEventData?.data?.event?.type;
+  
+  // Fetch from appropriate API based on event type
+  const { data: workshopDetailData } = useWorkshopDetails(
+    slug, 
+    hasMounted && eventType === "Workshop"
+  );
+  const { data: hackathonDetailData } = useHackathonDetails(
+    slug, 
+    hasMounted && eventType === "Hackathon"
+  );
 
   const eventData = useMemo(
-    () => workshopDetailData ? mapEventDetailToEventData(workshopDetailData) : getEventDetailBySlug(slug),
-    [slug, workshopDetailData]
+    () => {
+      // Prioritize API data over mock data
+      if (workshopDetailData) return mapEventDetailToEventData(workshopDetailData);
+      if (hackathonDetailData) return mapEventDetailToEventData(hackathonDetailData);
+      return mockEventData;
+    },
+    [slug, workshopDetailData, hackathonDetailData, mockEventData]
   );
   const event = eventData?.data?.event;
   const overview = eventData?.data?.overview;
@@ -173,9 +195,10 @@ export default function EventDetailPage({
     notFound();
   }
 
-  const showMentorSection = event.type === "Bootcamp";
+  const showMentorSection = event.type === "Bootcamp" || event.type === "Hackathon";
   const isWorkshopEvent = event.type === "Workshop";
   const isBootcampEvent = event.type === "Bootcamp";
+  const isHackathonEvent = event.type === "Hackathon";
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -234,6 +257,22 @@ export default function EventDetailPage({
         event.title,
         "bootcamp"
       );
+      return;
+    }
+
+    if (isHackathonEvent) {
+      const label =
+        formType === "callback"
+          ? secondaryCTA || primaryCTA || "Request Callback"
+          : primaryCTA;
+
+      openForm(
+        formType,
+        `${label} - ${event.title}`,
+        event._id,
+        event.title,
+        "hackathon"
+      );
     }
   };
 
@@ -241,7 +280,7 @@ export default function EventDetailPage({
   const handlePrimaryCTAClick = () => {
     // For "Request Callback" - no login required
     if (isPrimaryCallback) {
-      if (isWorkshopEvent || isBootcampEvent) {
+      if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
         openEventActionForm("callback");
         return;
       }
@@ -257,7 +296,7 @@ export default function EventDetailPage({
 
     // For "Register Interest" - no login required
     if (isPrimaryRegisterInterest) {
-      if (isWorkshopEvent || isBootcampEvent) {
+      if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
         openEventActionForm("register-interest");
         return;
       }
@@ -289,7 +328,7 @@ export default function EventDetailPage({
       return;
     }
 
-    if (isWorkshopEvent || isBootcampEvent) {
+    if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
       openEventActionForm("reserve-seat");
       return;
     }
@@ -299,7 +338,7 @@ export default function EventDetailPage({
 
   // Handle secondary CTA click
   const handleSecondaryCTAClick = () => {
-    if (isWorkshopEvent || isBootcampEvent) {
+    if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
       openEventActionForm("callback");
       return;
     }
@@ -311,7 +350,7 @@ export default function EventDetailPage({
           `${secondaryCTA} - ${event.title}`,
           event._id,
           event.title,
-          isWorkshopEvent ? "workshop" : "course"
+          isWorkshopEvent ? "workshop" : isHackathonEvent ? "hackathon" : "course"
         );
       }
       return;
@@ -343,7 +382,7 @@ export default function EventDetailPage({
         title={formTitle}
         courseId={courseId}
         courseTitle={courseTitle}
-        itemType={isWorkshopEvent ? "workshop" : isBootcampEvent ? "bootcamp" : "course"}
+        itemType={isWorkshopEvent ? "workshop" : isBootcampEvent ? "bootcamp" : isHackathonEvent ? "hackathon" : "course"}
       />
 
       <Section variant="white" className="overflow-hidden">
