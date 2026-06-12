@@ -238,7 +238,8 @@ const BootcampsPage = () => {
 
       {/* Bootcamp cards — alternating white/marble */}
       {bootcamps.map((bootcamp, i) => {
-        const isPrimaryDisabled = bootcamp.cta.disabled || bootcamp.status === "Completed";
+        const isPrimaryDisabled =
+          bootcamp.cta?.disabled ?? (!bootcamp.canRegister || bootcamp.status === "Completed");
 
         return (
         <Section key={bootcamp.id} variant={i % 2 === 0 ? "white" : "marble"}>

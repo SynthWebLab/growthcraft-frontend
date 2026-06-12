@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use, useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -22,16 +22,108 @@ import {
   Copy,
   PlayCircle,
   ArrowRight,
-  Loader2,
   Calendar,
   Clock,
   MapPin,
 } from "lucide-react";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useWorkshopDetails } from "@/hooks/queries/useWorkshops";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getEventDetailBySlug } from "@/data/events-detail.mock";
+import type { WorkshopDetailResponse } from "@/types/workshop";
+
+const subscribeToClientSnapshot = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
+function getWorkshopDurationHours(startDate: string, endDate: string) {
+  const durationMs = new Date(endDate).getTime() - new Date(startDate).getTime();
+  return Math.max(1, Math.round(durationMs / (1000 * 60 * 60)));
+}
+
+function mapWorkshopDetailToEventData(response: WorkshopDetailResponse) {
+  const details = response.data.eventDetails;
+  const workshop = details.eventId;
+  const primaryCTA = workshop.status === "Open" && workshop.availableSeats > 0
+    ? "Reserve Seat"
+    : "Request Callback";
+
+  return {
+    success: response.success,
+    message: response.message,
+    data: {
+      event: {
+        _id: workshop._id,
+        title: workshop.title,
+        slug: workshop.slug,
+        description: workshop.description,
+        type: "Workshop" as const,
+        category: workshop.category,
+        level: "Beginner" as const,
+        duration: getWorkshopDurationHours(workshop.startDate, workshop.endDate),
+        price: workshop.price,
+        originalPrice: workshop.originalPrice,
+        mode: workshop.mode,
+        venue: undefined,
+        zoomLink: undefined,
+        startDate: workshop.startDate,
+        endDate: workshop.endDate,
+        maxSeats: workshop.maxSeats,
+        enrolledCount: workshop.enrolledCount,
+        status: workshop.status,
+        rating: workshop.rating,
+        tools: workshop.skillsCovered,
+        mentorName: workshop.mentorNames.join(", "),
+        thumbnail: workshop.banner,
+        primaryCTA,
+        secondaryCTA: primaryCTA === "Reserve Seat" ? "Request Callback" : null,
+        createdAt: workshop.createdAt,
+        updatedAt: workshop.updatedAt,
+      },
+      overview: {
+        aboutEvent: details.overview.aboutEvent,
+        whatYouWillLearn: details.overview.whatYouWillLearn.map((item, index) => ({
+          ...item,
+          _id: `learn-${index}`,
+        })),
+        prerequisites: details.overview.prerequisites.map((item, index) => ({
+          ...item,
+          _id: `prerequisite-${index}`,
+        })),
+        whatsIncluded: details.overview.whatsIncluded.map((item, index) => ({
+          ...item,
+          icon: "Check",
+          _id: `included-${index}`,
+        })),
+      },
+      agenda: details.agenda.map((session, index) => ({
+        sessionNumber: session.step,
+        title: session.title,
+        topics: session.topics.map((topic, topicIndex) => ({
+          text: topic,
+          _id: `agenda-${index}-topic-${topicIndex}`,
+        })),
+        duration: Number.parseInt(session.duration, 10) || 0,
+        _id: `agenda-${index}`,
+      })),
+      mentorDetails: {
+        name: details.mentors[0]?.name || workshop.mentorNames[0] || "GrowthCraft Mentor",
+        avatar: details.mentors[0]?.avatar || "",
+        bio: details.mentors[0]?.bio || "Industry expert with extensive experience in training and mentorship.",
+        rating: details.mentors[0]?.rating || workshop.rating,
+        studentsCount: details.mentors[0]?.studentsCount || workshop.enrolledCount,
+        expertise: details.mentors[0]?.expertise || workshop.skillsCovered,
+      },
+      faqs: details.faqs.map((faq, index) => ({
+        ...faq,
+        _id: `faq-${index}`,
+      })),
+    },
+    meta: response.meta,
+  };
+}
 
 export default function EventDetailPage({
   params,
@@ -41,11 +133,19 @@ export default function EventDetailPage({
   const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
+  const hasMounted = useSyncExternalStore(
+    subscribeToClientSnapshot,
+    getClientSnapshot,
+    getServerSnapshot
+  );
 
   const { slug } = use(params);
+  const { data: workshopDetailData } = useWorkshopDetails(slug, hasMounted);
 
-  // Fetch event from mock data
-  const eventData = useMemo(() => getEventDetailBySlug(slug), [slug]);
+  const eventData = useMemo(
+    () => workshopDetailData ? mapWorkshopDetailToEventData(workshopDetailData) : getEventDetailBySlug(slug),
+    [slug, workshopDetailData]
+  );
   const event = eventData?.data?.event;
   const overview = eventData?.data?.overview;
   const agenda = eventData?.data?.agenda || [];
@@ -58,6 +158,7 @@ export default function EventDetailPage({
   }
 
   const showMentorSection = event.type === "Bootcamp";
+  const isWorkshopEvent = event.type === "Workshop";
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -77,23 +178,37 @@ export default function EventDetailPage({
 
   // Determine CTA behavior
   const isPrimaryCallback = primaryCTA.toLowerCase().includes("callback");
-  const isPrimaryRegistration = primaryCTA.toLowerCase().includes("register");
   const isPrimaryRegisterInterest =
     primaryCTA.toLowerCase().includes("interest");
   const eventStatus = event.status as string;
   const isFinalizedStatus = eventStatus === "Closed" || eventStatus === "Completed";
 
+  const openWorkshopForm = (formType: "callback" | "register-interest" | "reserve-seat") => {
+    const label =
+      formType === "callback"
+        ? secondaryCTA || primaryCTA || "Request Callback"
+        : primaryCTA;
+
+    openForm(
+      formType,
+      `${label} - ${event.title}`,
+      event._id,
+      event.title,
+      "workshop"
+    );
+  };
+
   // Handle primary CTA click
-  const handlePrimaryCTAClick = async () => {
+  const handlePrimaryCTAClick = () => {
     // For "Request Callback" - no login required
     if (isPrimaryCallback) {
+      if (isWorkshopEvent) {
+        openWorkshopForm("callback");
+        return;
+      }
+
       if (!isAuthenticated) {
-        openForm(
-          "callback",
-          `${primaryCTA} - ${event.title}`,
-          event._id,
-          event.title
-        );
+        openForm("callback", `${primaryCTA} - ${event.title}`, event._id, event.title);
         return;
       }
 
@@ -103,13 +218,13 @@ export default function EventDetailPage({
 
     // For "Register Interest" - no login required
     if (isPrimaryRegisterInterest) {
+      if (isWorkshopEvent) {
+        openWorkshopForm("register-interest");
+        return;
+      }
+
       if (!isAuthenticated) {
-        openForm(
-          "register-interest",
-          `${primaryCTA} - ${event.title}`,
-          event._id,
-          event.title
-        );
+        openForm("register-interest", `${primaryCTA} - ${event.title}`, event._id, event.title);
         return;
       }
 
@@ -135,25 +250,34 @@ export default function EventDetailPage({
       return;
     }
 
-    // Show success message
+    if (isWorkshopEvent) {
+      openWorkshopForm("reserve-seat");
+      return;
+    }
+
     toast.success("Registration successful! Check your email for details.");
   };
 
   // Handle secondary CTA click
-  const handleSecondaryCTAClick = async () => {
+  const handleSecondaryCTAClick = () => {
+    if (isWorkshopEvent) {
+      openWorkshopForm("callback");
+      return;
+    }
+
     if (!isAuthenticated) {
       if (secondaryCTA) {
         openForm(
           "callback",
           `${secondaryCTA} - ${event.title}`,
           event._id,
-          event.title
+          event.title,
+          isWorkshopEvent ? "workshop" : "course"
         );
       }
       return;
     }
 
-    // Show success message
     toast.success("Callback request submitted! We'll contact you soon.");
   };
 
@@ -180,6 +304,7 @@ export default function EventDetailPage({
         title={formTitle}
         courseId={courseId}
         courseTitle={courseTitle}
+        itemType={isWorkshopEvent ? "workshop" : "course"}
       />
 
       <Section variant="white" className="overflow-hidden">
@@ -260,7 +385,7 @@ export default function EventDetailPage({
                 </div>
 
                 <div>
-                  <h2 className="text-xl font-bold mb-4">What you'll learn</h2>
+                  <h2 className="text-xl font-bold mb-4">What you&apos;ll learn</h2>
                   <div className="grid sm:grid-cols-2 gap-3">
                     {overview?.whatYouWillLearn?.map((item) => (
                       <div key={item._id} className="flex items-start gap-2">
@@ -514,7 +639,7 @@ export default function EventDetailPage({
                 )}
 
                 <div className="mt-6 space-y-3 text-sm">
-                  <h4 className="font-semibold">What's included</h4>
+                  <h4 className="font-semibold">What&apos;s included</h4>
                   {overview?.whatsIncluded?.map((item) => (
                     <div
                       key={item._id}
@@ -559,7 +684,7 @@ export default function EventDetailPage({
       <Section variant="graphite">
         <div className="text-center py-8">
           <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4">
-            Don't miss this event!
+            Don&apos;t miss this event!
           </h2>
           <p className="text-white/60 mb-6">
             {event.maxSeats - event.enrolledCount} seats remaining

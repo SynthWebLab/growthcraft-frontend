@@ -36,7 +36,7 @@ export interface Bootcamp {
   canRegister: boolean;
   primaryCTA: string;
   secondaryCTA: string | null;
-  cta: BootcampCTA;
+  cta?: BootcampCTA;
   createdAt: string;
   updatedAt: string;
 }

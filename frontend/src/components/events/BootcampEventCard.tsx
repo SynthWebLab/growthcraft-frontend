@@ -31,7 +31,7 @@ export function BootcampEventCard({
   onSecondaryCTAClick,
 }: BootcampEventCardProps) {
   const isFinalizedStatus = bootcamp.status === "Closed" || bootcamp.status === "Completed";
-  const isPrimaryDisabled = bootcamp.cta.disabled || isFinalizedStatus;
+  const isPrimaryDisabled = bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus);
   const primaryButtonLabel = isFinalizedStatus ? bootcamp.status : bootcamp.primaryCTA;
 
   return (

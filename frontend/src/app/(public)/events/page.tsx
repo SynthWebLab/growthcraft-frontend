@@ -8,17 +8,24 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkshopEvents } from "@/components/events/WorkshopEvents";
 import { HackathonEvents } from "@/components/events/HackathonEvents";
 import { BootcampEvents } from "@/components/events/BootcampEvents";
-import { MOCK_WORKSHOPS, MOCK_HACKATHONS } from "@/data/events.mock";
 
 type EventTab = "workshops" | "bootcamps" | "hackathons";
 
 export default function EventsPage() {
-  const { isOpen, formType, formTitle, openForm, closeForm } = usePopupForm();
+  const { isOpen, formType, formTitle, courseId, courseTitle, itemType, openForm, closeForm } = usePopupForm();
   const [activeTab, setActiveTab] = useState<EventTab>("workshops");
 
   return (
     <>
-      <PopupForm isOpen={isOpen} onClose={closeForm} type={formType} title={formTitle} />
+      <PopupForm
+        isOpen={isOpen}
+        onClose={closeForm}
+        type={formType}
+        title={formTitle}
+        courseId={courseId}
+        courseTitle={courseTitle}
+        itemType={itemType}
+      />
 
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <Tabs

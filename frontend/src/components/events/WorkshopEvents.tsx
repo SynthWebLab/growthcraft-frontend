@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EventSection } from "@/components/events/EventSection";
+import { Loader2 } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -13,11 +14,18 @@ import {
 } from "@/components/ui/pagination";
 import { EventFilters } from "@/components/events/EventFilters";
 import { WorkshopCard } from "@/components/events/WorkshopCard";
-import { MOCK_WORKSHOPS, type Workshop, getWorkshopCTA } from "@/data/events.mock";
+import { useWorkshops } from "@/hooks/queries/useWorkshops";
 import { FormType } from "@/lib/ctaPolicy";
+import type { Workshop, WorkshopMode, WorkshopStatus } from "@/types/workshop";
 
 interface WorkshopEventsProps {
-  onOpenForm: (type: FormType | "enquiry" | "mentor" | "partner", title?: string, courseIdParam?: string, courseTitleParam?: string) => void;
+  onOpenForm: (
+    type: FormType | "enquiry" | "mentor" | "partner",
+    title?: string,
+    courseIdParam?: string,
+    courseTitleParam?: string,
+    itemTypeParam?: "course" | "workshop"
+  ) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -25,40 +33,47 @@ const WORKSHOP_MODES = ["Online", "Offline", "Hybrid"] as const;
 const WORKSHOP_STATUSES = ["Open", "Closed", "Completed"] as const;
 
 export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
-  const [workshopMode, setWorkshopMode] = useState<typeof WORKSHOP_MODES[number] | null>(null);
-  const [workshopStatus, setWorkshopStatus] = useState<typeof WORKSHOP_STATUSES[number] | null>(null);
+  const [workshopMode, setWorkshopMode] = useState<(typeof WORKSHOP_MODES)[number] | null>(null);
+  const [workshopStatus, setWorkshopStatus] = useState<(typeof WORKSHOP_STATUSES)[number] | null>("Open");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredWorkshops = MOCK_WORKSHOPS.filter((workshop) => {
-    if (workshopMode && workshop.mode !== workshopMode) {
-      return false;
-    }
-
-    if (workshopStatus && workshop.status !== workshopStatus) {
-      return false;
-    }
-
-    return true;
+  const { data, isLoading, error, refetch } = useWorkshops({
+    limit: ITEMS_PER_PAGE,
+    page: currentPage,
+    mode: workshopMode as WorkshopMode | undefined,
+    status: workshopStatus as WorkshopStatus | undefined,
   });
 
-  const totalPages = Math.max(1, Math.ceil(filteredWorkshops.length / ITEMS_PER_PAGE));
-  const effectivePage = Math.min(currentPage, totalPages);
-  const pageItems = filteredWorkshops.slice((effectivePage - 1) * ITEMS_PER_PAGE, effectivePage * ITEMS_PER_PAGE);
-  const hasNextPage = effectivePage < totalPages;
-  const hasPreviousPage = effectivePage > 1;
+  const pageItems = data?.items || [];
+  const totalItems = data?.pagination.total || 0;
+  const totalPages = data?.pagination.totalPages || 1;
+  const hasNextPage = currentPage < totalPages;
+  const hasPreviousPage = currentPage > 1;
 
   const handleWorkshopCTA = (workshop: Workshop) => {
-    const ctaText = getWorkshopCTA(workshop);
-    if (ctaText === "Register Interest") {
-      onOpenForm("register-interest", `${ctaText} — ${workshop.title}`);
-    } else {
-      onOpenForm("callback", `${ctaText} — ${workshop.title}`);
+    const ctaText = workshop.primaryCTA || "Reserve Seat";
+
+    if (ctaText.toLowerCase().includes("callback")) {
+      onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+      return;
     }
+
+    if (ctaText.toLowerCase().includes("interest")) {
+      onOpenForm("register-interest", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+      return;
+    }
+
+    onOpenForm("reserve-seat", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+  };
+
+  const handleWorkshopSecondaryCTA = (workshop: Workshop) => {
+    const ctaText = workshop.secondaryCTA || "Request Callback";
+    onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
   };
 
   const clearWorkshopFilters = () => {
     setWorkshopMode(null);
-    setWorkshopStatus(null);
+    setWorkshopStatus("Open");
     setCurrentPage(1);
   };
 
@@ -75,6 +90,27 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
+
+  if (isLoading && !pageItems.length) {
+    return (
+      <EventSection variant="white">
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-magenta" />
+        </div>
+      </EventSection>
+    );
+  }
+
+  if (error) {
+    return (
+      <EventSection variant="white">
+        <div className="text-center py-16">
+          <p className="text-danger mb-4">Failed to load workshops. Please try again.</p>
+          <Button onClick={() => refetch()}>Retry</Button>
+        </div>
+      </EventSection>
+    );
+  }
 
   return (
     <>
@@ -97,7 +133,7 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
                 label: mode,
               })),
               onChange: (value) => {
-                setWorkshopMode(value as typeof WORKSHOP_MODES[number] | null);
+                setWorkshopMode(value as (typeof WORKSHOP_MODES)[number] | null);
                 setCurrentPage(1);
               },
             },
@@ -108,7 +144,7 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
                 label: status,
               })),
               onChange: (value) => {
-                setWorkshopStatus(value as typeof WORKSHOP_STATUSES[number] | null);
+                setWorkshopStatus(value as (typeof WORKSHOP_STATUSES)[number] | null);
                 setCurrentPage(1);
               },
             },
@@ -116,15 +152,19 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
           onClearAll={clearWorkshopFilters}
         />
         <div className="text-sm text-muted-foreground">
-          Showing {pageItems.length} of {filteredWorkshops.length} workshops
-          {totalPages > 1 && ` — Page ${effectivePage} of ${totalPages}`}
+          Showing {pageItems.length} of {totalItems} workshops
+          {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
         </div>
       </EventSection>
 
       {pageItems.length > 0 ? (
         pageItems.map((workshop, i) => (
           <EventSection key={workshop.id} variant={i % 2 === 0 ? "white" : "marble"}>
-            <WorkshopCard workshop={workshop} onCTAClick={handleWorkshopCTA} />
+            <WorkshopCard
+              workshop={workshop}
+              onCTAClick={handleWorkshopCTA}
+              onSecondaryCTAClick={handleWorkshopSecondaryCTA}
+            />
           </EventSection>
         ))
       ) : (
@@ -160,7 +200,7 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
                 <PaginationItem key={i}>
                   <PaginationLink
                     href="#"
-                    isActive={effectivePage === i + 1}
+                    isActive={currentPage === i + 1}
                     onClick={(e) => {
                       e.preventDefault();
                       setCurrentPage(i + 1);

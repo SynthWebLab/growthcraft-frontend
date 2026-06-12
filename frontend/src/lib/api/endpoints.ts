@@ -42,9 +42,15 @@ export const API_ENDPOINTS = {
     list: "/events",
     detail: (id: string) => `/events/${id}`,
     detailBySlug: (slug: string) => `/events/slug/${slug}`,
+    detailBySlugV2: (slug: string) => `/events/${slug}/details`,
     register: (id: string) => `/events/${id}/register`,
     requestCallback: (id: string) => `/events/${id}/request-callback`,
+    registerByType: (type: string, id: string) => `/events/${type}/${id}/register`,
+    requestCallbackByType: (type: string, id: string) => `/events/${type}/${id}/request-callback`,
     config: "/events/config",
+  },
+  workshops: {
+    list: "/workshops",
   },
   leads: {
     create: "/leads",
