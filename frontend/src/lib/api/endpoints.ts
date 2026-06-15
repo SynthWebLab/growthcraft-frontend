@@ -33,10 +33,13 @@ export const API_ENDPOINTS = {
   trainingPrograms: {
     list: "/training-programs",
     detail: (id: string) => `/training-programs/${id}`,
-    detailBySlug: (slug: string) => `/training-programs/slug/${slug}`,
+    basicBySlug: (slug: string) => `/training-programs/${slug}`,
+    detailsBySlug: (slug: string) => `/training-programs/${slug}/details`,
+    similarBySlug: (slug: string) => `/training-programs/${slug}/similar`,
     enroll: (id: string) => `/training-programs/${id}/enroll`,
     requestCallback: (id: string) => `/training-programs/${id}/request-callback`,
-    config: "/training-programs/config",
+    domains: "/training-programs/filters/domains",
+    enrollmentStatus: (id: string) => `/training-programs/${id}/enrollment-status`,
   },
   events: {
     list: "/events",

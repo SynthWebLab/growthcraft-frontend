@@ -95,14 +95,16 @@ export interface TrainingProgramDetailResponse {
       topics: Array<{ text: string; _id: string }>;
       _id: string;
     }>;
-    mentorDetails: {
+    mentors: Array<{
       name: string;
       avatar: string;
       bio: string;
+      designation?: string;
+      company?: string;
       rating: number;
       studentsCount: number;
       expertise: string[];
-    };
+    }>;
     faqs: Array<{
       question: string;
       answer: string;

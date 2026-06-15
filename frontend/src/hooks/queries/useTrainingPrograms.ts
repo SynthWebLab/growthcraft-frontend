@@ -9,6 +9,7 @@ import {
   getTrainingProgramConfig,
   enrollInTrainingProgram,
   requestTrainingProgramCallback,
+  getTrainingProgramEnrollmentStatus,
 } from "@/services/training-program.service";
 import type { TrainingProgramFilters } from "@/types/training-program";
 import { toast } from "sonner";
@@ -48,6 +49,18 @@ export function useTrainingProgramConfig() {
 }
 
 /**
+ * Check user's enrollment status for a training program
+ */
+export function useTrainingProgramEnrollmentStatus(programId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["training-program-enrollment-status", programId],
+    queryFn: () => getTrainingProgramEnrollmentStatus(programId),
+    enabled: !!programId && enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
  * Enroll in training program
  */
 export function useEnrollInTrainingProgram() {
@@ -65,6 +78,7 @@ export function useEnrollInTrainingProgram() {
       toast.success(data.message || "Successfully enrolled in training program!");
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["training-program", variables.programId] });
+      queryClient.invalidateQueries({ queryKey: ["training-program-enrollment-status", variables.programId] });
       queryClient.invalidateQueries({ queryKey: ["training-programs"] });
     },
     onError: (error: any) => {
@@ -81,6 +95,8 @@ export function useEnrollInTrainingProgram() {
  * Request callback for training program
  */
 export function useRequestTrainingProgramCallback() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({
       programId,
@@ -89,10 +105,11 @@ export function useRequestTrainingProgramCallback() {
       programId: string;
       data: { fullName: string; email: string; phone: string };
     }) => requestTrainingProgramCallback(programId, data),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       toast.success(
         data.message || "Callback request submitted! We'll contact you soon."
       );
+      queryClient.invalidateQueries({ queryKey: ["training-program-enrollment-status", variables.programId] });
     },
     onError: (error: any) => {
       const errorMessage =

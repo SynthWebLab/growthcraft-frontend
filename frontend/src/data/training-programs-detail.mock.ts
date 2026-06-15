@@ -1,7 +1,7 @@
 /**
- * Mock detailed data for Training Programs
- * Used for detail pages
- */
+* Mock detailed data for Training Programs
+* Used for detail pages
+*/
 
 import type { TrainingProgramDetailResponse } from "@/types/training-program";
 
@@ -184,19 +184,21 @@ export const TRAINING_PROGRAMS_DETAIL_MOCK: Record<
           _id: "w8",
         },
       ],
-      mentorDetails: {
-        name: "Arjun Mehta",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Arjun",
-        bio: "Full-Stack Engineer at Amazon with 10+ years of experience. Mentored 500+ developers and helped them land jobs at FAANG companies. Passionate about teaching and building scalable applications.",
-        rating: 4.9,
-        studentsCount: 2340,
-        expertise: [
-          "MERN Stack",
-          "System Design",
-          "AWS",
-          "Career Mentorship",
-        ],
-      },
+      mentors: [
+        {
+          name: "Arjun Mehta",
+          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Arjun",
+          bio: "Full-Stack Engineer at Amazon with 10+ years of experience. Mentored 500+ developers and helped them land jobs at FAANG companies. Passionate about teaching and building scalable applications.",
+          rating: 4.9,
+          studentsCount: 2340,
+          expertise: [
+            "MERN Stack",
+            "System Design",
+            "AWS",
+            "Career Mentorship",
+          ],
+        }
+      ],
       faqs: [
         {
           question: "Will I get an internship certificate?",
@@ -395,19 +397,21 @@ export const TRAINING_PROGRAMS_DETAIL_MOCK: Record<
           _id: "w8",
         },
       ],
-      mentorDetails: {
-        name: "Dr. Vikram Singh",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram",
-        bio: "PhD in Data Science with 12+ years of experience in analytics and machine learning. Former Data Scientist at Google. Published multiple research papers and mentored 300+ aspiring data scientists.",
-        rating: 4.9,
-        studentsCount: 1580,
-        expertise: [
-          "Machine Learning",
-          "Statistics",
-          "Python",
-          "Research & Publications",
-        ],
-      },
+      mentors: [
+        {
+          name: "Dr. Vikram Singh",
+          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram",
+          bio: "PhD in Data Science with 12+ years of experience in analytics and machine learning. Former Data Scientist at Google. Published multiple research papers and mentored 300+ aspiring data scientists.",
+          rating: 4.9,
+          studentsCount: 1580,
+          expertise: [
+            "Machine Learning",
+            "Statistics",
+            "Python",
+            "Research & Publications",
+          ],
+        }
+      ],
       faqs: [
         {
           question: "Do I need a statistics background?",
@@ -559,14 +563,16 @@ export const TRAINING_PROGRAMS_DETAIL_MOCK: Record<
           _id: "w4",
         },
       ],
-      mentorDetails: {
-        name: "Priya Sharma",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya",
-        bio: "Lead Product Designer at Flipkart with 8+ years of experience. Specialized in mobile app design and design systems. Mentored 200+ designers who now work at top companies.",
-        rating: 4.8,
-        studentsCount: 1250,
-        expertise: ["UI/UX Design", "Figma", "Mobile Design", "Design Systems"],
-      },
+      mentors: [
+        {
+          name: "Priya Sharma",
+          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya",
+          bio: "Lead Product Designer at Flipkart with 8+ years of experience. Specialized in mobile app design and design systems. Mentored 200+ designers who now work at top companies.",
+          rating: 4.8,
+          studentsCount: 1250,
+          expertise: ["UI/UX Design", "Figma", "Mobile Design", "Design Systems"],
+        }
+      ],
       faqs: [
         {
           question: "Do I need design experience?",
@@ -709,14 +715,16 @@ export const TRAINING_PROGRAMS_DETAIL_MOCK: Record<
           _id: "w4",
         },
       ],
-      mentorDetails: {
-        name: "Rahul Verma",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul",
-        bio: "Senior Mobile Engineer at Swiggy with 9+ years of experience. Built 20+ mobile apps with millions of downloads. Expert in React Native and native iOS development.",
-        rating: 4.7,
-        studentsCount: 980,
-        expertise: ["React Native", "iOS", "Android", "App Architecture"],
-      },
+      mentors: [
+        {
+          name: "Rahul Verma",
+          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul",
+          bio: "Senior Mobile Engineer at Swiggy with 9+ years of experience. Built 20+ mobile apps with millions of downloads. Expert in React Native and native iOS development.",
+          rating: 4.7,
+          studentsCount: 980,
+          expertise: ["React Native", "iOS", "Android", "App Architecture"],
+        }
+      ],
       faqs: [
         {
           question: "Do I need a Mac?",
@@ -859,14 +867,16 @@ export const TRAINING_PROGRAMS_DETAIL_MOCK: Record<
           _id: "w4",
         },
       ],
-      mentorDetails: {
-        name: "Sneha Kapoor",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha",
-        bio: "Growth Marketing Manager at Razorpay with 7+ years of experience. Scaled multiple startups from 0 to 1M users. Google Ads and HubSpot certified trainer.",
-        rating: 4.6,
-        studentsCount: 1650,
-        expertise: ["SEO", "Paid Ads", "Growth Marketing", "Analytics"],
-      },
+      mentors: [
+        {
+          name: "Sneha Kapoor",
+          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha",
+          bio: "Growth Marketing Manager at Razorpay with 7+ years of experience. Scaled multiple startups from 0 to 1M users. Google Ads and HubSpot certified trainer.",
+          rating: 4.6,
+          studentsCount: 1650,
+          expertise: ["SEO", "Paid Ads", "Growth Marketing", "Analytics"],
+        }
+      ],
       faqs: [
         {
           question: "Will we run real campaigns?",
