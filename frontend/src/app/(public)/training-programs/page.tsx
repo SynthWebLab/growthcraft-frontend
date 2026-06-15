@@ -2,14 +2,17 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Clock, Search, Briefcase } from "lucide-react";
+import { Clock, Search, Briefcase, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataCard } from "@/components/ui/data-card";
 import { Section } from "@/components/ui/section";
-import { trainingProgramsMock } from "@/data/training-programs.mock";
 import { getPrimaryCta } from "@/lib/ctaPolicy";
+import {
+  useTrainingPrograms,
+  useTrainingProgramConfig,
+} from "@/hooks/queries/useTrainingPrograms";
 import {
   Pagination,
   PaginationContent,
@@ -30,82 +33,63 @@ export default function TrainingProgramsPage() {
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("popular");
   const [page, setPage] = useState(1);
   const itemsPerPage = 6;
 
+  // Debounce search query input to avoid duplicate network calls
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [selectedDomain, selectedLevel, searchQuery, sortBy]);
+  }, [selectedDomain, selectedLevel, debouncedSearchQuery, sortBy]);
 
-  // Extract unique domains and levels from mock data
-  const domains = useMemo(() => {
-    const uniqueDomains = [...new Set(trainingProgramsMock.map((p) => p.domain))];
-    return uniqueDomains.sort();
-  }, []);
+  // Fetch unique domains and levels from API config
+  const { data: configResponse } = useTrainingProgramConfig();
+  const domains = useMemo(() => configResponse?.data?.domains || [], [configResponse]);
+  const levels = useMemo(() => configResponse?.data?.levels || ["Beginner", "Intermediate", "Advanced"], [configResponse]);
 
-  const levels = useMemo(() => {
-    const uniqueLevels = [...new Set(trainingProgramsMock.map((p) => p.level))];
-    return uniqueLevels.sort();
-  }, []);
-
-  // Filter and sort programs
-  const filteredPrograms = useMemo(() => {
-    let filtered = [...trainingProgramsMock];
-
-    // Apply domain filter
-    if (selectedDomain) {
-      filtered = filtered.filter((p) => p.domain === selectedDomain);
-    }
-
-    // Apply level filter
-    if (selectedLevel) {
-      filtered = filtered.filter((p) => p.level === selectedLevel);
-    }
-
-    // Apply search
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.title.toLowerCase().includes(query) ||
-          p.description.toLowerCase().includes(query) ||
-          p.domain.toLowerCase().includes(query) ||
-          p.tools.some((tool) => tool.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply sorting
+  // Map client sort settings to backend sortBy/sortOrder parameters
+  const sortByParam = useMemo(() => {
     switch (sortBy) {
       case "newest":
-        filtered.sort((a, b) => b._id.localeCompare(a._id));
-        break;
+        return "createdAt";
       case "price-low":
-        filtered.sort((a, b) => a.price - b.price);
-        break;
       case "price-high":
-        filtered.sort((a, b) => b.price - a.price);
-        break;
+        return "price";
       case "rating":
-        filtered.sort((a, b) => b.rating - a.rating);
-        break;
+        return "rating";
       case "popular":
       default:
-        filtered.sort((a, b) => b.enrollmentCount - a.enrollmentCount);
-        break;
+        return "enrollmentCount";
     }
+  }, [sortBy]);
 
-    return filtered;
-  }, [selectedDomain, selectedLevel, searchQuery, sortBy]);
+  const sortOrderParam = useMemo(() => {
+    return sortBy === "price-low" ? "asc" : "desc";
+  }, [sortBy]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredPrograms.length / itemsPerPage);
-  const programs = filteredPrograms.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
-  const totalPrograms = filteredPrograms.length;
+  // Query training programs from API
+  const { data: apiResponse, isLoading, error } = useTrainingPrograms({
+    domain: selectedDomain || undefined,
+    level: selectedLevel || undefined,
+    search: debouncedSearchQuery.trim() || undefined,
+    sortBy: sortByParam as any,
+    sortOrder: sortOrderParam,
+    page,
+    limit: itemsPerPage,
+  });
+
+  const programs = apiResponse?.data || [];
+  const totalPrograms = apiResponse?.meta?.pagination?.total || 0;
+  const totalPages = apiResponse?.meta?.pagination?.totalPages || 0;
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -124,6 +108,7 @@ export default function TrainingProgramsPage() {
     setSelectedDomain(null);
     setSelectedLevel(null);
     setSearchQuery("");
+    setDebouncedSearchQuery("");
   };
 
   const handleSortChange = (value: string) => {
@@ -220,162 +205,180 @@ export default function TrainingProgramsPage() {
         </div>
       </div>
 
-      {/* Results count */}
-      {totalPrograms > 0 && (
-        <div className="text-sm text-muted-foreground mb-4">
-          Showing {programs.length} of {totalPrograms} programs
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-magenta mb-4" />
+          <p className="text-muted-foreground text-sm">Loading training programs...</p>
         </div>
-      )}
-
-      {/* Training Programs grid - 3 columns on desktop, 1 on mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {programs.map((program) => {
-          const ctaConfig = getPrimaryCta({
-            type: "course",
-            status: program.status.toLowerCase() as "active" | "coming-soon" | "draft",
-          });
-
-          return (
-            <Link
-              href={`/training-programs/${program.slug}`}
-              key={program._id}
-              className="group"
-            >
-              <DataCard className="h-full flex flex-col">
-                {/* Header with domain and level */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-magenta/10 text-magenta">
-                    {program.domain}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getLevelColor(
-                      program.level
-                    )}`}
-                  >
-                    {program.level}
-                  </span>
-                </div>
-
-                {/* Program Title */}
-                <h3 className="text-base font-bold text-foreground group-hover:text-magenta transition-colors mb-2 line-clamp-2">
-                  {program.title}
-                </h3>
-
-                {/* Description */}
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
-                  {program.description}
-                </p>
-
-                {/* Duration Badge */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
-                    <Clock className="h-3 w-3" />
-                    {program.duration} Days
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success">
-                    <Briefcase className="h-3 w-3" />
-                    Internship
-                  </span>
-                </div>
-
-                {/* Tools chips (max 4) */}
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {program.tools.slice(0, 4).map((tool, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground"
-                    >
-                      {tool}
-                    </span>
-                  ))}
-                  {program.tools.length > 4 && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
-                      +{program.tools.length - 4}
-                    </span>
-                  )}
-                </div>
-
-                {/* Footer with price and CTA */}
-                <div className="flex items-center justify-between pt-3 border-t border-border">
-                  <div>
-                    <span className="text-lg font-extrabold text-magenta">
-                      ₹{program.price.toLocaleString()}
-                    </span>
-                    {program.originalPrice && program.originalPrice > program.price && (
-                      <span className="text-xs text-muted-foreground line-through ml-2">
-                        ₹{program.originalPrice.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-magenta font-medium group-hover:underline">
-                    {ctaConfig.primary.label} →
-                  </span>
-                </div>
-              </DataCard>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Empty state */}
-      {programs.length === 0 && (
+      ) : error ? (
         <div className="text-center py-16">
-          <p className="text-muted-foreground mb-4">
-            No training programs match your filters.
+          <p className="text-danger mb-4">
+            Failed to load training programs. Please check if the backend is running.
           </p>
-          <Button variant="outline" onClick={handleClearFilters}>
-            Clear Filters
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Retry
           </Button>
         </div>
-      )}
+      ) : (
+        <>
+          {/* Results count */}
+          {totalPrograms > 0 && (
+            <div className="text-sm text-muted-foreground mb-4">
+              Showing {programs.length} of {totalPrograms} programs
+            </div>
+          )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            {page > 1 && (
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setPage(page - 1);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                />
-              </PaginationItem>
-            )}
+          {/* Training Programs grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {programs.map((program) => {
+              const ctaConfig = getPrimaryCta({
+                type: "course",
+                status: program.status.toLowerCase() as "active" | "coming-soon" | "draft",
+              });
 
-            {Array.from({ length: totalPages }, (_, i) => (
-              <PaginationItem key={i}>
-                <PaginationLink
-                  href="#"
-                  isActive={page === i + 1}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setPage(i + 1);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
+              return (
+                <Link
+                  href={`/training-programs/${program.slug}`}
+                  key={program._id}
+                  className="group"
                 >
-                  {i + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
+                  <DataCard className="h-full flex flex-col">
+                    {/* Header with domain and level */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-magenta/10 text-magenta">
+                        {program.domain}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getLevelColor(
+                          program.level
+                        )}`}
+                      >
+                        {program.level}
+                      </span>
+                    </div>
 
-            {page < totalPages && (
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setPage(page + 1);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                />
-              </PaginationItem>
-            )}
-          </PaginationContent>
-        </Pagination>
+                    {/* Program Title */}
+                    <h3 className="text-base font-bold text-foreground group-hover:text-magenta transition-colors mb-2 line-clamp-2">
+                      {program.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
+                      {program.description}
+                    </p>
+
+                    {/* Duration Badge */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
+                        <Clock className="h-3 w-3" />
+                        {program.duration} Days
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success">
+                        <Briefcase className="h-3 w-3" />
+                        Internship
+                      </span>
+                    </div>
+
+                    {/* Tools chips (max 4) */}
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {program.tools.slice(0, 4).map((tool, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground"
+                        >
+                          {tool}
+                        </span>
+                      ))}
+                      {program.tools.length > 4 && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
+                          +{program.tools.length - 4}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Footer with price and CTA */}
+                    <div className="flex items-center justify-between pt-3 border-t border-border">
+                      <div>
+                        <span className="text-lg font-extrabold text-magenta">
+                          ₹{program.price.toLocaleString()}
+                        </span>
+                        {program.originalPrice && program.originalPrice > program.price && (
+                          <span className="text-xs text-muted-foreground line-through ml-2">
+                            ₹{program.originalPrice.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-magenta font-medium group-hover:underline">
+                        {ctaConfig.primary.label} →
+                      </span>
+                    </div>
+                  </DataCard>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Empty state */}
+          {programs.length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground mb-4">
+                No training programs match your filters.
+              </p>
+              <Button variant="outline" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                {page > 1 && (
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPage(page - 1);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    />
+                  </PaginationItem>
+                )}
+
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      href="#"
+                      isActive={page === i + 1}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPage(i + 1);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+
+                {page < totalPages && (
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPage(page + 1);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    />
+                  </PaginationItem>
+                )}
+              </PaginationContent>
+            </Pagination>
+          )}
+        </>
       )}
     </Section>
   );

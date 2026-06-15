@@ -29,9 +29,13 @@ import {
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
-import type { CohortDate } from "@/types/training-program";
 import { format } from "date-fns";
-import { getTrainingProgramDetailBySlug } from "@/data/training-programs-detail.mock";
+import {
+  useTrainingProgramBySlug,
+  useTrainingProgramEnrollmentStatus,
+  useEnrollInTrainingProgram,
+  useRequestTrainingProgramCallback,
+} from "@/hooks/queries/useTrainingPrograms";
 
 export default function TrainingProgramDetailPage({
   params,
@@ -44,16 +48,38 @@ export default function TrainingProgramDetailPage({
 
   const { slug } = use(params);
 
-  // Fetch training program from mock data
-  const programData = useMemo(() => getTrainingProgramDetailBySlug(slug), [slug]);
+  // Fetch training program detail using the React Query API hook
+  const { data: programData, isLoading, error } = useTrainingProgramBySlug(slug);
   const program = programData?.data?.program;
   const overview = programData?.data?.overview;
   const syllabus = programData?.data?.syllabus || [];
-  const mentorDetails = programData?.data?.mentorDetails;
+  const mentors = programData?.data?.mentors || [];
   const faqs = programData?.data?.faqs || [];
 
-  // Not found
-  if (!program) {
+  // Check enrollment status (only if user is authenticated)
+  const isAuthenticated = user && user.isEmailVerified;
+  const { data: enrollmentStatus } = useTrainingProgramEnrollmentStatus(
+    program?._id || "",
+    !!program?._id && !!isAuthenticated
+  );
+
+  // Mutations for enrollment and callback
+  const enrollMutation = useEnrollInTrainingProgram();
+  const callbackMutation = useRequestTrainingProgramCallback();
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Section variant="white">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-magenta" />
+        </div>
+      </Section>
+    );
+  }
+
+  // Error state or not found
+  if (error || !program) {
     notFound();
   }
 
@@ -64,9 +90,10 @@ export default function TrainingProgramDetailPage({
     }
   };
 
-  // Check if user is logged in and verified
-  const isAuthenticated = user && user.isEmailVerified;
+  // Check student role
   const isStudent = user?.role === "student";
+  const isEnrolled = enrollmentStatus?.data?.isEnrolled || false;
+  const hasCallbackRequest = enrollmentStatus?.data?.hasCallbackRequest || false;
 
   // Use backend-provided CTAs
   const primaryCTA = program.primaryCTA || "Enroll Now";
@@ -82,36 +109,64 @@ export default function TrainingProgramDetailPage({
 
   // Handle primary CTA click
   const handlePrimaryCTAClick = async () => {
-    // For "Request Callback" - no login required
+    // For "Request Callback"
     if (isPrimaryCallback) {
       if (!isAuthenticated) {
         openForm(
           "callback",
           `${primaryCTA} - ${program.title}`,
           program._id,
-          program.title
+          program.title,
+          "training-program"
         );
         return;
       }
 
-      toast.success("Callback request submitted! We'll contact you soon.");
+      if (hasCallbackRequest) {
+        toast.info("You already have a pending callback request");
+        return;
+      }
+
+      try {
+        await callbackMutation.mutateAsync({
+          programId: program._id,
+          data: {
+            fullName: user.fullName,
+            email: user.email,
+            phone: user.phone || "",
+          },
+        });
+      } catch (err) {
+        console.error("Callback request error:", err);
+      }
       return;
     }
 
-    // For "Register Interest" - no login required
+    // For "Register Interest"
     if (isPrimaryRegisterInterest) {
       if (!isAuthenticated) {
         openForm(
           "register-interest",
           `${primaryCTA} - ${program.title}`,
           program._id,
-          program.title
+          program.title,
+          "training-program"
         );
         return;
       }
 
-      // Logged in - show success message
-      toast.success("Interest registered successfully! We'll contact you soon.");
+      try {
+        await callbackMutation.mutateAsync({
+          programId: program._id,
+          data: {
+            fullName: user.fullName,
+            email: user.email,
+            phone: user.phone || "",
+          },
+        });
+      } catch (err) {
+        console.error("Register interest error:", err);
+      }
       return;
     }
 
@@ -132,8 +187,23 @@ export default function TrainingProgramDetailPage({
       return;
     }
 
-    // Show success message
-    toast.success("Enrollment successful! Check your email for next steps.");
+    if (isEnrolled) {
+      toast.info("You are already enrolled in this program");
+      return;
+    }
+
+    try {
+      await enrollMutation.mutateAsync({
+        programId: program._id,
+        data: {
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone || "",
+        },
+      });
+    } catch (err) {
+      console.error("Enrollment error:", err);
+    }
   };
 
   // Handle secondary CTA click
@@ -144,25 +214,72 @@ export default function TrainingProgramDetailPage({
           "callback",
           `${secondaryCTA} - ${program.title}`,
           program._id,
-          program.title
+          program.title,
+          "training-program"
         );
       }
       return;
     }
 
-    // Show success message
-    toast.success("Callback request submitted! We'll contact you soon.");
+    if (hasCallbackRequest) {
+      toast.info("You already have a pending callback request");
+      return;
+    }
+
+    try {
+      await callbackMutation.mutateAsync({
+        programId: program._id,
+        data: {
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone || "",
+        },
+      });
+    } catch (err) {
+      console.error("Callback error:", err);
+    }
   };
 
-  // Button states
-  const isPrimaryButtonDisabled = false;
-  const isSecondaryButtonDisabled = false;
+  // Button states and labels
+  const isPrimaryButtonDisabled =
+    isPrimaryEnrollment
+      ? isEnrolled || enrollMutation.isPending
+      : isPrimaryCallback
+      ? hasCallbackRequest || callbackMutation.isPending
+      : isPrimaryRegisterInterest
+      ? hasCallbackRequest || callbackMutation.isPending
+      : callbackMutation.isPending;
+
+  const isSecondaryButtonDisabled = hasCallbackRequest || callbackMutation.isPending;
   const primaryButtonClasses = isPrimaryCallback
     ? ""
     : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50";
 
-  const primaryButtonLabel = primaryCTA;
-  const secondaryButtonLabel = secondaryCTA || "Request Callback";
+  const primaryButtonLabel = isPrimaryEnrollment
+    ? isEnrolled
+      ? "Already Enrolled"
+      : enrollMutation.isPending
+      ? "Enrolling..."
+      : primaryCTA
+    : isPrimaryCallback
+    ? hasCallbackRequest
+      ? "Callback Requested"
+      : callbackMutation.isPending
+      ? "Requesting..."
+      : primaryCTA
+    : isPrimaryRegisterInterest
+    ? hasCallbackRequest
+      ? "Interest Registered"
+      : callbackMutation.isPending
+      ? "Submitting..."
+      : primaryCTA
+    : primaryCTA;
+
+  const secondaryButtonLabel = hasCallbackRequest
+    ? "Callback Requested"
+    : callbackMutation.isPending
+    ? "Requesting..."
+    : secondaryCTA || "Request Callback";
 
   return (
     <>
@@ -173,6 +290,7 @@ export default function TrainingProgramDetailPage({
         title={formTitle}
         courseId={courseId}
         courseTitle={courseTitle}
+        itemType="training-program"
       />
 
       <Section variant="white" className="overflow-hidden">
@@ -227,14 +345,14 @@ export default function TrainingProgramDetailPage({
                 <TabsTrigger value="overview" className="flex-shrink-0">Overview</TabsTrigger>
                 <TabsTrigger value="syllabus" className="flex-shrink-0">Syllabus</TabsTrigger>
                 <TabsTrigger value="cohorts" className="flex-shrink-0">Cohorts</TabsTrigger>
-                <TabsTrigger value="mentor" className="flex-shrink-0">Mentor</TabsTrigger>
+                <TabsTrigger value="mentor" className="flex-shrink-0">{mentors.length > 1 ? "Mentors" : "Mentor"}</TabsTrigger>
                 <TabsTrigger value="faq" className="flex-shrink-0">FAQ</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-8 pt-6">
                 <div>
                   <h2 className="text-xl font-bold mb-4">About this program</h2>
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground whitespace-pre-line">
                     {overview?.aboutProgram || program.description}
                   </p>
                 </div>
@@ -361,49 +479,61 @@ export default function TrainingProgramDetailPage({
                 )}
               </TabsContent>
 
-              <TabsContent value="mentor" className="pt-6">
-                <DataCard>
-                  <div className="flex items-start gap-4">
-                    <img
-                      src={mentorDetails?.avatar}
-                      alt={mentorDetails?.name}
-                      className="h-16 w-16 rounded-full"
-                    />
-                    <div>
-                      <h3 className="text-lg font-bold">
-                        {mentorDetails?.name || program.mentorName}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {mentorDetails?.bio ||
-                          "Industry expert with extensive experience in training and mentorship."}
-                      </p>
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Star className="h-3 w-3 text-warning" />
-                          {(mentorDetails?.rating || program.rating).toFixed(1)} rating
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {mentorDetails?.studentsCount ||
-                            program.enrollmentCount}{" "}
-                          students
-                        </span>
-                      </div>
-                      {mentorDetails?.expertise && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {mentorDetails.expertise.map((exp, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-1 rounded text-xs bg-muted"
-                            >
-                              {exp}
+              <TabsContent value="mentor" className="pt-6 space-y-4">
+                {mentors.length > 0 ? (
+                  mentors.map((mentor, index) => (
+                    <DataCard key={index}>
+                      <div className="flex items-start gap-4">
+                        <img
+                          src={mentor.avatar}
+                          alt={mentor.name}
+                          className="h-16 w-16 rounded-full object-cover"
+                        />
+                        <div>
+                          <h3 className="text-lg font-bold">
+                            {mentor.name}
+                          </h3>
+                          {mentor.designation && (
+                            <p className="text-sm font-medium text-magenta mb-1">
+                              {mentor.designation} {mentor.company ? `at ${mentor.company}` : ""}
+                            </p>
+                          )}
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {mentor.bio}
+                          </p>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Star className="h-3 w-3 text-warning" />
+                              {mentor.rating.toFixed(1)} rating
                             </span>
-                          ))}
+                            <span className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {mentor.studentsCount.toLocaleString()} students
+                            </span>
+                          </div>
+                          {mentor.expertise && mentor.expertise.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {mentor.expertise.map((exp, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-2 py-1 rounded text-xs bg-muted"
+                                >
+                                  {exp}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
+                    </DataCard>
+                  ))
+                ) : (
+                  <DataCard>
+                    <div className="text-center py-8 text-muted-foreground">
+                      No mentor details available.
                     </div>
-                  </div>
-                </DataCard>
+                  </DataCard>
+                )}
               </TabsContent>
 
               <TabsContent value="faq" className="pt-6">
@@ -444,12 +574,15 @@ export default function TrainingProgramDetailPage({
 
                 {/* Primary CTA */}
                 <Button
-                  className={`${primaryButtonClasses} mb-3`}
+                  className={`${primaryButtonClasses} w-full mb-3`}
                   size="lg"
                   variant={isPrimaryCallback ? "outline" : "default"}
                   onClick={handlePrimaryCTAClick}
                   disabled={isPrimaryButtonDisabled}
                 >
+                  {(enrollMutation.isPending || callbackMutation.isPending) && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {primaryButtonLabel}
                 </Button>
 
@@ -457,9 +590,13 @@ export default function TrainingProgramDetailPage({
                 {secondaryCTA && (
                   <Button
                     variant="outline"
+                    className="w-full"
                     onClick={handleSecondaryCTAClick}
                     disabled={isSecondaryButtonDisabled}
                   >
+                    {callbackMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
                     {secondaryButtonLabel}
                   </Button>
                 )}
@@ -523,6 +660,9 @@ export default function TrainingProgramDetailPage({
               onClick={handlePrimaryCTAClick}
               disabled={isPrimaryButtonDisabled}
             >
+              {(enrollMutation.isPending || callbackMutation.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {primaryButtonLabel}{" "}
               {!isPrimaryButtonDisabled && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
