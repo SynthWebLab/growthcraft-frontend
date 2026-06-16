@@ -60,7 +60,7 @@ export default function StudentSupportPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
           Help & Support
@@ -70,6 +70,7 @@ export default function StudentSupportPage() {
         </p>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-2 items-start">
       {/* FAQs */}
       <Card className="border-border/50">
         <CardHeader>
@@ -129,6 +130,7 @@ export default function StudentSupportPage() {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

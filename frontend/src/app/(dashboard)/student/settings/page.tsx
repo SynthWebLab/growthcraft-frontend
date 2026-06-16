@@ -60,7 +60,7 @@ export default function StudentSettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <PageHeader title="Settings" description="Manage your account preferences" />
 
       <Tabs defaultValue="account">
@@ -74,6 +74,7 @@ export default function StudentSettingsPage() {
           <DataCard>
             <h3 className="font-bold text-foreground mb-4">Account Information</h3>
             <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label>Full Name</Label>
                 <Input
@@ -105,6 +106,7 @@ export default function StudentSettingsPage() {
                   className="mt-1.5"
                   disabled={isLoading}
                 />
+              </div>
               </div>
               <Button
                 className="bg-magenta text-white hover:bg-magenta/90"
@@ -142,7 +144,8 @@ export default function StudentSettingsPage() {
         <TabsContent value="password" className="mt-4">
           <DataCard>
             <h3 className="font-bold text-foreground mb-4">Change Password</h3>
-            <div className="space-y-4 max-w-md">
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label>Current Password</Label>
                 <Input
@@ -169,6 +172,7 @@ export default function StudentSettingsPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="mt-1.5"
                 />
+              </div>
               </div>
               <Button
                 className="bg-magenta text-white hover:bg-magenta/90"

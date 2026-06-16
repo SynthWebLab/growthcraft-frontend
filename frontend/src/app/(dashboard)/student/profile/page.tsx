@@ -81,7 +81,7 @@ export default function StudentProfilePage() {
   const initial = fullName.charAt(0).toUpperCase();
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <PageHeader
         title="My Profile"
         description="Manage your personal information and preferences"
@@ -114,6 +114,7 @@ export default function StudentProfilePage() {
         </div>
       </DataCard>
 
+      <div className="grid gap-6 lg:grid-cols-2 items-start">
       {/* Education */}
       <DataCard>
         <h3 className="font-bold text-foreground mb-4">Education</h3>
@@ -191,7 +192,7 @@ export default function StudentProfilePage() {
       </DataCard>
 
       {/* Links */}
-      <DataCard>
+      <DataCard className="lg:col-span-2">
         <h3 className="font-bold text-foreground mb-4">Links & Resume</h3>
         <div className="space-y-4">
           <div>
@@ -236,6 +237,7 @@ export default function StudentProfilePage() {
           </div>
         </div>
       </DataCard>
+      </div>
 
       <Button
         className="bg-magenta text-white hover:bg-magenta/90"
