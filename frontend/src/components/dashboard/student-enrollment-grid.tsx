@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
@@ -45,6 +46,14 @@ export function StudentEnrollmentGrid({
   browseHref,
   browseLabel = "Browse",
 }: StudentEnrollmentGridProps) {
+  const searchParams = useSearchParams();
+  const q = searchParams.get("q") || "";
+
+  const filteredItems = items.filter((item) =>
+    item.title.toLowerCase().includes(q.toLowerCase()) ||
+    (item.subtitle && item.subtitle.toLowerCase().includes(q.toLowerCase()))
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader title={pageTitle} description={pageDescription} />
@@ -79,9 +88,15 @@ export function StudentEnrollmentGrid({
             ) : undefined
           }
         />
+      ) : filteredItems.length === 0 ? (
+        <PanelEmptyState
+          icon={icon}
+          title="No results found"
+          description={`We couldn't find any matches for "${q}".`}
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {items.map((item) => {
+          {filteredItems.map((item) => {
             const badge = statusBadge(item.status);
             return (
               <DataCard key={item.id}>

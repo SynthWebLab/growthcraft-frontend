@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Menu, Search, Bell, LogOut, User, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,13 +24,25 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
   const { user: profile } = useAuth();
   const { mutate: signOut } = useLogout();
   const router = useRouter();
+  const pathname = usePathname();
   const [search, setSearch] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const term = search.trim();
     if (term) {
-      router.push(`/courses?q=${encodeURIComponent(term)}`);
+      if (pathname.includes("/bootcamps")) {
+        router.push(`${basePath}/bootcamps?q=${encodeURIComponent(term)}`);
+      } else if (pathname.includes("/workshops")) {
+        router.push(`${basePath}/workshops?q=${encodeURIComponent(term)}`);
+      } else if (pathname.includes("/hackathons")) {
+        router.push(`${basePath}/hackathons?q=${encodeURIComponent(term)}`);
+      } else if (pathname.includes("/training-programs")) {
+        router.push(`${basePath}/training-programs?q=${encodeURIComponent(term)}`);
+      } else {
+        router.push(`${basePath}/courses?q=${encodeURIComponent(term)}`);
+      }
+      setSearch("");
     }
   };
 

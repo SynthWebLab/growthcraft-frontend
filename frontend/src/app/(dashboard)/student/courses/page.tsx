@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
@@ -22,6 +23,8 @@ const filters: { label: string; value: Filter }[] = [
 
 export default function StudentCoursesPage() {
   const [filter, setFilter] = useState<Filter>("all");
+  const searchParams = useSearchParams();
+  const q = searchParams.get("q") || "";
   const { data, isLoading, isError } = useStudentCourses();
   const courses = data?.data?.courses ?? [];
 
@@ -30,10 +33,13 @@ export default function StudentCoursesPage() {
       ? courses.length
       : courses.filter((c) => c.status === (value as EnrollmentStatus)).length;
 
-  const filtered =
-    filter === "all"
-      ? courses
-      : courses.filter((c) => c.status === (filter as EnrollmentStatus));
+  const filtered = courses.filter((c) => {
+    const course = resolveRef(c.courseId);
+    const title = (course?.title ?? c.title ?? "").toLowerCase();
+    const matchesQuery = title.includes(q.toLowerCase());
+    const matchesFilter = filter === "all" || c.status === (filter as EnrollmentStatus);
+    return matchesQuery && matchesFilter;
+  });
 
   return (
     <div className="space-y-6">
@@ -88,39 +94,47 @@ export default function StudentCoursesPage() {
             ))}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((enrollment) => {
-              const course = resolveRef(enrollment.courseId);
-              const badge = statusBadge(enrollment.status);
-              const title = course?.title ?? enrollment.title;
-              return (
-                <DataCard key={enrollment._id}>
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-3xl">📘</span>
-                    <Badge variant="secondary" className={badge.className}>
-                      {badge.label}
-                    </Badge>
-                  </div>
+          {filtered.length === 0 ? (
+            <PanelEmptyState
+              icon={<BookOpen className="h-12 w-12" />}
+              title="No results found"
+              description={`We couldn't find any courses matching "${q}".`}
+            />
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((enrollment) => {
+                const course = resolveRef(enrollment.courseId);
+                const badge = statusBadge(enrollment.status);
+                const title = course?.title ?? enrollment.title;
+                return (
+                  <DataCard key={enrollment._id}>
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-3xl">📘</span>
+                      <Badge variant="secondary" className={badge.className}>
+                        {badge.label}
+                      </Badge>
+                    </div>
 
-                  <h3 className="font-semibold text-foreground text-sm mb-1">
-                    {title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    {course?.category ? `${course.category} · ` : ""}
-                    Enrolled {formatDate(enrollment.enrollmentDate)}
-                  </p>
+                    <h3 className="font-semibold text-foreground text-sm mb-1">
+                      {title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      {course?.category ? `${course.category} · ` : ""}
+                      Enrolled {formatDate(enrollment.enrollmentDate)}
+                    </p>
 
-                  {course?.slug && (
-                    <Link href={`/courses/${course.slug}`}>
-                      <Button size="sm" variant="outline" className="w-full">
-                        View Course
-                      </Button>
-                    </Link>
-                  )}
-                </DataCard>
-              );
-            })}
-          </div>
+                    {course?.slug && (
+                      <Link href={`/courses/${course.slug}`}>
+                        <Button size="sm" variant="outline" className="w-full">
+                          View Course
+                        </Button>
+                      </Link>
+                    )}
+                  </DataCard>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
     </div>
