@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
@@ -19,71 +21,84 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Video } from "lucide-react";
+import { Users, Star } from "lucide-react";
+import {
+  useStudentMentors,
+  useStudentMentorSessions,
+  useBookMentorSession,
+} from "@/hooks/queries/useStudent";
+import { resolveRef, formatDate } from "@/lib/student-dashboard.utils";
+import type { Mentor } from "@/types/student";
 
-const upcomingSessions = [
-  {
-    id: 1,
-    date: new Date(2026, 3, 14),
-    time: "10:00 AM",
-    mentor: "Rohit Sharma",
-    topic: "React Performance",
-    duration: "45 min",
-    type: "1:1" as const,
-  },
-  {
-    id: 2,
-    date: new Date(2026, 3, 16),
-    time: "2:00 PM",
-    mentor: "Priya Patel",
-    topic: "Data Pipelines",
-    duration: "60 min",
-    type: "Group" as const,
-  },
-  {
-    id: 3,
-    date: new Date(2026, 3, 20),
-    time: "11:00 AM",
-    mentor: "Amit Kumar",
-    topic: "System Design Review",
-    duration: "45 min",
-    type: "1:1" as const,
-  },
-];
+const DEFAULT_SLOTS = ["10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 
-const mentors = [
-  {
-    id: 1,
-    name: "Rohit Sharma",
-    expertise: "Full Stack / React",
-    avatar: "RS",
-    slots: ["10:00 AM", "2:00 PM", "4:00 PM"],
-  },
-  {
-    id: 2,
-    name: "Priya Patel",
-    expertise: "Data Science / ML",
-    avatar: "PP",
-    slots: ["9:00 AM", "1:00 PM", "3:00 PM"],
-  },
-  {
-    id: 3,
-    name: "Amit Kumar",
-    expertise: "System Design",
-    avatar: "AK",
-    slots: ["11:00 AM", "3:00 PM"],
-  },
-];
+function mentorName(mentor: Mentor): string {
+  return mentor.userId?.fullName || "Mentor";
+}
+
+function mentorInitials(mentor: Mentor): string {
+  const name = mentorName(mentor);
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function slotsFor(mentor: Mentor | undefined): string[] {
+  if (!mentor) return DEFAULT_SLOTS;
+  const slots = mentor.availability
+    ?.flatMap((a) => a.slots.map((s) => s.startTime))
+    .filter(Boolean);
+  return slots && slots.length > 0 ? Array.from(new Set(slots)) : DEFAULT_SLOTS;
+}
 
 export default function StudentMentorsPage() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date()
-  );
-  const [bookOpen, setBookOpen] = useState(false);
-  const [selectedMentor, setSelectedMentor] = useState("");
-  const [selectedSlot, setSelectedSlot] = useState("");
+  const { data: mentorsData, isLoading: mentorsLoading } = useStudentMentors();
+  const { data: sessionsData, isLoading: sessionsLoading } = useStudentMentorSessions();
+  const bookSession = useBookMentorSession();
 
-  const sessionDates = upcomingSessions.map((s) => s.date);
+  const mentors = useMemo(
+    // Only mentors with a valid user can be booked.
+    () => (mentorsData?.data?.mentors ?? []).filter((m) => m.userId?._id),
+    [mentorsData]
+  );
+  const sessions = sessionsData?.data?.sessions ?? [];
+  const upcoming = sessions.filter((s) => s.status === "scheduled");
+
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [bookOpen, setBookOpen] = useState(false);
+  const [mentorUserId, setMentorUserId] = useState("");
+  const [topic, setTopic] = useState("");
+  const [slot, setSlot] = useState("");
+
+  const sessionDates = upcoming.map((s) => new Date(s.scheduledDate));
+  const selectedMentor = mentors.find((m) => m.userId?._id === mentorUserId);
+
+  const openBooking = (preselectMentorId?: string) => {
+    setMentorUserId(preselectMentorId ?? "");
+    setTopic("");
+    setSlot("");
+    setBookOpen(true);
+  };
+
+  const confirmBooking = () => {
+    if (!mentorUserId || !slot || !topic || !selectedDate) return;
+    bookSession.mutate(
+      {
+        mentorUserId,
+        topic,
+        timeSlot: slot,
+        scheduledDate: selectedDate.toISOString(),
+      },
+      {
+        onSuccess: (res) => {
+          if (res.success) setBookOpen(false);
+        },
+      }
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -93,7 +108,7 @@ export default function StudentMentorsPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-        {/* Calendar */}
+        {/* Calendar + book */}
         <DataCard>
           <h3 className="font-bold text-foreground mb-4">Session Calendar</h3>
           <Calendar
@@ -108,58 +123,124 @@ export default function StudentMentorsPage() {
           />
           <Button
             className="w-full mt-4 bg-magenta text-white hover:bg-magenta/90"
-            onClick={() => setBookOpen(true)}
+            onClick={() => openBooking()}
+            disabled={mentorsLoading || mentors.length === 0}
           >
             Book New Session
           </Button>
+          {!mentorsLoading && mentors.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              No mentors are available to book right now.
+            </p>
+          )}
         </DataCard>
 
-        {/* Upcoming Sessions */}
+        {/* Upcoming sessions */}
         <DataCard>
           <h3 className="font-bold text-foreground mb-4">Upcoming Sessions</h3>
-          <div className="space-y-3">
-            {upcomingSessions.map((session) => (
-              <div
-                key={session.id}
-                className="flex items-center gap-4 p-4 rounded-lg border border-border bg-white"
-              >
-                <div className="h-10 w-10 rounded-full bg-lavender/20 flex items-center justify-center text-sm font-bold text-lavender shrink-0">
-                  {session.mentor
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+          {sessionsLoading ? (
+            <div className="space-y-3">
+              {[0, 1].map((i) => (
+                <div key={i} className="h-16 rounded-lg border border-border bg-white animate-pulse" />
+              ))}
+            </div>
+          ) : upcoming.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No upcoming sessions. Book one to get started!
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {upcoming.map((session) => {
+                const mentor = resolveRef(session.mentorUserId);
+                const name = mentor?.fullName || "Mentor";
+                return (
+                  <div
+                    key={session._id}
+                    className="flex items-center gap-4 p-4 rounded-lg border border-border bg-white"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-lavender/20 flex items-center justify-center text-sm font-bold text-lavender shrink-0">
+                      {name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-semibold text-foreground truncate">
+                        {session.topic}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        {name} · {formatDate(session.scheduledDate)} at {session.timeSlot}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={session.sessionType === "1:1" ? "default" : "secondary"}
+                      className={session.sessionType === "1:1" ? "bg-magenta text-white" : ""}
+                    >
+                      {session.sessionType}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DataCard>
+      </div>
+
+      {/* Available mentors */}
+      <DataCard>
+        <h3 className="font-bold text-foreground mb-4">Available Mentors</h3>
+        {mentorsLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-28 rounded-lg border border-border bg-white animate-pulse" />
+            ))}
+          </div>
+        ) : mentors.length === 0 ? (
+          <div className="flex flex-col items-center text-center py-8 text-muted-foreground">
+            <Users className="h-10 w-10 mb-3" />
+            <p className="text-sm">No mentors available yet. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {mentors.map((mentor) => (
+              <div key={mentor._id} className="rounded-lg border border-border bg-white p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-full bg-lavender/20 flex items-center justify-center text-sm font-bold text-lavender shrink-0">
+                    {mentorInitials(mentor)}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-semibold text-foreground truncate">
+                      {mentorName(mentor)}
+                    </h4>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {mentor.areaOfExpertise}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold text-foreground">
-                    {session.topic}
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    {session.mentor} ·{" "}
-                    {session.date.toLocaleDateString("en-IN", {
-                      month: "short",
-                      day: "numeric",
-                    })}{" "}
-                    at {session.time}
-                  </p>
+                <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+                  {mentor.rating > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                      {mentor.rating.toFixed(1)}
+                    </span>
+                  )}
+                  <span>{mentor.experienceYears}+ yrs</span>
+                  {mentor.currentOrganization && (
+                    <span className="truncate">· {mentor.currentOrganization}</span>
+                  )}
                 </div>
-                <Badge
-                  variant={session.type === "1:1" ? "default" : "secondary"}
-                  className={
-                    session.type === "1:1" ? "bg-magenta text-white" : ""
-                  }
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => openBooking(mentor.userId?._id)}
                 >
-                  {session.type}
-                </Badge>
-                <Button size="sm" variant="outline">
-                  <Video className="h-3.5 w-3.5 mr-1" /> Join
+                  Book Session
                 </Button>
               </div>
             ))}
           </div>
-        </DataCard>
-      </div>
+        )}
+      </DataCard>
 
-      {/* Book Session Modal */}
+      {/* Booking modal */}
       <Dialog open={bookOpen} onOpenChange={setBookOpen}>
         <DialogContent>
           <DialogHeader>
@@ -167,40 +248,49 @@ export default function StudentMentorsPage() {
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                Select Mentor
-              </label>
-              <Select value={selectedMentor} onValueChange={setSelectedMentor}>
+              <Label className="mb-2 block">Select Mentor</Label>
+              <Select value={mentorUserId} onValueChange={setMentorUserId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a mentor" />
                 </SelectTrigger>
                 <SelectContent>
                   {mentors.map((m) => (
-                    <SelectItem key={m.id} value={m.name}>
-                      {m.name} — {m.expertise}
+                    <SelectItem key={m._id} value={m.userId!._id}>
+                      {mentorName(m)} — {m.areaOfExpertise}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {selectedMentor && (
+            <div>
+              <Label className="mb-2 block">Topic</Label>
+              <Input
+                placeholder="What would you like to discuss?"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label className="mb-2 block">
+                Date: {selectedDate ? formatDate(selectedDate.toISOString()) : "Pick a date on the calendar"}
+              </Label>
+            </div>
+
+            {mentorUserId && (
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">
-                  Select Time Slot
-                </label>
-                <Select value={selectedSlot} onValueChange={setSelectedSlot}>
+                <Label className="mb-2 block">Select Time Slot</Label>
+                <Select value={slot} onValueChange={setSlot}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a time" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mentors
-                      .find((m) => m.name === selectedMentor)
-                      ?.slots.map((slot) => (
-                        <SelectItem key={slot} value={slot}>
-                          {slot}
-                        </SelectItem>
-                      ))}
+                    {slotsFor(selectedMentor).map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -208,9 +298,10 @@ export default function StudentMentorsPage() {
 
             <Button
               className="w-full bg-magenta text-white hover:bg-magenta/90"
-              disabled={!selectedMentor || !selectedSlot}
+              disabled={!mentorUserId || !slot || !topic || !selectedDate || bookSession.isPending}
+              onClick={confirmBooking}
             >
-              Confirm Booking
+              {bookSession.isPending ? "Booking..." : "Confirm Booking"}
             </Button>
           </div>
         </DialogContent>

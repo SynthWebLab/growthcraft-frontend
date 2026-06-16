@@ -143,10 +143,67 @@ export interface SupportTicket {
   updatedAt: string;
 }
 
+/** A populated user ref (mentor's / student's User). May be null if the user was removed. */
+export interface PopulatedUserRef {
+  _id: string;
+  fullName?: string;
+  email?: string;
+}
+
+export interface MentorAvailabilitySlot {
+  startTime: string;
+  endTime: string;
+}
+
+export interface Mentor {
+  _id: string;
+  userId: PopulatedUserRef | null;
+  experienceYears: number;
+  areaOfExpertise: string;
+  currentOrganization: string;
+  bio: string;
+  hourlyRate?: number;
+  availability: { day: string; slots: MentorAvailabilitySlot[] }[];
+  rating: number;
+  totalSessions: number;
+  linkedIn?: string;
+  website?: string;
+  isVerified: boolean;
+}
+
+export type MentorSessionType = "1:1" | "Group";
+export type MentorSessionStatus = "scheduled" | "completed" | "cancelled";
+
+export interface MentorSession {
+  _id: string;
+  studentUserId: string;
+  mentorUserId: PopulatedUserRef | string;
+  topic: string;
+  scheduledDate: string;
+  timeSlot: string;
+  durationMinutes: number;
+  sessionType: MentorSessionType;
+  status: MentorSessionStatus;
+  meetingLink?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BookMentorSessionData {
+  mentorUserId: string;
+  topic: string;
+  scheduledDate: string;
+  timeSlot: string;
+  sessionType?: MentorSessionType;
+}
+
 // Response envelopes
 export type StudentDashboardResponse = ApiResponse<StudentDashboardData>;
 export type SupportTicketResponse = ApiResponse<{ ticket: SupportTicket }>;
 export type SupportTicketsResponse = ApiResponse<{ tickets: SupportTicket[] }>;
+export type MentorsResponse = ApiResponse<{ mentors: Mentor[] }>;
+export type MentorSessionResponse = ApiResponse<{ session: MentorSession }>;
+export type MentorSessionsResponse = ApiResponse<{ sessions: MentorSession[] }>;
 export type StudentProfileResponse = ApiResponse<{ profile: StudentProfile | null }>;
 export type StudentCoursesResponse = ApiResponse<{ courses: StudentCourseEnrollment[] }>;
 export type StudentBootcampsResponse = ApiResponse<{ bootcamps: StudentEventEnrollment[] }>;

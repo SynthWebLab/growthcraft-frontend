@@ -18,6 +18,10 @@ import type {
   UpdateStudentProfileData,
   SupportTicketResponse,
   SupportTicketsResponse,
+  MentorsResponse,
+  MentorSessionResponse,
+  MentorSessionsResponse,
+  BookMentorSessionData,
 } from "@/types/student";
 
 export const studentService = {
@@ -71,5 +75,20 @@ export const studentService = {
 
   getSupportTickets: async (): Promise<SupportTicketsResponse> => {
     return apiClient.get<SupportTicketsResponse>(API_ENDPOINTS.students.support);
+  },
+
+  getMentors: async (expertise?: string): Promise<MentorsResponse> => {
+    const url = expertise
+      ? `${API_ENDPOINTS.students.mentors}?expertise=${encodeURIComponent(expertise)}`
+      : API_ENDPOINTS.students.mentors;
+    return apiClient.get<MentorsResponse>(url);
+  },
+
+  getMentorSessions: async (): Promise<MentorSessionsResponse> => {
+    return apiClient.get<MentorSessionsResponse>(API_ENDPOINTS.students.mentorSessions);
+  },
+
+  bookMentorSession: async (data: BookMentorSessionData): Promise<MentorSessionResponse> => {
+    return apiClient.post<MentorSessionResponse>(API_ENDPOINTS.students.mentorSessions, data);
   },
 };

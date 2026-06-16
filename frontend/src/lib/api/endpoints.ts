@@ -73,6 +73,8 @@ export const API_ENDPOINTS = {
     trainingPrograms: "/students/training-programs",
     certificates: "/students/certificates",
     support: "/students/support",
+    mentors: "/students/mentors",
+    mentorSessions: "/students/mentor-sessions",
   },
   leads: {
     create: "/leads",

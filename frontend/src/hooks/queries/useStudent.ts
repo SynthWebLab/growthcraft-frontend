@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { studentService } from "@/services/student.service";
 import { authService } from "@/services/auth.service";
 import { authKeys } from "./useAuthentication";
-import type { UpdateStudentProfileData } from "@/types/student";
+import type { UpdateStudentProfileData, BookMentorSessionData } from "@/types/student";
 
 function extractApiError(error: any, fallback: string): string {
   const errorData = error?.response?.data?.error;
@@ -29,6 +29,8 @@ export const studentKeys = {
   trainingPrograms: () => [...studentKeys.all, "training-programs"] as const,
   certificates: () => [...studentKeys.all, "certificates"] as const,
   supportTickets: () => [...studentKeys.all, "support"] as const,
+  mentors: (expertise?: string) => [...studentKeys.all, "mentors", expertise ?? null] as const,
+  mentorSessions: () => [...studentKeys.all, "mentor-sessions"] as const,
 };
 
 const STALE = 2 * 60 * 1000; // 2 minutes
@@ -156,6 +158,46 @@ export function useStudentSupportTickets() {
     queryFn: () => studentService.getSupportTickets(),
     staleTime: STALE,
     retry: 1,
+  });
+}
+
+/** List available mentors (optionally filtered by area of expertise). */
+export function useStudentMentors(expertise?: string) {
+  return useQuery({
+    queryKey: studentKeys.mentors(expertise),
+    queryFn: () => studentService.getMentors(expertise),
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** List the student's mentor sessions. */
+export function useStudentMentorSessions() {
+  return useQuery({
+    queryKey: studentKeys.mentorSessions(),
+    queryFn: () => studentService.getMentorSessions(),
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Book a mentor session. */
+export function useBookMentorSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BookMentorSessionData) => studentService.bookMentorSession(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Session booked", {
+          description: response.message || "Your mentor session has been scheduled.",
+        });
+        queryClient.invalidateQueries({ queryKey: studentKeys.mentorSessions() });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Booking failed", { description: extractApiError(error, "Please try again.") });
+    },
   });
 }
 
