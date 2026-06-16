@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ const filters: { label: string; value: Filter }[] = [
   { label: "Pending", value: "pending" },
 ];
 
-export default function StudentCoursesPage() {
+function StudentCoursesContent() {
   const [filter, setFilter] = useState<Filter>("all");
   const searchParams = useSearchParams();
   const q = searchParams.get("q") || "";
@@ -138,5 +138,30 @@ export default function StudentCoursesPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function StudentCoursesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <PageHeader
+            title="My Courses"
+            description="Track your enrolled courses"
+          />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-44 rounded-xl border border-border bg-white animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+      }
+    >
+      <StudentCoursesContent />
+    </Suspense>
   );
 }

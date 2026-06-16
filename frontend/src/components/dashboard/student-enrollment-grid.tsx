@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ interface StudentEnrollmentGridProps {
   browseLabel?: string;
 }
 
-export function StudentEnrollmentGrid({
+function StudentEnrollmentGridContent({
   pageTitle,
   pageDescription,
   items,
@@ -134,6 +135,28 @@ export function StudentEnrollmentGrid({
         </div>
       )}
     </div>
+  );
+}
+
+export function StudentEnrollmentGrid(props: StudentEnrollmentGridProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <PageHeader title={props.pageTitle} description={props.pageDescription} />
+          <div className="grid gap-4 md:grid-cols-2">
+            {[0, 1].map((i) => (
+              <div
+                key={i}
+                className="h-32 rounded-xl border border-border bg-white animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+      }
+    >
+      <StudentEnrollmentGridContent {...props} />
+    </Suspense>
   );
 }
 
