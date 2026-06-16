@@ -1,24 +1,58 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
-import { useState } from "react";
 import { X } from "lucide-react";
+import { useStudentProfile, useUpdateStudentProfile } from "@/hooks/queries/useStudent";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { formatDate } from "@/lib/student-dashboard.utils";
+import type { UpdateStudentProfileData } from "@/types/student";
+
+const EMPTY_FORM: UpdateStudentProfileData = {
+  collegeName: "",
+  degree: "",
+  branch: "",
+  linkedIn: "",
+  github: "",
+  portfolio: "",
+  resume: "",
+};
 
 export default function StudentProfilePage() {
-  const [skills, setSkills] = useState([
-    "React",
-    "TypeScript",
-    "Node.js",
-    "Python",
-  ]);
+  const { data, isLoading } = useStudentProfile();
+  const { data: user } = useCurrentUser();
+  const updateProfile = useUpdateStudentProfile();
+
+  const profile = data?.data?.profile ?? null;
+
+  const [form, setForm] = useState<UpdateStudentProfileData>(EMPTY_FORM);
+  const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
+
+  // Hydrate the form once the profile loads.
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        collegeName: profile.collegeName ?? "",
+        degree: profile.degree ?? "",
+        branch: profile.branch ?? "",
+        linkedIn: profile.linkedIn ?? "",
+        github: profile.github ?? "",
+        portfolio: profile.portfolio ?? "",
+        resume: profile.resume ?? "",
+      });
+      setSkills(profile.skills ?? []);
+    }
+  }, [profile]);
+
+  const setField = (key: keyof UpdateStudentProfileData, value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
 
   const addSkill = () => {
     const trimmed = skillInput.trim();
@@ -27,6 +61,24 @@ export default function StudentProfilePage() {
       setSkillInput("");
     }
   };
+
+  const handleSave = () => {
+    // Only send non-empty optional URLs to avoid failing URL validation on "".
+    const payload: UpdateStudentProfileData = {
+      collegeName: form.collegeName || undefined,
+      degree: form.degree || undefined,
+      branch: form.branch || undefined,
+      linkedIn: form.linkedIn || undefined,
+      github: form.github || undefined,
+      portfolio: form.portfolio || undefined,
+      resume: form.resume || undefined,
+      skills,
+    };
+    updateProfile.mutate(payload);
+  };
+
+  const fullName = user?.fullName ?? "Student";
+  const initial = fullName.charAt(0).toUpperCase();
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -40,42 +92,60 @@ export default function StudentProfilePage() {
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <Avatar className="h-20 w-20">
             <AvatarFallback className="bg-magenta text-white text-2xl font-bold">
-              S
+              {initial}
             </AvatarFallback>
           </Avatar>
           <div className="text-center sm:text-left flex-1">
-            <h2 className="text-xl font-bold text-foreground">Student User</h2>
-            <p className="text-sm text-muted-foreground">
-              student@example.com
-            </p>
+            <h2 className="text-xl font-bold text-foreground">{fullName}</h2>
+            <p className="text-sm text-muted-foreground">{user?.email ?? ""}</p>
             <div className="flex flex-wrap gap-2 mt-2 justify-center sm:justify-start">
-              <Badge variant="secondary">3 Courses</Badge>
-              <Badge variant="outline">Member since Mar 2026</Badge>
+              {profile?.enrolledCourses?.length ? (
+                <Badge variant="secondary">
+                  {profile.enrolledCourses.length} Courses
+                </Badge>
+              ) : null}
+              {profile?.createdAt && (
+                <Badge variant="outline">
+                  Member since {formatDate(profile.createdAt)}
+                </Badge>
+              )}
             </div>
           </div>
-          <Button variant="outline" size="sm">
-            Change Photo
-          </Button>
         </div>
       </DataCard>
 
-      {/* Bio & About */}
+      {/* Education */}
       <DataCard>
-        <h3 className="font-bold text-foreground mb-4">About</h3>
-        <div className="space-y-4">
+        <h3 className="font-bold text-foreground mb-4">Education</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label>Bio</Label>
-            <Textarea
-              defaultValue="Aspiring full-stack developer passionate about building scalable web applications."
-              rows={3}
+            <Label>College Name</Label>
+            <Input
+              value={form.collegeName}
+              onChange={(e) => setField("collegeName", e.target.value)}
+              placeholder="Your college"
               className="mt-1.5"
+              disabled={isLoading}
             />
           </div>
           <div>
-            <Label>Current Job Title</Label>
+            <Label>Degree</Label>
             <Input
-              defaultValue="Computer Science Student"
+              value={form.degree}
+              onChange={(e) => setField("degree", e.target.value)}
+              placeholder="e.g. B.Tech"
               className="mt-1.5"
+              disabled={isLoading}
+            />
+          </div>
+          <div>
+            <Label>Branch</Label>
+            <Input
+              value={form.branch}
+              onChange={(e) => setField("branch", e.target.value)}
+              placeholder="e.g. Computer Science"
+              className="mt-1.5"
+              disabled={isLoading}
             />
           </div>
         </div>
@@ -91,11 +161,15 @@ export default function StudentProfilePage() {
               <button
                 onClick={() => setSkills(skills.filter((s) => s !== skill))}
                 className="ml-1 hover:text-danger"
+                aria-label={`Remove ${skill}`}
               >
                 <X className="h-3 w-3" />
               </button>
             </Badge>
           ))}
+          {skills.length === 0 && (
+            <p className="text-sm text-muted-foreground">No skills added yet.</p>
+          )}
         </div>
         <div className="flex gap-2">
           <Input
@@ -122,28 +196,53 @@ export default function StudentProfilePage() {
         <div className="space-y-4">
           <div>
             <Label>LinkedIn URL</Label>
-            <Input placeholder="https://linkedin.com/in/..." className="mt-1.5" />
+            <Input
+              value={form.linkedIn}
+              onChange={(e) => setField("linkedIn", e.target.value)}
+              placeholder="https://linkedin.com/in/..."
+              className="mt-1.5"
+              disabled={isLoading}
+            />
           </div>
           <div>
             <Label>GitHub URL</Label>
-            <Input placeholder="https://github.com/..." className="mt-1.5" />
+            <Input
+              value={form.github}
+              onChange={(e) => setField("github", e.target.value)}
+              placeholder="https://github.com/..."
+              className="mt-1.5"
+              disabled={isLoading}
+            />
           </div>
           <div>
-            <Label>Resume</Label>
-            <div className="mt-1.5 border border-dashed border-border rounded-lg p-6 text-center">
-              <p className="text-sm text-muted-foreground mb-2">
-                Drag & drop your resume or click to upload
-              </p>
-              <Button variant="outline" size="sm">
-                Upload PDF
-              </Button>
-            </div>
+            <Label>Portfolio URL</Label>
+            <Input
+              value={form.portfolio}
+              onChange={(e) => setField("portfolio", e.target.value)}
+              placeholder="https://..."
+              className="mt-1.5"
+              disabled={isLoading}
+            />
+          </div>
+          <div>
+            <Label>Resume URL</Label>
+            <Input
+              value={form.resume}
+              onChange={(e) => setField("resume", e.target.value)}
+              placeholder="https://... (link to your resume)"
+              className="mt-1.5"
+              disabled={isLoading}
+            />
           </div>
         </div>
       </DataCard>
 
-      <Button className="bg-magenta text-white hover:bg-magenta/90">
-        Save Profile
+      <Button
+        className="bg-magenta text-white hover:bg-magenta/90"
+        onClick={handleSave}
+        disabled={isLoading || updateProfile.isPending}
+      >
+        {updateProfile.isPending ? "Saving..." : "Save Profile"}
       </Button>
     </div>
   );

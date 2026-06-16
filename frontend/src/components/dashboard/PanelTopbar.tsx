@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Menu, Search, Bell, Sun, LogOut, User, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,6 +23,16 @@ interface PanelTopbarProps {
 const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) => {
   const { user: profile } = useAuth();
   const { mutate: signOut } = useLogout();
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const term = search.trim();
+    if (term) {
+      router.push(`/courses?q=${encodeURIComponent(term)}`);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border bg-white px-4 md:px-8">
@@ -37,16 +49,19 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
 
       {/* Center — search */}
       <div className="flex-1 flex justify-center">
-        <div className="relative w-full max-w-md">
+        <form onSubmit={handleSearch} className="relative w-full max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search courses, mentors, students…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search courses…"
             className="pl-9 pr-12 h-9 bg-marble border-none"
+            aria-label="Search courses"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono bg-white border border-border rounded px-1.5 py-0.5 text-muted-foreground">
-            ⌘K
+            ↵
           </kbd>
-        </div>
+        </form>
       </div>
 
       {/* Right */}
@@ -74,7 +89,7 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="h-8 w-8 rounded-full bg-lavender/20 flex items-center justify-center text-sm font-semibold text-foreground">
-              {(profile?.full_name?.[0] || "U").toUpperCase()}
+              {(profile?.fullName?.[0] || "U").toUpperCase()}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">

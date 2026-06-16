@@ -15,6 +15,10 @@ export const API_ENDPOINTS = {
     logout: "/auth/logout",
     logoutAll: "/auth/logout-all",
     refresh: "/auth/refresh",
+    changePassword: "/auth/change-password",
+  },
+  users: {
+    update: (id: string) => `/users/${id}`,
   },
   // Future endpoints can be added here
   courses: {
@@ -57,6 +61,18 @@ export const API_ENDPOINTS = {
   },
   hackathons: {
     list: "/hackathons",
+  },
+  students: {
+    dashboard: "/students/dashboard",
+    profile: "/students/profile",
+    courses: "/students/courses",
+    bootcamps: "/students/bootcamps",
+    workshops: "/students/workshops",
+    hackathons: "/students/hackathons",
+    events: "/students/events",
+    trainingPrograms: "/students/training-programs",
+    certificates: "/students/certificates",
+    support: "/students/support",
   },
   leads: {
     create: "/leads",

@@ -1,197 +1,128 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
-import { Play, CheckCircle2, XCircle } from "lucide-react";
-import Link from "next/link";
+import { PanelEmptyState } from "@/components/panel";
+import { BookOpen } from "lucide-react";
+import { useStudentCourses } from "@/hooks/queries/useStudent";
+import { formatDate, resolveRef, statusBadge } from "@/lib/student-dashboard.utils";
+import type { EnrollmentStatus } from "@/types/student";
 
-type Status = "all" | "active" | "completed" | "dropped";
+type Filter = "all" | "confirmed" | "pending";
 
-const enrolledCourses = [
-  {
-    id: "1",
-    title: "Full Stack Web Development",
-    progress: 68,
-    totalLessons: 42,
-    completed: 28,
-    category: "Web Dev",
-    status: "active" as const,
-    image: "🌐",
-    slug: "full-stack-web",
-  },
-  {
-    id: "2",
-    title: "Data Science with Python",
-    progress: 35,
-    totalLessons: 36,
-    completed: 13,
-    category: "Data Science",
-    status: "active" as const,
-    image: "📊",
-    slug: "data-science-python",
-  },
-  {
-    id: "3",
-    title: "React & Next.js Masterclass",
-    progress: 90,
-    totalLessons: 30,
-    completed: 27,
-    category: "Frontend",
-    status: "active" as const,
-    image: "⚛️",
-    slug: "react-nextjs",
-  },
-  {
-    id: "4",
-    title: "UI/UX Design Fundamentals",
-    progress: 100,
-    totalLessons: 20,
-    completed: 20,
-    category: "Design",
-    status: "completed" as const,
-    image: "🎨",
-    slug: "uiux-design",
-  },
-  {
-    id: "5",
-    title: "Python Basics",
-    progress: 15,
-    totalLessons: 24,
-    completed: 4,
-    category: "Programming",
-    status: "dropped" as const,
-    image: "🐍",
-    slug: "python-basics",
-  },
-];
-
-const filters: { label: string; value: Status }[] = [
+const filters: { label: string; value: Filter }[] = [
   { label: "All", value: "all" },
-  { label: "Active", value: "active" },
-  { label: "Completed", value: "completed" },
-  { label: "Dropped", value: "dropped" },
+  { label: "Confirmed", value: "confirmed" },
+  { label: "Pending", value: "pending" },
 ];
 
 export default function StudentCoursesPage() {
-  const [filter, setFilter] = useState<Status>("all");
+  const [filter, setFilter] = useState<Filter>("all");
+  const { data, isLoading, isError } = useStudentCourses();
+  const courses = data?.data?.courses ?? [];
+
+  const countFor = (value: Filter) =>
+    value === "all"
+      ? courses.length
+      : courses.filter((c) => c.status === (value as EnrollmentStatus)).length;
 
   const filtered =
     filter === "all"
-      ? enrolledCourses
-      : enrolledCourses.filter((c) => c.status === filter);
+      ? courses
+      : courses.filter((c) => c.status === (filter as EnrollmentStatus));
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="My Courses"
-        description="Track your enrolled courses and learning progress"
+        description="Track your enrolled courses"
       />
 
-      {/* Filter chips */}
-      <div className="flex flex-wrap gap-2">
-        {filters.map((f) => {
-          const count =
-            f.value === "all"
-              ? enrolledCourses.length
-              : enrolledCourses.filter((c) => c.status === f.value).length;
-          return (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                filter === f.value
-                  ? "bg-magenta text-white"
-                  : "bg-white border border-border text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {f.label} ({count})
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Course Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((course) => (
-          <DataCard key={course.id}>
-            <div className="flex items-start justify-between mb-3">
-              <span className="text-3xl">{course.image}</span>
-              <Badge
-                variant={
-                  course.status === "completed"
-                    ? "default"
-                    : course.status === "dropped"
-                    ? "destructive"
-                    : "secondary"
-                }
-                className={
-                  course.status === "completed"
-                    ? "bg-success text-white"
-                    : course.status === "active"
-                    ? "bg-magenta/10 text-magenta"
-                    : ""
-                }
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-44 rounded-xl border border-border bg-white animate-pulse"
+            />
+          ))}
+        </div>
+      ) : isError ? (
+        <PanelEmptyState
+          icon={<BookOpen className="h-12 w-12" />}
+          title="Couldn't load your courses"
+          description="Something went wrong. Please refresh and try again."
+        />
+      ) : courses.length === 0 ? (
+        <PanelEmptyState
+          icon={<BookOpen className="h-12 w-12" />}
+          title="No courses yet"
+          description="You haven't enrolled in any courses. Explore the catalogue to get started!"
+          action={
+            <Link href="/courses">
+              <Button className="bg-magenta text-white hover:bg-magenta/90">
+                Browse Courses
+              </Button>
+            </Link>
+          }
+        />
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {filters.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setFilter(f.value)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filter === f.value
+                    ? "bg-magenta text-white"
+                    : "bg-white border border-border text-muted-foreground hover:bg-muted"
+                }`}
               >
-                {course.status === "active" && "Active"}
-                {course.status === "completed" && (
-                  <>
-                    <CheckCircle2 className="h-3 w-3 mr-1" /> Completed
-                  </>
-                )}
-                {course.status === "dropped" && (
-                  <>
-                    <XCircle className="h-3 w-3 mr-1" /> Dropped
-                  </>
-                )}
-              </Badge>
-            </div>
+                {f.label} ({countFor(f.value)})
+              </button>
+            ))}
+          </div>
 
-            <h3 className="font-semibold text-foreground text-sm mb-1">
-              {course.title}
-            </h3>
-            <p className="text-xs text-muted-foreground mb-3">
-              {course.category} · {course.completed}/{course.totalLessons}{" "}
-              lessons
-            </p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((enrollment) => {
+              const course = resolveRef(enrollment.courseId);
+              const badge = statusBadge(enrollment.status);
+              const title = course?.title ?? enrollment.title;
+              return (
+                <DataCard key={enrollment._id}>
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-3xl">📘</span>
+                    <Badge variant="secondary" className={badge.className}>
+                      {badge.label}
+                    </Badge>
+                  </div>
 
-            <div className="space-y-1.5 mb-4">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Progress</span>
-                <span className="font-medium text-magenta">
-                  {course.progress}%
-                </span>
-              </div>
-              <Progress
-                value={course.progress}
-                className="h-2"
-                indicatorClassName="bg-magenta"
-              />
-            </div>
+                  <h3 className="font-semibold text-foreground text-sm mb-1">
+                    {title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {course?.category ? `${course.category} · ` : ""}
+                    Enrolled {formatDate(enrollment.enrollmentDate)}
+                  </p>
 
-            {course.status === "active" && (
-              <Link href={`/student/courses/${course.slug}/learn`}>
-                <Button
-                  size="sm"
-                  className="w-full bg-magenta text-white hover:bg-magenta/90"
-                >
-                  <Play className="h-3.5 w-3.5 mr-1.5" /> Continue
-                </Button>
-              </Link>
-            )}
-            {course.status === "completed" && (
-              <Link href="/student/certificates">
-                <Button size="sm" variant="outline" className="w-full">
-                  View Certificate
-                </Button>
-              </Link>
-            )}
-          </DataCard>
-        ))}
-      </div>
+                  {course?.slug && (
+                    <Link href={`/courses/${course.slug}`}>
+                      <Button size="sm" variant="outline" className="w-full">
+                        View Course
+                      </Button>
+                    </Link>
+                  )}
+                </DataCard>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useSubmitSupport } from "@/hooks/queries/useStudent";
 
 const faqs = [
   {
@@ -38,6 +40,25 @@ const faqs = [
 ];
 
 export default function StudentSupportPage() {
+  const submitSupport = useSubmitSupport();
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitSupport.mutate(
+      { subject, message },
+      {
+        onSuccess: (res) => {
+          if (res.success) {
+            setSubject("");
+            setMessage("");
+          }
+        },
+      }
+    );
+  };
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
@@ -82,22 +103,29 @@ export default function StudentSupportPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form
-            className="space-y-4"
-            onSubmit={(e) => e.preventDefault()}
-          >
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <Label>Subject</Label>
-              <Input placeholder="What do you need help with?" />
+              <Input
+                placeholder="What do you need help with?"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label>Message</Label>
               <Textarea
                 placeholder="Describe your issue in detail…"
                 rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                required
               />
             </div>
-            <Button type="submit">Send Message</Button>
+            <Button type="submit" disabled={submitSupport.isPending}>
+              {submitSupport.isPending ? "Sending..." : "Send Message"}
+            </Button>
           </form>
         </CardContent>
       </Card>

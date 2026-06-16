@@ -104,12 +104,12 @@ const SidebarInner = ({
               collapsed && "justify-center"
             )}>
               <div className="h-9 w-9 rounded-full bg-lavender/20 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-                {(profile?.full_name?.[0] || "U").toUpperCase()}
+                {(profile?.fullName?.[0] || "U").toUpperCase()}
               </div>
               {!collapsed && (
                 <>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{profile?.full_name || "User"}</p>
+                    <p className="text-sm font-medium text-white truncate">{profile?.fullName || "User"}</p>
                     <RoleBadge role={role} className="mt-1 text-[10px] px-2 py-0.5" />
                   </div>
                   <ChevronUp className="h-4 w-4 text-white/50 shrink-0" />
