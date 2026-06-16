@@ -16,6 +16,8 @@ import { useRegisterBootcamp, useRequestBootcampCallback } from "@/hooks/queries
 import { useRegisterWorkshop, useRequestWorkshopCallback } from "@/hooks/queries/useWorkshops";
 import { useRegisterHackathon, useRequestHackathonCallback } from "@/hooks/queries/useHackathons";
 import { useEnrollInTrainingProgram, useRequestTrainingProgramCallback } from "@/hooks/queries/useTrainingPrograms";
+import { apiClient } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 // Validation schemas
 const enrollmentSchema = z.object({
@@ -299,9 +301,28 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
         reset();
         onClose();
       } else {
-        // For enquiry, mentor, partner - just validate and show success
-        // Simulate API call for non-course forms
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Prepare payload for leads
+        const payload: Record<string, any> = {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          message: (data as EnquiryFormData).message,
+        };
+
+        if (type === "mentor") {
+          payload.source = "about_mentor";
+          payload.role = "Mentor";
+          payload.organization = (data as EnquiryFormData).organization;
+        } else if (type === "partner") {
+          payload.source = "about_partner";
+          payload.role = "HiringPartner";
+          payload.organization = (data as EnquiryFormData).organization;
+        } else {
+          payload.source = "about_enquiry";
+        }
+
+        // Post to Leads API
+        await apiClient.post(API_ENDPOINTS.leads.create, payload);
 
         const successMessage = type === "mentor"
           ? "Application submitted! We'll review and get back to you."

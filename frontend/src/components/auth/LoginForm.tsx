@@ -18,7 +18,7 @@ interface LoginFormProps {
 
 export function LoginForm({ role, redirectPath, callbackUrl }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const loginMutation = useLogin(callbackUrl);
+  const loginMutation = useLogin(role, callbackUrl);
   
   const {
     register,

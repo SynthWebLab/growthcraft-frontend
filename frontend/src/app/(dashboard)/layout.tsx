@@ -163,7 +163,6 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
         role={config.role}
         basePath={config.basePath}
         collapsed={collapsed}
-        onToggle={() => setCollapsed((c) => !c)}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />

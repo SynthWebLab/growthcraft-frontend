@@ -81,4 +81,29 @@ export const authService = {
   refreshToken: async (): Promise<ApiResponse> => {
     return apiClient.post<ApiResponse>(API_ENDPOINTS.auth.refresh);
   },
+
+  /**
+   * Change password for the authenticated user
+   */
+  changePassword: async (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword?: string
+  ): Promise<ApiResponse> => {
+    return apiClient.post<ApiResponse>(API_ENDPOINTS.auth.changePassword, {
+      currentPassword,
+      newPassword,
+      ...(confirmPassword !== undefined ? { confirmPassword } : {}),
+    });
+  },
+
+  /**
+   * Update the authenticated user's account (name, phone, etc.)
+   */
+  updateAccount: async (
+    userId: string,
+    data: { fullName?: string; phone?: string }
+  ): Promise<ApiResponse> => {
+    return apiClient.patch<ApiResponse>(API_ENDPOINTS.users.update(userId), data);
+  },
 };

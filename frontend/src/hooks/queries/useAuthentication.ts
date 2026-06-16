@@ -55,7 +55,7 @@ export function useRegister(callbackUrl?: string) {
  * Hook to login user
  * Uses direct backend authentication with httpOnly cookies
  */
-export function useLogin(callbackUrl?: string) {
+export function useLogin(expectedRole?: string, callbackUrl?: string) {
   const router = useRouter();
 
   return useMutation({
@@ -90,6 +90,16 @@ export function useLogin(callbackUrl?: string) {
       const user = response.data?.user;
       
       if (user) {
+        // Validate that user role matches the login form's expected role
+        if (expectedRole && user.role?.toLowerCase() !== expectedRole.toLowerCase()) {
+          toast.error("Access Denied", {
+            description: `This login page is only for ${expectedRole} accounts.`,
+          });
+          // Immediately log out to clear cookies and session state
+          await authService.logout();
+          return;
+        }
+
         toast.success("Welcome back!", {
           description: "You've been logged in successfully.",
         });
