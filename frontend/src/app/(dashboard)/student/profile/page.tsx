@@ -77,8 +77,9 @@ export default function StudentProfilePage() {
     updateProfile.mutate(payload);
   };
 
-  const fullName = user?.fullName ?? "Student";
-  const initial = fullName.charAt(0).toUpperCase();
+  const fullName = user?.fullName ?? "";
+  const email = user?.email ?? "";
+  const initial = fullName ? fullName.charAt(0).toUpperCase() : "U";
 
   return (
     <div className="space-y-6">
@@ -91,13 +92,22 @@ export default function StudentProfilePage() {
       <DataCard>
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarFallback className="bg-magenta text-white text-2xl font-bold">
+            <AvatarFallback suppressHydrationWarning className="bg-magenta text-white text-2xl font-bold">
               {initial}
             </AvatarFallback>
           </Avatar>
-          <div className="text-center sm:text-left flex-1">
-            <h2 className="text-xl font-bold text-foreground">{fullName}</h2>
-            <p className="text-sm text-muted-foreground">{user?.email ?? ""}</p>
+          <div className="text-center sm:text-left flex-1 min-h-[4rem] flex flex-col justify-center">
+            {user ? (
+              <>
+                <h2 suppressHydrationWarning className="text-xl font-bold text-foreground">{fullName}</h2>
+                <p suppressHydrationWarning className="text-sm text-muted-foreground">{email}</p>
+              </>
+            ) : (
+              <div className="space-y-2 animate-pulse py-1">
+                <div className="h-6 w-40 bg-marble border border-border rounded" />
+                <div className="h-4 w-52 bg-marble border border-border rounded" />
+              </div>
+            )}
             <div className="flex flex-wrap gap-2 mt-2 justify-center sm:justify-start">
               {profile?.enrolledCourses?.length ? (
                 <Badge variant="secondary">

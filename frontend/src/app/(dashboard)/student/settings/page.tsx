@@ -19,8 +19,8 @@ export default function StudentSettingsPage() {
   const changePassword = useChangePassword();
 
   // Account form
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState(() => user?.fullName ?? "");
+  const [phone, setPhone] = useState(() => user?.phone ?? "");
 
   useEffect(() => {
     if (user) {
@@ -79,6 +79,7 @@ export default function StudentSettingsPage() {
                 <Label>Full Name</Label>
                 <Input
                   value={fullName}
+                  suppressHydrationWarning
                   onChange={(e) => setFullName(e.target.value)}
                   className="mt-1.5"
                   disabled={isLoading}
@@ -88,6 +89,7 @@ export default function StudentSettingsPage() {
                 <Label>Email</Label>
                 <Input
                   value={user?.email ?? ""}
+                  suppressHydrationWarning
                   type="email"
                   className="mt-1.5"
                   disabled
@@ -101,6 +103,7 @@ export default function StudentSettingsPage() {
                 <Label>Phone</Label>
                 <Input
                   value={phone}
+                  suppressHydrationWarning
                   onChange={(e) => setPhone(e.target.value)}
                   type="tel"
                   className="mt-1.5"

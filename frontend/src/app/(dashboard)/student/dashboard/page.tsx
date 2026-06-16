@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ArrowRight, BookOpen, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,9 @@ const StudentDashboard = () => {
   const recentCourses = dashboard?.recent?.courses ?? [];
   const recentEvents = dashboard?.recent?.events ?? [];
 
-  const firstName = user?.fullName?.split(" ")[0] ?? "Student";
+  const firstName = user?.fullName ? user.fullName.split(" ")[0] : "";
+  const title = firstName ? `Welcome back, ${firstName}! 👋` : "Welcome back! 👋";
+
   const totalEvents =
     (counts?.bootcamps ?? 0) + (counts?.workshops ?? 0) + (counts?.hackathons ?? 0);
 
@@ -40,9 +43,11 @@ const StudentDashboard = () => {
   return (
     <div className="space-y-6 md:space-y-8">
       <PageHeader
-        title={`Welcome back, ${firstName}! 👋`}
+        title={title}
         description="Track your enrollments and recent activity"
+        suppressHydrationWarning
       />
+
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -7,6 +7,7 @@ interface PageHeaderProps {
   description?: string;
   action?: React.ReactNode;
   className?: string;
+  suppressHydrationWarning?: boolean;
 }
 
 export function PageHeader({
@@ -15,6 +16,7 @@ export function PageHeader({
   description,
   action,
   className,
+  suppressHydrationWarning,
 }: PageHeaderProps) {
   return (
     <div className={cn("mb-8", className)}>
@@ -25,7 +27,10 @@ export function PageHeader({
       )}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold font-display tracking-tight">
+          <h1
+            suppressHydrationWarning={suppressHydrationWarning}
+            className="text-3xl md:text-4xl font-extrabold font-display tracking-tight"
+          >
             {title}
           </h1>
           {description && (

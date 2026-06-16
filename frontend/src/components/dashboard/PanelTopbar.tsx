@@ -95,7 +95,10 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
         {/* Avatar dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="h-8 w-8 rounded-full bg-lavender/20 flex items-center justify-center text-sm font-semibold text-foreground">
+            <button
+              suppressHydrationWarning
+              className="h-8 w-8 rounded-full bg-lavender/20 flex items-center justify-center text-sm font-semibold text-foreground"
+            >
               {(profile?.fullName?.[0] || "U").toUpperCase()}
             </button>
           </DropdownMenuTrigger>

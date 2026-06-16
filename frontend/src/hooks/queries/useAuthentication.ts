@@ -57,6 +57,7 @@ export function useRegister(callbackUrl?: string) {
  */
 export function useLogin(expectedRole?: string, callbackUrl?: string) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
@@ -90,6 +91,10 @@ export function useLogin(expectedRole?: string, callbackUrl?: string) {
       const user = response.data?.user;
       
       if (user) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("gc_user", JSON.stringify(user));
+        }
+        queryClient.setQueryData(authKeys.profile(), user);
         // Validate that user role matches the login form's expected role
         if (expectedRole && user.role?.toLowerCase() !== expectedRole.toLowerCase()) {
           toast.error("Access Denied", {
@@ -146,12 +151,20 @@ export function useLogin(expectedRole?: string, callbackUrl?: string) {
  */
 export function useVerifyEmail(callbackUrl?: string) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ email, otp }: { email: string; otp: string }) =>
       authService.verifyEmail(email, otp),
     onSuccess: (response) => {
       if (response.success) {
+        const user = response.data?.user;
+        if (user) {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("gc_user", JSON.stringify(user));
+          }
+          queryClient.setQueryData(authKeys.profile(), user);
+        }
         toast.success("Email verified!", {
           description: callbackUrl 
             ? "Redirecting you to the course..."
@@ -289,6 +302,9 @@ export function useLogout() {
       return { success: true };
     },
     onSuccess: async () => {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("gc_user");
+      }
       // Clear all React Query cache
       queryClient.clear();
       
@@ -330,6 +346,9 @@ export function useLogoutAll() {
       return { success: true };
     },
     onSuccess: async () => {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("gc_user");
+      }
       // Clear all React Query cache
       queryClient.clear();
       
