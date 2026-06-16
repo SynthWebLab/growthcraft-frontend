@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, Search, Bell, Sun, LogOut, User, Settings } from "lucide-react";
+import { Menu, Search, Bell, LogOut, User, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -79,11 +79,6 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
             <div className="p-4 text-sm text-muted-foreground text-center">No new notifications</div>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Theme toggle (UI only) */}
-        <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
-          <Sun className="h-5 w-5" />
-        </button>
 
         {/* Avatar dropdown */}
         <DropdownMenu>
