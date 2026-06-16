@@ -115,6 +115,7 @@ export default function StudentProfilePage() {
       </DataCard>
 
       <div className="grid gap-6 lg:grid-cols-2 items-start">
+      <div className="space-y-6">
       {/* Education */}
       <DataCard>
         <h3 className="font-bold text-foreground mb-4">Education</h3>
@@ -190,9 +191,10 @@ export default function StudentProfilePage() {
           </Button>
         </div>
       </DataCard>
+      </div>
 
       {/* Links */}
-      <DataCard className="lg:col-span-2">
+      <DataCard>
         <h3 className="font-bold text-foreground mb-4">Links & Resume</h3>
         <div className="space-y-4">
           <div>
