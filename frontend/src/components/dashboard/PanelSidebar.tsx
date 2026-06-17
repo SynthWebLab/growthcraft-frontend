@@ -12,7 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogout } from "@/hooks/queries/useAuthentication";
 
@@ -161,6 +162,9 @@ const PanelSidebar = (props: PanelSidebarProps) => {
       {/* Mobile drawer */}
       <Sheet open={mobileOpen} onOpenChange={onMobileClose}>
         <SheetContent side="left" className="p-0 w-64 border-none">
+          <VisuallyHidden>
+            <SheetTitle>Navigation Menu</SheetTitle>
+          </VisuallyHidden>
           <SidebarInner {...rest} collapsed={false} onToggle={props.onToggle} />
         </SheetContent>
       </Sheet>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Calendar, ArrowRight, MapPin, Loader2 } from "lucide-react";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
-import { PageHeader } from "@/components/ui/page-header";
+import PageHeader from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { useBootcamps } from "@/hooks/queries/useBootcamps";
 import {

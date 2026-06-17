@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { PageHeader } from "@/components/ui/page-header";
+import PageHeader from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
 import { Play, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";

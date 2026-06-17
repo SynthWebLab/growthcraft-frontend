@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { PageHeader } from "@/components/ui/page-header";
+import PageHeader from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
 import {
   Dialog,

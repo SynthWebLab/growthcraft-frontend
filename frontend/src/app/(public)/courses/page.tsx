@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Clock, BookOpen, Star, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PageHeader } from "@/components/ui/page-header";
+import PageHeader from "@/components/ui/page-header";
 import { DataCard } from "@/components/ui/data-card";
 import { Section } from "@/components/ui/section";
 import { useCourses, useCourseConfig } from "@/hooks/queries/useCourses";

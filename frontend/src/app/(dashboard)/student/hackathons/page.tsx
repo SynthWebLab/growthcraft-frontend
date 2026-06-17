@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
+import PageHeader from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
 import { Video, ChevronDown, Calendar, Trophy } from "lucide-react";
 import { useState } from "react";

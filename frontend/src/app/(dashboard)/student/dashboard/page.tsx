@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { KpiCard } from "@/components/panel";
 import DataCard from "@/components/ui/data-card";
-import { PageHeader } from "@/components/ui/page-header";
+import PageHeader from "@/components/ui/page-header";
 import Link from "next/link";
 
 const continueLearning = [
