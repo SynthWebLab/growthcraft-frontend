@@ -59,6 +59,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         label: "Account",
         items: [
           { icon: Building2, label: "Profile", href: "profile" },
+          { icon: Settings, label: "Settings", href: "settings" },
           { icon: HelpCircle, label: "Support", href: "support" },
         ],
       },
@@ -104,6 +105,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         label: "Account",
         items: [
           { icon: User, label: "Profile", href: "profile" },
+          { icon: Settings, label: "Settings", href: "settings" },
           { icon: HelpCircle, label: "Support", href: "support" },
         ],
       },
@@ -126,6 +128,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         label: "Account",
         items: [
           { icon: Building2, label: "Profile", href: "profile" },
+          { icon: Settings, label: "Settings", href: "settings" },
           { icon: HelpCircle, label: "Support", href: "support" },
         ],
       },
