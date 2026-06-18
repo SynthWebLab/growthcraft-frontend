@@ -111,7 +111,7 @@ const MentorDashboard = () => (
             />
             <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
             <Tooltip
-              formatter={(v: number) => [`₹${v.toLocaleString()}`, "Earnings"]}
+              formatter={(v) => [`₹${Number(v).toLocaleString()}`, "Earnings"]}
             />
             <Bar dataKey="amount" fill="hsl(var(--lavender))" radius={[4, 4, 0, 0]} />
           </BarChart>
