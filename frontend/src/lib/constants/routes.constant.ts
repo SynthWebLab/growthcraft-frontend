@@ -10,11 +10,11 @@ export const NAV_ROUTES = [
   { name: "Bootcamps", path: "/bootcamps" },
   { name: "Training Programs", path: "/training-programs" },
   { name: "Events", path: "/events" },
+  { name: "Students", path: "/for-students" },
+  { name: "Colleges", path: "/for-colleges" },
+  { name: "Mentors", path: "/for-mentors" },
+  { name: "Employers", path: "/for-employers" },
   { name: "About", path: "/about" },
-  { name: "For Students", path: "/for-students" },
-  { name: "For Colleges", path: "/for-colleges" },
-  { name: "For Mentors", path: "/for-mentors" },
-  { name: "For Employers", path: "/for-employers" },
   { name: "Contact", path: "/contact" },
 ] as const;
 

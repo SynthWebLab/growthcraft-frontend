@@ -39,17 +39,7 @@ export const Navbar = () => {
 
   const courses = searchResults?.data || [];
 
-  // Group navigation routes
-  const mainRoutes = NAV_ROUTES.filter(route => 
-    ["Home", "Courses", "Training Programs", "Events", "About"].includes(route.name)
-    // ["Home", "Courses", "Bootcamps", "Training Programs", "Events", "About"].includes(route.name)
-  );
-  
-  const audienceRoutes = NAV_ROUTES.filter(route => 
-    route.name.startsWith("For ")
-  );
-  
-  const contactRoute = NAV_ROUTES.find(route => route.name === "Contact");
+  // Rendered directly in the Navbar from NAV_ROUTES
 
   // Close search results when clicking outside
   useEffect(() => {
@@ -96,12 +86,12 @@ export const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden xl:flex items-center gap-1">
-            {mainRoutes.map((link) => (
+          <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5">
+            {NAV_ROUTES.map((link) => (
               <Link
                 key={link.path}
                 href={link.path}
-                className={`px-2.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`px-1.5 2xl:px-2.5 py-2 rounded-lg text-xs 2xl:text-sm font-medium transition-colors whitespace-nowrap ${
                   pathname === link.path
                     ? "text-primary bg-primary/10"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -110,41 +100,6 @@ export const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            
-            {/* Audience Dropdown */}
-            {audienceRoutes.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className={`px-2.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
-                    audienceRoutes.some(route => pathname === route.path)
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}>
-                    For You <ChevronDown className="h-3 w-3" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {audienceRoutes.map((route) => (
-                    <DropdownMenuItem key={route.path} asChild>
-                      <Link href={route.path}>{route.name}</Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            
-            {contactRoute && (
-              <Link
-                href={contactRoute.path}
-                className={`px-2.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                  pathname === contactRoute.path
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-              >
-                {contactRoute.name}
-              </Link>
-            )}
           </div>
 
           {/* CTA Buttons */}
