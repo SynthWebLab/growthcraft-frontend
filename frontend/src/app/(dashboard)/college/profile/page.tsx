@@ -17,13 +17,13 @@ const CollegeProfile = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <PageHeader title="Institution Profile" description="Manage your college details" />
 
-      <form onSubmit={handleSave} className="space-y-6">
+      <form onSubmit={handleSave} className="grid lg:grid-cols-2 gap-6 items-start">
         <DataCard>
           <h3 className="text-base font-semibold font-display mb-4">Institution Details</h3>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Institution Name</Label>
               <Input defaultValue="ABC Engineering College" />
@@ -45,7 +45,7 @@ const CollegeProfile = () => {
 
         <DataCard>
           <h3 className="text-base font-semibold font-display mb-4">Point of Contact</h3>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>POC Name</Label>
               <Input defaultValue="Dr. R. Sharma" />
@@ -54,18 +54,17 @@ const CollegeProfile = () => {
               <Label>POC Phone</Label>
               <Input defaultValue="+91 98765 43210" />
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2 sm:col-span-2">
               <Label>SPOC Email</Label>
               <Input type="email" defaultValue="tpo@abcengg.edu" />
             </div>
           </div>
+          <div className="mt-6 flex justify-end">
+            <Button type="submit" className="bg-magenta hover:bg-magenta/90 text-white">
+              <Save className="h-4 w-4 mr-2" /> Save Changes
+            </Button>
+          </div>
         </DataCard>
-
-        <div className="flex justify-end">
-          <Button type="submit" className="bg-magenta hover:bg-magenta/90 text-white">
-            <Save className="h-4 w-4 mr-2" /> Save Changes
-          </Button>
-        </div>
       </form>
     </div>
   );

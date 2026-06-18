@@ -11,7 +11,7 @@ const faqs = [
 ];
 
 const CollegeSupport = () => (
-  <div className="space-y-6 max-w-3xl">
+  <div className="space-y-6">
     <div>
       <h1 className="text-2xl md:text-3xl font-bold text-foreground">Help & Support</h1>
       <p className="text-muted-foreground mt-1 text-sm">Get help with your campus partnership</p>
@@ -38,26 +38,34 @@ const CollegeSupport = () => (
       </Card>
     </div>
 
-    <Card className="border-border/50">
-      <CardHeader><CardTitle className="text-lg flex items-center gap-2"><HelpCircle className="h-5 w-5" /> FAQs</CardTitle></CardHeader>
-      <CardContent>
-        <Accordion type="single" collapsible className="w-full">
-          {faqs.map((faq, i) => (
-            <AccordionItem key={i} value={`faq-${i}`}>
-              <AccordionTrigger className="text-sm text-left">{faq.q}</AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground">{faq.a}</AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </CardContent>
-    </Card>
+    <div className="grid lg:grid-cols-2 gap-6 items-start">
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <HelpCircle className="h-5 w-5" /> FAQs
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            {faqs.map((faq, i) => (
+              <AccordionItem key={i} value={`faq-${i}`}>
+                <AccordionTrigger className="text-sm text-left">{faq.q}</AccordionTrigger>
+                <AccordionContent className="text-sm text-muted-foreground">{faq.a}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
 
-    <Card className="border-border/50">
-      <CardHeader><CardTitle className="text-lg">Submit a Query</CardTitle></CardHeader>
-      <CardContent>
-        <SupportQueryForm />
-      </CardContent>
-    </Card>
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg">Submit a Query</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SupportQueryForm />
+        </CardContent>
+      </Card>
+    </div>
   </div>
 );
 
