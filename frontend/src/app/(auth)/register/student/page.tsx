@@ -26,6 +26,7 @@ function StudentAuthContent() {
       icon={GraduationCap}
       title="Student Portal"
       subtitle="Access your learning dashboard"
+      expectedRole="student"
     >
       <Card className="border-border/50 shadow-lg">
         <Tabs defaultValue={defaultTab}>

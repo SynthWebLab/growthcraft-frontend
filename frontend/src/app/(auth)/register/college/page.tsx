@@ -22,6 +22,7 @@ function CollegeAuthContent() {
       icon={Building2}
       title="College Portal"
       subtitle="Manage your campus partnership"
+      expectedRole="college"
     >
       <Card className="border-border/50 shadow-lg">
         <Tabs defaultValue={defaultTab}>

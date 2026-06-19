@@ -22,6 +22,7 @@ function MentorAuthContent() {
       icon={UserCheck}
       title="Mentor Portal"
       subtitle="Share your expertise & mentor students"
+      expectedRole="mentor"
     >
       <Card className="border-border/50 shadow-lg">
         <Tabs defaultValue={defaultTab}>

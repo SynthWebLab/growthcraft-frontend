@@ -77,6 +77,14 @@ async function checkAuth(request: NextRequest): Promise<{ isAuthenticated: boole
   }
 }
 
+function getTargetRoleFromPath(pathname: string): string | null {
+  if (pathname.includes('/student')) return 'student';
+  if (pathname.includes('/mentor')) return 'mentor';
+  if (pathname.includes('/college')) return 'college';
+  if (pathname.includes('/employer')) return 'employer';
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -116,17 +124,22 @@ export async function middleware(request: NextRequest) {
   // Redirect fully authenticated and verified users away from auth pages (login, register)
   // EXCEPT if they have a callbackUrl - redirect them to the callback destination
   if (isAuthRoute && isAuthenticated && isEmailVerified && userRole) {
-    // Check if there's a callbackUrl parameter
-    const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+    const targetRole = getTargetRoleFromPath(pathname);
     
-    if (callbackUrl && callbackUrl !== '/') {
-      // User is already authenticated, redirect directly to the callback URL
-      return NextResponse.redirect(new URL(callbackUrl, request.url));
+    // Only redirect if they are visiting their own role's page or a generic auth route
+    if (targetRole === null || targetRole === userRole) {
+      // Check if there's a callbackUrl parameter
+      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+      
+      if (callbackUrl && callbackUrl !== '/') {
+        // User is already authenticated, redirect directly to the callback URL
+        return NextResponse.redirect(new URL(callbackUrl, request.url));
+      }
+      
+      // No callback URL - redirect to dashboard
+      const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
+      return NextResponse.redirect(new URL(dashboardRoute, request.url));
     }
-    
-    // No callback URL - redirect to dashboard
-    const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
-    return NextResponse.redirect(new URL(dashboardRoute, request.url));
   }
 
   // Allow auth routes for non-authenticated users

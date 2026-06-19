@@ -22,6 +22,7 @@ function EmployerAuthContent() {
       icon={Briefcase}
       title="Employer Portal"
       subtitle="Hire job-ready tech talent"
+      expectedRole="employer"
     >
       <Card className="border-border/50 shadow-lg">
         <Tabs defaultValue={defaultTab}>

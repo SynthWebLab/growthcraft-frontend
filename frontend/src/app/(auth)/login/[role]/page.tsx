@@ -69,7 +69,7 @@ function LoginPageContent({ role }: { role: keyof typeof roleConfig }) {
   const { icon: Icon, title, subtitle, redirectPath, RegisterForm } = config;
 
   return (
-    <AuthPageLayout icon={Icon} title={title} subtitle={subtitle}>
+    <AuthPageLayout icon={Icon} title={title} subtitle={subtitle} expectedRole={role}>
       {/* Success message after email verification */}
       {verified && (
         <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-start gap-3">
