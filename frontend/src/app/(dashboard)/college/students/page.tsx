@@ -1,31 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import PanelDataTable, { Column } from "@/components/panel/PanelDataTable";
 import { StatusPill } from "@/components/panel";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Upload, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useCollegeStudents, useCollegeCohort, useImportStudents } from "@/hooks/queries/useCollege";
+import type { CollegeStudentRow } from "@/types/college";
 
-interface Student {
-  name: string;
-  email: string;
-  courses: number;
-  avgProgress: number;
-  status: "active" | "completed" | "pending";
-  lastActive: string;
-}
-
-const students: Student[] = [
-  { name: "Rahul Sharma", email: "rahul@college.edu", courses: 2, avgProgress: 78, status: "active", lastActive: "2 hours ago" },
-  { name: "Priya Devi", email: "priya@college.edu", courses: 1, avgProgress: 96, status: "active", lastActive: "1 hour ago" },
-  { name: "Amit Kumar", email: "amit@college.edu", courses: 1, avgProgress: 100, status: "completed", lastActive: "1 day ago" },
-  { name: "Sneha Gupta", email: "sneha@college.edu", courses: 1, avgProgress: 45, status: "active", lastActive: "3 hours ago" },
-  { name: "Ravi Patel", email: "ravi@college.edu", courses: 1, avgProgress: 60, status: "active", lastActive: "5 hours ago" },
-  { name: "Meera Singh", email: "meera@college.edu", courses: 2, avgProgress: 100, status: "completed", lastActive: "2 days ago" },
-  { name: "Arjun Nair", email: "arjun@college.edu", courses: 1, avgProgress: 12, status: "pending", lastActive: "1 week ago" },
-  { name: "Kavitha R.", email: "kavitha@college.edu", courses: 3, avgProgress: 72, status: "active", lastActive: "4 hours ago" },
-];
+type Student = CollegeStudentRow;
 
 const columns: Column<Student>[] = [
   {
@@ -35,7 +20,7 @@ const columns: Column<Student>[] = [
     render: (row) => (
       <div className="flex items-center gap-3">
         <div className="h-8 w-8 rounded-full bg-lavender/10 text-lavender flex items-center justify-center text-xs font-bold">
-          {row.name.split(" ").map(n => n[0]).join("")}
+          {row.name.split(" ").map((n) => n[0]).join("")}
         </div>
         <div>
           <p className="text-sm font-medium">{row.name}</p>
@@ -61,9 +46,22 @@ const columns: Column<Student>[] = [
   {
     key: "status",
     label: "Status",
-    render: (row) => <StatusPill variant={row.status === "completed" ? "completed" : row.status === "pending" ? "pending" : "active"} />,
+    render: (row) => (
+      <StatusPill
+        variant={row.status === "completed" ? "completed" : row.status === "pending" ? "pending" : "active"}
+      />
+    ),
   },
-  { key: "lastActive", label: "Last Active", sortable: true },
+  {
+    key: "lastActive",
+    label: "Last Active",
+    sortable: true,
+    render: (row) => (
+      <span className="text-sm text-muted-foreground">
+        {row.lastActive ? new Date(row.lastActive).toLocaleDateString() : "—"}
+      </span>
+    ),
+  },
 ];
 
 const exportColumns: { key: keyof Student; label: string }[] = [
@@ -81,9 +79,9 @@ const toCsvValue = (value: string | number) => {
 };
 
 const downloadCsv = (rows: Student[]) => {
-  const header = exportColumns.map(c => toCsvValue(c.label)).join(",");
+  const header = exportColumns.map((c) => toCsvValue(c.label)).join(",");
   const body = rows
-    .map(row => exportColumns.map(c => toCsvValue(row[c.key])).join(","))
+    .map((row) => exportColumns.map((c) => toCsvValue(row[c.key])).join(","))
     .join("\n");
   const csv = `${header}\n${body}`;
 
@@ -100,14 +98,47 @@ const downloadCsv = (rows: Student[]) => {
 
 const CollegeStudents = () => {
   const [filter, setFilter] = useState<string>("all");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = filter === "all" ? students : students.filter(s => s.status === filter);
+  const { data, isLoading } = useCollegeStudents({ limit: 1000 });
+  const { data: cohortRes } = useCollegeCohort();
+  const importStudents = useImportStudents();
+
+  const students = data?.data ?? [];
+  const cohort = cohortRes?.data;
+  const subscribed = cohort?.subscribed ?? true;
+
+  const filtered = filter === "all" ? students : students.filter((s) => s.status === filter);
   const chips = [
     { key: "all", label: "All", count: students.length },
-    { key: "active", label: "Active", count: students.filter(s => s.status === "active").length },
-    { key: "completed", label: "Completed", count: students.filter(s => s.status === "completed").length },
-    { key: "pending", label: "Pending", count: students.filter(s => s.status === "pending").length },
+    { key: "active", label: "Active", count: students.filter((s) => s.status === "active").length },
+    { key: "completed", label: "Completed", count: students.filter((s) => s.status === "completed").length },
+    { key: "pending", label: "Pending", count: students.filter((s) => s.status === "pending").length },
   ];
+
+  const requireSubscription = () => {
+    toast.error("Subscription required", {
+      description: "Choose a partnership plan before importing or exporting students.",
+    });
+  };
+
+  const handleExport = () => {
+    if (!subscribed) return requireSubscription();
+    downloadCsv(filtered);
+  };
+
+  const handleImportClick = () => {
+    if (!subscribed) return requireSubscription();
+    fileInputRef.current?.click();
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    const csv = await file.text();
+    importStudents.mutate({ csv });
+  };
 
   return (
     <div className="space-y-6">
@@ -115,14 +146,48 @@ const CollegeStudents = () => {
         title="Students"
         description="Track students enrolled in GrowthCraft programs from your campus"
         action={
-          <Button variant="outline" size="sm" onClick={() => downloadCsv(filtered)}>
-            <Download className="h-4 w-4 mr-2" /> Export CSV
-          </Button>
+          <div className="flex items-center gap-2">
+            {cohort && (
+              <span className="text-xs text-muted-foreground mr-1">
+                {cohort.used}
+                {cohort.unlimited ? "" : ` / ${cohort.limit}`} students
+              </span>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={handleFile}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleImportClick}
+              disabled={importStudents.isPending}
+            >
+              {importStudents.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
+              Import CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" /> Export CSV
+            </Button>
+          </div>
         }
       />
 
+      {!subscribed && (
+        <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+          You don&apos;t have an active subscription. Choose a partnership plan to import/export students.
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2">
-        {chips.map(c => (
+        {chips.map((c) => (
           <button
             key={c.key}
             onClick={() => setFilter(c.key)}
@@ -137,7 +202,11 @@ const CollegeStudents = () => {
         ))}
       </div>
 
-      <PanelDataTable columns={columns} data={filtered} searchKey="name" pageSize={10} />
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading students…</p>
+      ) : (
+        <PanelDataTable columns={columns} data={filtered} searchKey="name" pageSize={10} />
+      )}
     </div>
   );
 };

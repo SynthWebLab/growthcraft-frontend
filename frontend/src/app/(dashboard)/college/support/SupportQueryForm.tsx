@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useSubmitCollegeSupport } from "@/hooks/queries/useCollege";
 
 const SupportQueryForm = () => {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const { mutate, isPending } = useSubmitCollegeSupport();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,14 +22,15 @@ const SupportQueryForm = () => {
       return;
     }
 
-    setSubmitting(true);
-    // No support endpoint yet — acknowledge the submission.
-    toast.success("Message sent", {
-      description: "Our campus team will get back to you shortly.",
-    });
-    setSubject("");
-    setMessage("");
-    setSubmitting(false);
+    mutate(
+      { subject, message },
+      {
+        onSuccess: () => {
+          setSubject("");
+          setMessage("");
+        },
+      }
+    );
   };
 
   return (
@@ -44,8 +46,8 @@ const SupportQueryForm = () => {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
       />
-      <Button type="submit" disabled={submitting}>
-        Send Message
+      <Button type="submit" disabled={isPending}>
+        {isPending ? "Sending..." : "Send Message"}
       </Button>
     </form>
   );
