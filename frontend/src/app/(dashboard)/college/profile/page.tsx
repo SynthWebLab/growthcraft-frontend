@@ -76,6 +76,15 @@ const CollegeProfile = () => {
               <Input value={form.website} onChange={set("website")} />
             </div>
           </div>
+          <div className="mt-6 flex justify-end">
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="bg-magenta hover:bg-magenta/90 text-white"
+            >
+              <Save className="h-4 w-4 mr-2" /> {isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
         </DataCard>
 
         <DataCard>
