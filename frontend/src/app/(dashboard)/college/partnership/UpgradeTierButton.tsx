@@ -6,16 +6,17 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { useRequestUpgrade } from "@/hooks/queries/useCollege";
+import type { PartnershipTier } from "@/types/college";
 
 interface UpgradeTierButtonProps {
   currentTier: string;
-  nextTier: string | null;
+  nextTier: PartnershipTier | null;
 }
 
 const UpgradeTierButton = ({ currentTier, nextTier }: UpgradeTierButtonProps) => {
   const [open, setOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const { mutate, isPending } = useRequestUpgrade();
 
   if (!nextTier) {
     return (
@@ -26,13 +27,10 @@ const UpgradeTierButton = ({ currentTier, nextTier }: UpgradeTierButtonProps) =>
   }
 
   const handleConfirm = () => {
-    setSubmitting(true);
-    // No upgrade endpoint yet — acknowledge the request.
-    toast.success("Upgrade request sent", {
-      description: `Your request to upgrade from ${currentTier} to ${nextTier} has been sent. Your SPOC will reach out shortly.`,
-    });
-    setSubmitting(false);
-    setOpen(false);
+    mutate(
+      { requestedTier: nextTier },
+      { onSuccess: () => setOpen(false) }
+    );
   };
 
   return (
@@ -56,15 +54,15 @@ const UpgradeTierButton = ({ currentTier, nextTier }: UpgradeTierButtonProps) =>
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
               Cancel
             </Button>
             <Button
               className="bg-magenta hover:bg-magenta/90 text-white"
               onClick={handleConfirm}
-              disabled={submitting}
+              disabled={isPending}
             >
-              Confirm Request
+              {isPending ? "Sending..." : "Confirm Request"}
             </Button>
           </div>
         </DialogContent>

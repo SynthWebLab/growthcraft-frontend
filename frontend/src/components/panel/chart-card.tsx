@@ -12,6 +12,8 @@ interface ChartCardProps {
   title: string;
   children: ReactNode;
   periods?: string[];
+  selectedPeriod?: string;
+  onPeriodChange?: (period: string) => void;
   className?: string;
 }
 
@@ -19,12 +21,14 @@ export const ChartCard = ({
   title,
   children,
   periods = ["7 days", "30 days", "90 days"],
+  selectedPeriod,
+  onPeriodChange,
   className,
 }: ChartCardProps) => (
   <div className={cn("rounded-xl border border-border bg-white p-6", className)}>
     <div className="flex items-center justify-between mb-6">
       <h3 className="text-base font-semibold font-display">{title}</h3>
-      <Select defaultValue={periods[0]}>
+      <Select value={selectedPeriod} defaultValue={periods[0]} onValueChange={onPeriodChange}>
         <SelectTrigger className="w-28 h-8 text-xs">
           <SelectValue />
         </SelectTrigger>

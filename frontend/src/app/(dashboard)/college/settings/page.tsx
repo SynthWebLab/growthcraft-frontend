@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,24 +9,49 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
 import { toast } from "sonner";
+import {
+  useCollegeSettings,
+  useUpdateCollegeAccount,
+  useUpdateCollegeNotifications,
+} from "@/hooks/queries/useCollege";
+import { useChangePassword } from "@/hooks/queries/useStudent";
+import type { CollegeNotificationPreferences } from "@/types/college";
 
-const notificationPrefs = [
-  { label: "Student enrollments", desc: "New student enrollments and updates" },
-  { label: "Program updates", desc: "Changes to your training programs" },
-  { label: "Reports ready", desc: "Monthly performance reports are available" },
-  { label: "Marketing emails", desc: "Platform news, features, and offers" },
+const NOTIFICATION_ITEMS: {
+  key: keyof CollegeNotificationPreferences;
+  label: string;
+  desc: string;
+}[] = [
+  { key: "studentEnrollments", label: "Student enrollments", desc: "New student enrollments and updates" },
+  { key: "programUpdates", label: "Program updates", desc: "Changes to your training programs" },
+  { key: "reportsReady", label: "Reports ready", desc: "Monthly performance reports are available" },
+  { key: "marketingEmails", label: "Marketing emails", desc: "Platform news, features, and offers" },
 ];
 
 export default function CollegeSettingsPage() {
-  const [institutionName, setInstitutionName] = useState("ABC Engineering College");
-  const [phone, setPhone] = useState("+91 98765 43210");
+  const { data } = useCollegeSettings();
+  const settings = data?.data;
+
+  const updateAccount = useUpdateCollegeAccount();
+  const updateNotifications = useUpdateCollegeNotifications();
+  const changePassword = useChangePassword();
+
+  const [institutionName, setInstitutionName] = useState("");
+  const [phone, setPhone] = useState("");
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  useEffect(() => {
+    if (settings) {
+      setInstitutionName(settings.institutionName ?? "");
+      setPhone(settings.phone ?? "");
+    }
+  }, [settings]);
+
   const handleSaveAccount = () => {
-    toast.success("Account updated", { description: "Your account details have been saved." });
+    updateAccount.mutate({ institutionName, phone });
   };
 
   const handleUpdatePassword = () => {
@@ -36,10 +61,20 @@ export default function CollegeSettingsPage() {
       });
       return;
     }
-    toast.success("Password updated", { description: "Your password has been changed." });
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    changePassword.mutate(
+      { currentPassword, newPassword, confirmPassword },
+      {
+        onSuccess: () => {
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+        },
+      }
+    );
+  };
+
+  const handleToggle = (key: keyof CollegeNotificationPreferences, value: boolean) => {
+    updateNotifications.mutate({ [key]: value });
   };
 
   return (
@@ -64,7 +99,7 @@ export default function CollegeSettingsPage() {
                 </div>
                 <div>
                   <Label>Email</Label>
-                  <Input value="tpo@abcengg.edu" type="email" className="mt-1.5" disabled readOnly />
+                  <Input value={settings?.email ?? ""} type="email" className="mt-1.5" disabled readOnly />
                   <p className="text-xs text-muted-foreground mt-1">Email cannot be changed here.</p>
                 </div>
                 <div>
@@ -72,8 +107,12 @@ export default function CollegeSettingsPage() {
                   <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" className="mt-1.5" />
                 </div>
               </div>
-              <Button className="bg-magenta text-white hover:bg-magenta/90" onClick={handleSaveAccount}>
-                Save Changes
+              <Button
+                className="bg-magenta text-white hover:bg-magenta/90"
+                onClick={handleSaveAccount}
+                disabled={updateAccount.isPending}
+              >
+                {updateAccount.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </DataCard>
@@ -83,13 +122,17 @@ export default function CollegeSettingsPage() {
           <DataCard>
             <h3 className="font-bold text-foreground mb-4">Notification Preferences</h3>
             <div className="space-y-4">
-              {notificationPrefs.map((item) => (
-                <div key={item.label} className="flex items-center justify-between">
+              {NOTIFICATION_ITEMS.map((item) => (
+                <div key={item.key} className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-foreground">{item.label}</p>
                     <p className="text-xs text-muted-foreground">{item.desc}</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch
+                    checked={settings?.notificationPreferences?.[item.key] ?? false}
+                    onCheckedChange={(v) => handleToggle(item.key, v === true)}
+                    disabled={!settings || updateNotifications.isPending}
+                  />
                 </div>
               ))}
             </div>
@@ -117,9 +160,9 @@ export default function CollegeSettingsPage() {
               <Button
                 className="bg-magenta text-white hover:bg-magenta/90"
                 onClick={handleUpdatePassword}
-                disabled={!currentPassword || !newPassword || !confirmPassword}
+                disabled={!currentPassword || !newPassword || !confirmPassword || changePassword.isPending}
               >
-                Update Password
+                {changePassword.isPending ? "Updating..." : "Update Password"}
               </Button>
             </div>
           </DataCard>

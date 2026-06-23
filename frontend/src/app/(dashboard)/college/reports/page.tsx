@@ -13,12 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
+import { useCollegeReports } from "@/hooks/queries/useCollege";
+import type { CollegeMonthlyReport } from "@/types/college";
 
-interface Report {
-  month: string;
-  enrollments: number;
-  completionRate: string;
-}
+type Report = CollegeMonthlyReport;
 
 const downloadReportPdf = (report: Report) => {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -68,23 +66,14 @@ const downloadReportPdf = (report: Report) => {
   doc.save(`growthcraft-report-${report.month.replace(/\s+/g, "-").toLowerCase()}.pdf`);
 };
 
-const reports: Report[] = [
-  { month: "March 2026", enrollments: 58, completionRate: "82%" },
-  { month: "February 2026", enrollments: 62, completionRate: "79%" },
-  { month: "January 2026", enrollments: 55, completionRate: "76%" },
-  { month: "December 2025", enrollments: 38, completionRate: "84%" },
-  { month: "November 2025", enrollments: 41, completionRate: "71%" },
-  { month: "October 2025", enrollments: 32, completionRate: "68%" },
-];
-
 const MONTH_NAMES = [
-  "january", "february", "march", "april", "may", "june",
-  "july", "august", "september", "october", "november", "december",
+  "jan", "feb", "mar", "apr", "may", "jun",
+  "jul", "aug", "sep", "oct", "nov", "dec",
 ];
 
 const parseReportMonth = (month: string) => {
   const [name, year] = month.toLowerCase().split(" ");
-  return new Date(Number(year), MONTH_NAMES.indexOf(name), 1);
+  return new Date(Number(year), MONTH_NAMES.indexOf(name.slice(0, 3)), 1);
 };
 
 const formatRange = (from: string, to: string) => {
@@ -94,18 +83,26 @@ const formatRange = (from: string, to: string) => {
   return "All time";
 };
 
-const downloadCustomReportPdf = (from: string, to: string, selectedMetrics: string[]) => {
-  const inRange = reports.filter((r) => {
+const downloadCustomReportPdf = (
+  allReports: Report[],
+  from: string,
+  to: string,
+  selectedMetrics: string[]
+) => {
+  const inRange = allReports.filter((r) => {
     const d = parseReportMonth(r.month);
     if (from && d < new Date(from)) return false;
     if (to && d > new Date(to)) return false;
     return true;
   });
-  const periodReports = inRange.length ? inRange : reports;
+  const periodReports = inRange.length ? inRange : allReports;
 
   const totalEnrollments = periodReports.reduce((sum, r) => sum + r.enrollments, 0);
   const avgCompletion = periodReports.length
-    ? Math.round(periodReports.reduce((sum, r) => sum + parseFloat(r.completionRate), 0) / periodReports.length)
+    ? Math.round(
+        periodReports.reduce((sum, r) => sum + parseFloat(r.completionRate), 0) /
+          periodReports.length
+      )
     : 0;
 
   const metricValue = (metric: string): string => {
@@ -189,6 +186,9 @@ const columns: Column<Report>[] = [
 const metrics = ["Enrollments", "Completion Rate", "Student Progress", "Placement Stats", "Mentor Sessions"];
 
 const CollegeReports = () => {
+  const { data, isLoading } = useCollegeReports();
+  const reports = data?.data?.reports ?? [];
+
   const [modalOpen, setModalOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -214,9 +214,8 @@ const CollegeReports = () => {
       return;
     }
 
-    // Order the metrics as listed for a consistent report layout.
     const ordered = metrics.filter((m) => selectedMetrics.includes(m));
-    downloadCustomReportPdf(fromDate, toDate, ordered);
+    downloadCustomReportPdf(reports, fromDate, toDate, ordered);
     toast.success("Report generated", {
       description: "Your custom report has been downloaded.",
     });
@@ -235,7 +234,11 @@ const CollegeReports = () => {
         }
       />
 
-      <PanelDataTable columns={columns} data={reports} pageSize={10} />
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading reports…</p>
+      ) : (
+        <PanelDataTable columns={columns} data={reports} pageSize={10} />
+      )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md">
