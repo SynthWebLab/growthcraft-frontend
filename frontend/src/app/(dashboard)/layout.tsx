@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import PanelSidebar, { type NavSection } from "@/components/dashboard/PanelSidebar";
 import PanelTopbar from "@/components/dashboard/PanelTopbar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
+import { DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
 import {
   LayoutDashboard, BookOpen, Award, User, HelpCircle, Settings,
   GraduationCap, Users, Calendar, BarChart3, Building2,
-  Briefcase, Search, FileText, Megaphone, DollarSign, Wrench, Trophy, Target
+  Briefcase, Search, FileText, Megaphone, DollarSign, Wrench, Trophy, Target,
+  Loader2
 } from "lucide-react";
 
 type Role = "Student" | "College" | "Ambassador" | "Mentor" | "HiringPartner";
@@ -146,13 +149,28 @@ function getPanelKey(pathname: string): string {
 }
 
 const PanelLayout = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const isMobile = useIsMobile();
-  const pathname = usePathname();
 
   const panelKey = getPanelKey(pathname);
   const config = panelConfigs[panelKey] || panelConfigs.student;
+
+  const userRole = user?.role?.toLowerCase();
+  const pathRole = panelKey === "hiring" ? "employer" : panelKey;
+
+  const isRoleMismatch = !!(isAuthenticated && userRole && pathRole && userRole !== pathRole);
+
+  useEffect(() => {
+    if (!isLoading && isRoleMismatch && userRole) {
+      const targetDashboard = DASHBOARD_ROUTES[userRole as keyof typeof DASHBOARD_ROUTES] || `/${userRole}`;
+      router.replace(targetDashboard);
+    }
+  }, [isLoading, isRoleMismatch, userRole, router]);
 
   const handleMenuClick = () => {
     if (isMobile) {
@@ -161,6 +179,25 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
       setCollapsed((c) => !c);
     }
   };
+
+  // Show a loading screen if auth is checking, if they are not authenticated, or if there's a role conflict and we are redirecting
+  const showLoader = isLoading || !isAuthenticated || isRoleMismatch;
+
+  if (showLoader) {
+    return (
+      <div className="min-h-screen bg-marble flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="relative flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full border-4 border-lavender/30 border-t-magenta animate-spin" />
+            <span className="absolute text-sm font-semibold text-magenta">GC</span>
+          </div>
+          <p className="text-sm font-afacad font-medium text-muted-foreground tracking-wide animate-pulse">
+            {isRoleMismatch ? "Redirecting to your dashboard..." : "Loading your workspace..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">

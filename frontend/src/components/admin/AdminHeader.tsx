@@ -23,11 +23,11 @@ interface AdminHeaderProps {
 }
 
 export const AdminHeader = ({ user, onLogout, onMenuClick }: AdminHeaderProps) => {
-  const displayName = user?.full_name || (user as any)?.fullName || "";
+  const displayName: string = user?.full_name || (user as any)?.fullName || "";
   const initials = displayName
     ? displayName
         .split(" ")
-        .map((n) => n[0])
+        .map((n: string) => n[0])
         .join("")
         .toUpperCase()
     : user?.email?.[0]?.toUpperCase() || "A";

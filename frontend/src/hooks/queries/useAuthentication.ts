@@ -178,8 +178,9 @@ export function useVerifyEmail(callbackUrl?: string) {
             router.push(callbackUrl);
             router.refresh(); // Refresh to update auth state
           } else {
-            // No callback URL - redirect to student dashboard
-            router.push(DASHBOARD_ROUTES.student);
+            // Redirect based on user role
+            const dashboardRoute = DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || DASHBOARD_ROUTES.student;
+            router.push(dashboardRoute);
             router.refresh(); // Refresh to update auth state
           }
         }, 1500);
