@@ -59,12 +59,31 @@ jobs:
             sudo apt-get clean || true
             
             echo "=== Vacuuming systemd journal logs ==="
+            sudo journalctl --vacuum-size=50M || true
             sudo journalctl --vacuum-time=1d || true
+            
+            echo "=== Cleaning rotated and large active log files ==="
+            sudo find /var/log -type f -name "*.gz" -delete || true
+            sudo find /var/log -type f -name "*.1" -delete || true
+            sudo find /var/log -type f -name "*.log" -size +10M -exec truncate -s 0 {} \; || true
+            
+            echo "=== Cleaning /tmp ==="
+            sudo rm -rf /tmp/* || true
+            
+            if command -v pm2 &> /dev/null; then
+              echo "=== Cleaning PM2 logs ==="
+              pm2 flush || true
+            fi
             
             echo "=== Checking and cleaning Docker resources (if present) ==="
             if command -v docker &> /dev/null; then
               sudo docker system prune -af --volumes || true
+              sudo docker builder prune -af || true
             fi
+            
+            echo "=== Top Space Consumers ==="
+            sudo du -hxd 1 /var /home /usr /opt 2>/dev/null | sort -rh || true
+            sudo du -hxd 2 /home /var/log 2>/dev/null | sort -rh | head -n 15 || true
             
             echo "=== Disk Space After Cleanup ==="
             df -h
