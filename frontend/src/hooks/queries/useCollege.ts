@@ -31,6 +31,7 @@ export const collegeKeys = {
   reports: () => [...collegeKeys.all, "reports"] as const,
   settings: () => [...collegeKeys.all, "settings"] as const,
   supportTickets: () => [...collegeKeys.all, "support"] as const,
+  eventAccess: (eventId: string) => [...collegeKeys.all, "event-access", eventId] as const,
 };
 
 const STALE = 2 * 60 * 1000; // 2 minutes
@@ -246,6 +247,35 @@ export function useSubmitCollegeSupport() {
     },
     onError: (error: any) => {
       toast.error("Couldn't send message", { description: extractApiError(error, "Please try again.") });
+    },
+  });
+}
+
+export function useEventAccessStudents(eventId: string) {
+  return useQuery({
+    queryKey: collegeKeys.eventAccess(eventId),
+    queryFn: () => collegeService.getEventAccessStudents(eventId),
+    enabled: !!eventId,
+  });
+}
+
+export function useUpdateEventAccess() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      eventId,
+      data,
+    }: {
+      eventId: string;
+      data: { studentIds: string[]; action: "grant" | "revoke" };
+    }) => collegeService.updateEventAccess(eventId, data),
+    onSuccess: (response, variables) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: collegeKeys.eventAccess(variables.eventId) });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Failed to update access", { description: extractApiError(error, "Please try again.") });
     },
   });
 }

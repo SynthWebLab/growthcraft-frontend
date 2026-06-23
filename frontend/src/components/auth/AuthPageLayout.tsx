@@ -61,9 +61,9 @@ export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, chil
   };
 
   const hasConflict = !!(user && expectedRole && user.role?.toLowerCase() !== expectedRole.toLowerCase());
-  const userRoleDisplay = user ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
+  const userRoleDisplay = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
   const expectedRoleDisplay = expectedRole ? expectedRole.charAt(0).toUpperCase() + expectedRole.slice(1) : "";
-  const userDashboard = user ? (dashboardRoutes[user.role as keyof typeof dashboardRoutes] || "/") : "/";
+  const userDashboard = user?.role ? (dashboardRoutes[user.role as keyof typeof dashboardRoutes] || "/") : "/";
 
   // If user is loading session, show loading spinner
   if (isLoading) {

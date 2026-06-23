@@ -25,7 +25,11 @@ export interface CollegeDashboardData {
     cohortLimit: number | null;
     cohortRemaining: number | null;
   };
-  enrollmentTrend: { month: string; students: number }[];
+  enrollmentTrend: {
+    weekly: { label: string; students: number }[];
+    monthly: { label: string; students: number }[];
+    yearly: { label: string; students: number }[];
+  };
   topPerformers: { name: string; course: string; progress: number }[];
   recentActivity: { text: string; date: string }[];
 }

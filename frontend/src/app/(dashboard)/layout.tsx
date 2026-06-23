@@ -51,6 +51,9 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         items: [
           { icon: LayoutDashboard, label: "Dashboard", href: "dashboard" },
           { icon: GraduationCap, label: "Students", href: "students" },
+          { icon: Wrench, label: "Workshops", href: "workshops" },
+          { icon: Trophy, label: "Hackathons", href: "hackathons" },
+          { icon: GraduationCap, label: "Bootcamps", href: "bootcamps" },
           { icon: BarChart3, label: "Reports", href: "reports" },
           { icon: Award, label: "Partnership", href: "partnership" },
         ],

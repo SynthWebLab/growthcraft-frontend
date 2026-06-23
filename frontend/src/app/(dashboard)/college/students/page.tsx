@@ -29,7 +29,7 @@ const columns: Column<Student>[] = [
       </div>
     ),
   },
-  { key: "courses", label: "Enrolled Courses", sortable: true },
+  { key: "courses", label: "Enrolled Courses/Events", sortable: true },
   {
     key: "avgProgress",
     label: "Avg Progress",
@@ -67,7 +67,7 @@ const columns: Column<Student>[] = [
 const exportColumns: { key: keyof Student; label: string }[] = [
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },
-  { key: "courses", label: "Enrolled Courses" },
+  { key: "courses", label: "Enrolled Courses/Events" },
   { key: "avgProgress", label: "Avg Progress (%)" },
   { key: "status", label: "Status" },
   { key: "lastActive", label: "Last Active" },

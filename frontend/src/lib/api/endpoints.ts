@@ -90,6 +90,8 @@ export const API_ENDPOINTS = {
     settingsAccount: "/colleges/settings/account",
     settingsNotifications: "/colleges/settings/notifications",
     support: "/colleges/support",
+    eventStudents: (eventId: string) => `/colleges/events/${eventId}/students`,
+    eventAccess: (eventId: string) => `/colleges/events/${eventId}/access`,
   },
   leads: {
     create: "/leads",

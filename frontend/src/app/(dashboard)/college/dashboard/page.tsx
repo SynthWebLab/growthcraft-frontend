@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard, ChartCard, StatusPill } from "@/components/panel";
@@ -17,6 +18,7 @@ import {
 const CollegeDashboard = () => {
   const { data, isLoading, isError } = useCollegeDashboard();
   const dashboard = data?.data;
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("Weekly");
 
   return (
     <div className="space-y-8">
@@ -34,7 +36,7 @@ const CollegeDashboard = () => {
           label="Total Students Enrolled"
           value={isLoading ? 0 : dashboard?.kpis.totalStudentsEnrolled ?? 0}
         />
-        <KpiCard label="Active Courses" value={isLoading ? 0 : dashboard?.kpis.activeCourses ?? 0} />
+        <KpiCard label="Active Courses/Events" value={isLoading ? 0 : dashboard?.kpis.activeCourses ?? 0} />
         <div className="rounded-xl border border-border bg-white p-6">
           <p className="text-sm text-muted-foreground mb-1">Partnership Tier</p>
           <StatusPill
@@ -51,12 +53,23 @@ const CollegeDashboard = () => {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <ChartCard title="Enrollment Trend">
+        <ChartCard
+          title="Enrollment Trend"
+          periods={["Weekly", "Monthly", "Yearly"]}
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+        >
           <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={dashboard?.enrollmentTrend ?? []}>
+            <LineChart
+              data={
+                dashboard?.enrollmentTrend?.[
+                  selectedPeriod.toLowerCase() as "weekly" | "monthly" | "yearly"
+                ] ?? []
+              }
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
-                dataKey="month"
+                dataKey="label"
                 tick={{ fontSize: 12 }}
                 stroke="hsl(var(--muted-foreground))"
               />

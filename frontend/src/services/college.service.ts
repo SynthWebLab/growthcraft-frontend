@@ -110,4 +110,17 @@ export const collegeService = {
   getSupportTickets: async (): Promise<CollegeSupportTicketsResponse> => {
     return apiClient.get<CollegeSupportTicketsResponse>(API_ENDPOINTS.colleges.support);
   },
+
+  getEventAccessStudents: async (
+    eventId: string
+  ): Promise<ApiResponse<{ userId: string; name: string; email: string; phone: string; hasAccess: boolean }[]>> => {
+    return apiClient.get(API_ENDPOINTS.colleges.eventStudents(eventId));
+  },
+
+  updateEventAccess: async (
+    eventId: string,
+    data: { studentIds: string[]; action: "grant" | "revoke" }
+  ): Promise<ApiResponse<{ success: boolean; modifiedCount: number }>> => {
+    return apiClient.post(API_ENDPOINTS.colleges.eventAccess(eventId), data);
+  },
 };
