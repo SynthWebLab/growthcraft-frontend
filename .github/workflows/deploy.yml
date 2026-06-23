@@ -54,8 +54,9 @@ jobs:
 
             cd /home/ubuntu/growthcraft-frontend
 
-            # Install dependencies
-            npm ci
+            # Clean npm cache and install production-only dependencies to save disk space
+            npm cache clean --force || true
+            npm ci --omit=dev
 
             # Restart the systemd service
             sudo systemctl daemon-reload
