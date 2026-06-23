@@ -33,6 +33,20 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
+      - name: Free Disk Space on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            # Ensure folder exists and clean up old heavy directories to free disk space
+            mkdir -p /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend
+            sudo rm -rf /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend/node_modules || true
+            sudo rm -rf /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend/.next/cache || true
+            sudo journalctl --vacuum-size=50M || true
+
       - name: Transfer Files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -40,8 +54,10 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "frontend/.next,frontend/public,frontend/package.json,frontend/package-lock.json,frontend/next.config.ts,frontend/.env"
-          target: "/home/ubuntu/growthcraft-frontend"
+          target: "/home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend"
           strip_components: 1
+          overwrite: true
+          debug: true
 
       - name: Execute Deployment on EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -52,7 +68,7 @@ jobs:
           script: |
             set -e
 
-            cd /home/ubuntu/growthcraft-frontend
+            cd /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend
 
             # Clean npm cache and install production-only dependencies to save disk space
             npm cache clean --force || true
