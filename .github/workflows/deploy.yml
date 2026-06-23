@@ -45,6 +45,8 @@ jobs:
             mkdir -p /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend
             sudo rm -rf /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend/node_modules || true
             sudo rm -rf /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend/.next/cache || true
+            rm -rf /home/${{ secrets.EC2_USERNAME }}/.npm || true
+            sudo apt-get clean || true
             sudo journalctl --vacuum-size=50M || true
 
       - name: Transfer Files to EC2
