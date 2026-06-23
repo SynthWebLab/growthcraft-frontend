@@ -41,11 +41,33 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+            echo "=== Initial Disk Space ==="
+            df -h
+            
             # Ensure folder exists and clean up old heavy directories to free disk space
             mkdir -p /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend
+            
+            echo "=== Cleaning up node_modules and next cache ==="
             sudo rm -rf /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend/node_modules || true
             sudo rm -rf /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend/.next/cache || true
-            sudo journalctl --vacuum-size=50M || true
+            
+            echo "=== Cleaning npm cache ==="
+            rm -rf /home/${{ secrets.EC2_USERNAME }}/.npm || true
+            
+            echo "=== Cleaning system package cache ==="
+            sudo apt-get autoremove -y || true
+            sudo apt-get clean || true
+            
+            echo "=== Vacuuming systemd journal logs ==="
+            sudo journalctl --vacuum-time=1d || true
+            
+            echo "=== Checking and cleaning Docker resources (if present) ==="
+            if command -v docker &> /dev/null; then
+              sudo docker system prune -af --volumes || true
+            fi
+            
+            echo "=== Disk Space After Cleanup ==="
+            df -h
 
       - name: Transfer Files to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -67,6 +89,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+            echo "=== Disk Space before npm ci ==="
+            df -h
 
             cd /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend
 
@@ -77,3 +101,6 @@ jobs:
             # Restart the systemd service
             sudo systemctl daemon-reload
             sudo systemctl restart growth-frontend
+            
+            echo "=== Disk Space after deployment ==="
+            df -h

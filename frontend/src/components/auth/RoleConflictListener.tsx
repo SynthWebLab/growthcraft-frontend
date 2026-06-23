@@ -51,7 +51,7 @@ export function RoleConflictListener() {
             else if (href.includes("/employer")) targetRole = "employer";
           }
 
-          if (targetRole && targetRole !== user.role?.toLowerCase()) {
+          if (targetRole && user.role && targetRole !== user.role.toLowerCase()) {
             // Role conflict found, block navigation and show popup
             e.preventDefault();
             e.stopPropagation();
@@ -101,7 +101,7 @@ export function RoleConflictListener() {
     }
   };
 
-  if (!isOpen || !expectedRole || !user) return null;
+  if (!isOpen || !expectedRole || !user || !user.role) return null;
 
   const userRoleDisplay = user.role.charAt(0).toUpperCase() + user.role.slice(1);
   const expectedRoleDisplay = expectedRole.charAt(0).toUpperCase() + expectedRole.slice(1);
