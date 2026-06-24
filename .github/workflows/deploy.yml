@@ -47,6 +47,10 @@ jobs:
             # Ensure folder exists and clean up old heavy directories to free disk space
             mkdir -p /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend
             
+            # Stop the systemd service first to release files in use and free locked disk space
+            echo "=== Stopping service to release file handles ==="
+            sudo systemctl stop growth-frontend || true
+            
             echo "=== Cleaning up node_modules and next cache ==="
             sudo rm -rf /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend/node_modules || true
             sudo rm -rf /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend/.next/cache || true
@@ -113,9 +117,9 @@ jobs:
 
             cd /home/${{ secrets.EC2_USERNAME }}/growthcraft-frontend
 
-            # Clean npm cache and install production-only dependencies to save disk space
-            npm cache clean --force || true
-            npm ci --omit=dev
+            # Clean npm cache and install production-only dependencies using /tmp for cache
+            rm -rf /home/${{ secrets.EC2_USERNAME }}/.npm || true
+            npm ci --omit=dev --cache=/tmp/npm-cache --prefer-offline --no-audit --no-fund
 
             # Restart the systemd service
             sudo systemctl daemon-reload
