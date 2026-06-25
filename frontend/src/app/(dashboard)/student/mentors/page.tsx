@@ -147,6 +147,12 @@ export default function StudentMentorsPage() {
   const [topic, setTopic] = useState("");
   const [slot, setSlot] = useState("");
 
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
   const sessionDates = upcoming.map((s) => new Date(s.scheduledDate));
   const selectedMentor = mentors.find((m) => m.userId?._id === mentorUserId);
 
@@ -206,6 +212,7 @@ export default function StudentMentorsPage() {
             modifiersClassNames={{
               booked: "bg-magenta/10 text-magenta font-bold",
             }}
+            disabled={{ before: today }}
           />
           <Button
             className="w-full mt-4 bg-magenta text-white hover:bg-magenta/90"
