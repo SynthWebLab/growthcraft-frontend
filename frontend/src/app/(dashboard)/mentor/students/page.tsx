@@ -2,26 +2,10 @@
 
 import { PageHeader } from "@/components/ui/page-header";
 import PanelDataTable, { type Column } from "@/components/panel/PanelDataTable";
+import { useMentorStudents } from "@/hooks/queries/useMentor";
+import type { MentorStudent } from "@/types/mentor";
 
-type Mentee = {
-  name: string;
-  course: string;
-  sessionsCompleted: number;
-  lastSession: string;
-  nextSession: string;
-};
-
-const mentees: Mentee[] = [
-  { name: "Rahul S.", course: "React Masterclass", sessionsCompleted: 12, lastSession: "Apr 14, 2026", nextSession: "Apr 16, 2026" },
-  { name: "Priya D.", course: "Full Stack Dev", sessionsCompleted: 8, lastSession: "Apr 13, 2026", nextSession: "Apr 16, 2026" },
-  { name: "Amit K.", course: "React Masterclass", sessionsCompleted: 6, lastSession: "Apr 12, 2026", nextSession: "Apr 17, 2026" },
-  { name: "Sneha G.", course: "Node.js Advanced", sessionsCompleted: 15, lastSession: "Apr 14, 2026", nextSession: "Apr 18, 2026" },
-  { name: "Vivek R.", course: "React Masterclass", sessionsCompleted: 10, lastSession: "Apr 10, 2026", nextSession: "Apr 19, 2026" },
-  { name: "Neha P.", course: "Full Stack Dev", sessionsCompleted: 4, lastSession: "Apr 9, 2026", nextSession: "Apr 20, 2026" },
-  { name: "Karan M.", course: "Node.js Advanced", sessionsCompleted: 9, lastSession: "Apr 8, 2026", nextSession: "Apr 21, 2026" },
-];
-
-const columns: Column<Mentee>[] = [
+const columns: Column<MentorStudent>[] = [
   {
     key: "name",
     label: "Student",
@@ -44,14 +28,46 @@ const columns: Column<Mentee>[] = [
   { key: "nextSession", label: "Next Session", sortable: true },
 ];
 
-const MentorStudents = () => (
-  <div className="space-y-6">
-    <PageHeader
-      title="My Students"
-      description="Students assigned to you for mentoring"
-    />
-    <PanelDataTable columns={columns} data={mentees} searchKey="name" />
+const StudentsSkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    <div className="space-y-2">
+      <div className="h-8 w-48 bg-muted/40 rounded" />
+      <div className="h-4 w-80 bg-muted/40 rounded" />
+    </div>
+    <div className="h-96 bg-muted/40 rounded-xl" />
   </div>
 );
 
+const MentorStudents = () => {
+  const { data: studentsResponse, isLoading, error } = useMentorStudents();
+
+  if (isLoading) {
+    return <StudentsSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+        <p className="text-red-500 font-medium">Failed to load students directory</p>
+        <p className="text-sm text-muted-foreground">
+          {(error as any)?.message || "Please check your connection to the server."}
+        </p>
+      </div>
+    );
+  }
+
+  const mentees = studentsResponse?.data?.students || [];
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="My Students"
+        description="Students assigned to you for mentoring"
+      />
+      <PanelDataTable columns={columns} data={mentees} searchKey="name" />
+    </div>
+  );
+};
+
 export default MentorStudents;
+

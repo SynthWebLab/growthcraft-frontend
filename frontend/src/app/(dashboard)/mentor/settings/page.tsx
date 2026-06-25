@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
+import { useMentorProfile, useUpdateMentorProfile } from "@/hooks/queries/useMentor";
+import { useChangePassword } from "@/hooks/queries/useStudent";
 import { toast } from "sonner";
 
 const notificationPrefs = [
@@ -17,16 +19,43 @@ const notificationPrefs = [
   { label: "Marketing emails", desc: "Platform news, features, and offers" },
 ];
 
+const SettingsSkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    <div className="space-y-2">
+      <div className="h-8 w-48 bg-muted/40 rounded" />
+      <div className="h-4 w-80 bg-muted/40 rounded" />
+    </div>
+    <div className="h-96 bg-muted/40 rounded-xl" />
+  </div>
+);
+
 export default function MentorSettingsPage() {
-  const [fullName, setFullName] = useState("Mentor Sharma");
-  const [phone, setPhone] = useState("+91 98765 43210");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const { data: profileResponse, isLoading, error } = useMentorProfile();
+  const { mutate: updateProfile, isPending: isSavingProfile } = useUpdateMentorProfile();
+  const { mutate: changePassword, isPending: isSavingPassword } = useChangePassword();
+
+  const profile = profileResponse?.data?.profile;
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.fullName || "");
+      setPhone(profile.phone || "");
+    }
+  }, [profile]);
+
   const handleSaveAccount = () => {
-    toast.success("Account updated", { description: "Your account details have been saved." });
+    if (!fullName.trim()) {
+      toast.error("Full name is required");
+      return;
+    }
+    updateProfile({ fullName, phone });
   };
 
   const handleUpdatePassword = () => {
@@ -36,11 +65,32 @@ export default function MentorSettingsPage() {
       });
       return;
     }
-    toast.success("Password updated", { description: "Your password has been changed." });
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    changePassword(
+      { currentPassword, newPassword, confirmPassword },
+      {
+        onSuccess: () => {
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+        },
+      }
+    );
   };
+
+  if (isLoading) {
+    return <SettingsSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+        <p className="text-red-500 font-medium">Failed to load settings</p>
+        <p className="text-sm text-muted-foreground">
+          {(error as any)?.message || "Please check your connection to the server."}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -59,21 +109,43 @@ export default function MentorSettingsPage() {
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Full Name</Label>
-                  <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-1.5" />
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="mt-1.5"
+                  />
                 </div>
                 <div>
-                  <Label>Email</Label>
-                  <Input value="mentor@growthcraft.in" type="email" className="mt-1.5" disabled readOnly />
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    value={profile?.email || ""}
+                    type="email"
+                    className="mt-1.5"
+                    disabled
+                    readOnly
+                  />
                   <p className="text-xs text-muted-foreground mt-1">Email cannot be changed here.</p>
                 </div>
                 <div>
-                  <Label>Phone</Label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" className="mt-1.5" />
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    type="tel"
+                    className="mt-1.5"
+                  />
                 </div>
               </div>
-              <Button className="bg-magenta text-white hover:bg-magenta/90" onClick={handleSaveAccount}>
-                Save Changes
+              <Button
+                className="bg-magenta text-white hover:bg-magenta/90"
+                onClick={handleSaveAccount}
+                disabled={isSavingProfile}
+              >
+                {isSavingProfile ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </DataCard>
@@ -102,24 +174,42 @@ export default function MentorSettingsPage() {
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Current Password</Label>
-                  <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="mt-1.5" />
+                  <Label htmlFor="currPass">Current Password</Label>
+                  <Input
+                    id="currPass"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="mt-1.5"
+                  />
                 </div>
                 <div>
-                  <Label>New Password</Label>
-                  <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="mt-1.5" />
+                  <Label htmlFor="newPass">New Password</Label>
+                  <Input
+                    id="newPass"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="mt-1.5"
+                  />
                 </div>
                 <div>
-                  <Label>Confirm New Password</Label>
-                  <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="mt-1.5" />
+                  <Label htmlFor="confPass">Confirm New Password</Label>
+                  <Input
+                    id="confPass"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="mt-1.5"
+                  />
                 </div>
               </div>
               <Button
                 className="bg-magenta text-white hover:bg-magenta/90"
                 onClick={handleUpdatePassword}
-                disabled={!currentPassword || !newPassword || !confirmPassword}
+                disabled={isSavingPassword || !currentPassword || !newPassword || !confirmPassword}
               >
-                Update Password
+                {isSavingPassword ? "Updating Password..." : "Update Password"}
               </Button>
             </div>
           </DataCard>
@@ -128,3 +218,4 @@ export default function MentorSettingsPage() {
     </div>
   );
 }
+
