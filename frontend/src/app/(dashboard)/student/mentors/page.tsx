@@ -82,6 +82,52 @@ function slotsFor(mentor: Mentor | undefined, selectedDate: Date | undefined): s
   return slots;
 }
 
+function formatMentorAvailability(mentor: Mentor): string {
+  if (!mentor.availability || mentor.availability.length === 0) {
+    return "No slots configured";
+  }
+  
+  const parts: string[] = [];
+  
+  // Group recurring days
+  const recurring = mentor.availability.filter(a => a.day && a.slots && a.slots.length > 0);
+  if (recurring.length > 0) {
+    const daysStr = recurring.map(r => {
+      const times = r.slots.map(s => s.startTime).filter(Boolean).join(", ");
+      return `${r.day?.slice(0, 3)} (${times})`;
+    }).join("; ");
+    parts.push(`Weekly: ${daysStr}`);
+  }
+  
+  // Group specific dates
+  const specific = mentor.availability.filter(a => a.date && a.slots && a.slots.length > 0);
+  if (specific.length > 0) {
+    const datesStr = specific.map(s => {
+      const d = new Date(s.date!);
+      const dateFormatted = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const times = s.slots.map(sl => sl.startTime).filter(Boolean).join(", ");
+      return `${dateFormatted} (${times})`;
+    }).join("; ");
+    parts.push(`Dates: ${datesStr}`);
+  }
+  
+  return parts.join(" | ") || "No slots available";
+}
+
+function getAvailableDatesForMentor(mentor: Mentor | undefined): Date[] {
+  const dates: Date[] = [];
+  const today = new Date();
+  
+  // Return the next 14 days starting from today dynamically
+  for (let i = 0; i < 14; i++) {
+    const candidate = new Date();
+    candidate.setDate(today.getDate() + i);
+    dates.push(candidate);
+  }
+  
+  return dates;
+}
+
 export default function StudentMentorsPage() {
   const { data: mentorsData, isLoading: mentorsLoading } = useStudentMentors();
   const { data: sessionsData, isLoading: sessionsLoading } = useStudentMentorSessions();
@@ -105,9 +151,21 @@ export default function StudentMentorsPage() {
   const selectedMentor = mentors.find((m) => m.userId?._id === mentorUserId);
 
   const openBooking = (preselectMentorId?: string) => {
-    setMentorUserId(preselectMentorId ?? "");
+    const mId = preselectMentorId ?? "";
+    setMentorUserId(mId);
     setTopic("");
     setSlot("");
+
+    const mentor = mentors.find((m) => m.userId?._id === mId);
+    const avDates = getAvailableDatesForMentor(mentor);
+    if (selectedDate && mentor && slotsFor(mentor, selectedDate).length > 0) {
+      // keep current selection
+    } else if (avDates.length > 0) {
+      setSelectedDate(avDates[0]);
+    } else {
+      setSelectedDate(undefined);
+    }
+
     setBookOpen(true);
   };
 
@@ -237,32 +295,44 @@ export default function StudentMentorsPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {mentors.map((mentor) => (
-              <div key={mentor._id} className="rounded-lg border border-border bg-white p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-10 w-10 rounded-full bg-lavender/20 flex items-center justify-center text-sm font-bold text-lavender shrink-0">
-                    {mentorInitials(mentor)}
+              <div key={mentor._id} className="rounded-lg border border-border bg-white p-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-full bg-lavender/20 flex items-center justify-center text-sm font-bold text-lavender shrink-0">
+                      {mentorInitials(mentor)}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-foreground truncate">
+                        {mentorName(mentor)}
+                      </h4>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {mentor.areaOfExpertise}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-foreground truncate">
-                      {mentorName(mentor)}
-                    </h4>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {mentor.areaOfExpertise}
+                  <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+                    {mentor.rating > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                        {mentor.rating.toFixed(1)}
+                      </span>
+                    )}
+                    <span>{mentor.experienceYears}+ yrs</span>
+                    {mentor.currentOrganization && (
+                      <span className="truncate">· {mentor.currentOrganization}</span>
+                    )}
+                  </div>
+                  
+                  <div className="mt-2 pt-2 border-t border-border/50 mb-4">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                      Availability
+                    </p>
+                    <p className="text-xs text-foreground/80 line-clamp-2" title={formatMentorAvailability(mentor)}>
+                      {formatMentorAvailability(mentor)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
-                  {mentor.rating > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
-                      {mentor.rating.toFixed(1)}
-                    </span>
-                  )}
-                  <span>{mentor.experienceYears}+ yrs</span>
-                  {mentor.currentOrganization && (
-                    <span className="truncate">· {mentor.currentOrganization}</span>
-                  )}
-                </div>
+
                 <Button
                   size="sm"
                   variant="outline"
@@ -286,7 +356,22 @@ export default function StudentMentorsPage() {
           <div className="space-y-4 pt-2">
             <div>
               <Label className="mb-2 block">Select Mentor</Label>
-              <Select value={mentorUserId} onValueChange={setMentorUserId}>
+              <Select
+                value={mentorUserId}
+                onValueChange={(val) => {
+                  setMentorUserId(val);
+                  setSlot("");
+                  const mentor = mentors.find((m) => m.userId?._id === val);
+                  const avDates = getAvailableDatesForMentor(mentor);
+                  if (selectedDate && mentor && slotsFor(mentor, selectedDate).length > 0) {
+                    // Keep selectedDate
+                  } else if (avDates.length > 0) {
+                    setSelectedDate(avDates[0]);
+                  } else {
+                    setSelectedDate(undefined);
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a mentor" />
                 </SelectTrigger>
@@ -309,18 +394,64 @@ export default function StudentMentorsPage() {
               />
             </div>
 
-            <div>
-              <Label className="mb-2 block">
-                Date: {selectedDate ? formatDate(selectedDate.toISOString()) : "Pick a date on the calendar"}
-              </Label>
-            </div>
-
             {mentorUserId && (
               <div>
-                <Label className="mb-2 block">Select Time Slot</Label>
-                <Select value={slot} onValueChange={setSlot}>
+                <Label className="mb-2 block">Select Date</Label>
+                <Select
+                  value={
+                    selectedDate
+                      ? `${selectedDate.getFullYear()}-${(selectedDate.getMonth() + 1)
+                          .toString()
+                          .padStart(2, "0")}-${selectedDate.getDate().toString().padStart(2, "0")}`
+                      : ""
+                  }
+                  onValueChange={(val) => {
+                    if (val) {
+                      const [year, month, day] = val.split("-").map(Number);
+                      const parsed = new Date(year, month - 1, day);
+                      setSelectedDate(parsed);
+                      setSlot("");
+                    } else {
+                      setSelectedDate(undefined);
+                      setSlot("");
+                    }
+                  }}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a time" />
+                    <SelectValue placeholder="Choose an available date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableDatesForMentor(selectedMentor).map((d) => {
+                      const year = d.getFullYear();
+                      const month = (d.getMonth() + 1).toString().padStart(2, "0");
+                      const day = d.getDate().toString().padStart(2, "0");
+                      const isoStr = `${year}-${month}-${day}`;
+                      const formatted = d.toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      });
+                      return (
+                        <SelectItem key={isoStr} value={isoStr}>
+                          {formatted}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {mentorUserId && selectedDate && (
+              <div>
+                <Label className="mb-2 block">Select Time Slot</Label>
+                <Select
+                  value={slot}
+                  onValueChange={setSlot}
+                  disabled={slotsFor(selectedMentor, selectedDate).length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={slotsFor(selectedMentor, selectedDate).length > 0 ? "Choose a time" : "No slots available on this date"} />
                   </SelectTrigger>
                   <SelectContent>
                     {slotsFor(selectedMentor, selectedDate).map((s) => (
