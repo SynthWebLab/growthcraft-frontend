@@ -46,12 +46,40 @@ function mentorInitials(mentor: Mentor): string {
     .toUpperCase();
 }
 
-function slotsFor(mentor: Mentor | undefined): string[] {
-  if (!mentor) return DEFAULT_SLOTS;
-  const slots = mentor.availability
-    ?.flatMap((a) => a.slots.map((s) => s.startTime))
-    .filter(Boolean);
-  return slots && slots.length > 0 ? Array.from(new Set(slots)) : DEFAULT_SLOTS;
+function slotsFor(mentor: Mentor | undefined, selectedDate: Date | undefined): string[] {
+  if (!mentor) return [];
+  if (!selectedDate) return [];
+
+  // 1. Try date-specific slots first
+  const dateKey = selectedDate.getFullYear() + "-" + 
+    (selectedDate.getMonth() + 1).toString().padStart(2, "0") + "-" + 
+    selectedDate.getDate().toString().padStart(2, "0"); // YYYY-MM-DD local format
+  
+  const dateAvail = mentor.availability?.find((a) => {
+    if (!a.date) return false;
+    const d = new Date(a.date);
+    const ymd = d.getFullYear() + "-" + 
+      (d.getMonth() + 1).toString().padStart(2, "0") + "-" + 
+      d.getDate().toString().padStart(2, "0");
+    return ymd === dateKey;
+  });
+
+  if (dateAvail) {
+    return dateAvail.slots.map((s) => s.startTime).filter(Boolean);
+  }
+
+  // 2. Fall back to recurring day-of-week slots
+  const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayName = daysOfWeek[selectedDate.getDay()];
+
+  const dayAvail = mentor.availability?.find(
+    (a) => a.day && a.day.toLowerCase() === dayName.toLowerCase()
+  );
+
+  if (!dayAvail) return [];
+
+  const slots = dayAvail.slots.map((s) => s.startTime).filter(Boolean);
+  return slots;
 }
 
 export default function StudentMentorsPage() {
@@ -67,7 +95,7 @@ export default function StudentMentorsPage() {
   const sessions = sessionsData?.data?.sessions ?? [];
   const upcoming = sessions.filter((s) => s.status === "scheduled");
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookOpen, setBookOpen] = useState(false);
   const [mentorUserId, setMentorUserId] = useState("");
   const [topic, setTopic] = useState("");
@@ -286,7 +314,7 @@ export default function StudentMentorsPage() {
                     <SelectValue placeholder="Choose a time" />
                   </SelectTrigger>
                   <SelectContent>
-                    {slotsFor(selectedMentor).map((s) => (
+                    {slotsFor(selectedMentor, selectedDate).map((s) => (
                       <SelectItem key={s} value={s}>
                         {s}
                       </SelectItem>

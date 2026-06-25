@@ -163,7 +163,7 @@ export interface Mentor {
   currentOrganization: string;
   bio: string;
   hourlyRate?: number;
-  availability: { day: string; slots: MentorAvailabilitySlot[] }[];
+  availability: { day?: string; date?: string; slots: MentorAvailabilitySlot[] }[];
   rating: number;
   totalSessions: number;
   linkedIn?: string;
