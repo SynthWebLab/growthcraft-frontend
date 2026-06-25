@@ -124,23 +124,13 @@ export default function MentorDashboard() {
                       {s.course} · {s.duration}
                     </p>
                   </div>
-                  {s.meetingLink ? (
-                    <Button
-                      size="sm"
-                      className="bg-magenta hover:bg-magenta/90 text-white text-xs"
-                      onClick={() => window.open(s.meetingLink, "_blank")}
-                    >
-                      Join
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      disabled
-                      className="bg-muted text-muted-foreground text-xs"
-                    >
-                      No Link
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    className="bg-magenta hover:bg-magenta/90 text-white text-xs"
+                    onClick={() => window.open(s.meetingLink || "https://meet.google.com", "_blank")}
+                  >
+                    Join
+                  </Button>
                 </div>
               ))}
             </div>

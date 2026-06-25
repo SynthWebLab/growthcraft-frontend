@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, Star } from "lucide-react";
+import { Users, Star, Video } from "lucide-react";
 import {
   useStudentMentors,
   useStudentMentorSessions,
@@ -197,12 +197,21 @@ export default function StudentMentorsPage() {
                         {name} · {formatDate(session.scheduledDate)} at {session.timeSlot}
                       </p>
                     </div>
-                    <Badge
-                      variant={session.sessionType === "1:1" ? "default" : "secondary"}
-                      className={session.sessionType === "1:1" ? "bg-magenta text-white" : ""}
-                    >
-                      {session.sessionType}
-                    </Badge>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <Badge
+                        variant={session.sessionType === "1:1" ? "default" : "secondary"}
+                        className={session.sessionType === "1:1" ? "bg-magenta text-white" : ""}
+                      >
+                        {session.sessionType}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        className="bg-magenta hover:bg-magenta/90 text-white text-xs gap-1"
+                        onClick={() => window.open(session.meetingLink || "https://meet.google.com", "_blank")}
+                      >
+                        <Video className="h-3.5 w-3.5" /> Join
+                      </Button>
+                    </div>
                   </div>
                 );
               })}

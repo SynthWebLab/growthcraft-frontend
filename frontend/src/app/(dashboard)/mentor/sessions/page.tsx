@@ -83,15 +83,13 @@ const MentorSessions = () => {
               
               {s.status === "upcoming" && (
                 <div className="flex items-center gap-1.5 ml-2">
-                  {s.meetingLink && (
-                    <Button
-                      size="sm"
-                      className="bg-magenta hover:bg-magenta/90 text-white text-xs"
-                      onClick={() => window.open(s.meetingLink, "_blank")}
-                    >
-                      <Video className="h-3.5 w-3.5 mr-1" /> Join
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    className="bg-magenta hover:bg-magenta/90 text-white text-xs"
+                    onClick={() => window.open(s.meetingLink || "https://meet.google.com", "_blank")}
+                  >
+                    <Video className="h-3.5 w-3.5 mr-1" /> Join
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
