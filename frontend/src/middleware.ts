@@ -170,7 +170,11 @@ export async function middleware(request: NextRequest) {
 
     // Authenticated but email not verified - redirect to verify-email
     if (!isEmailVerified) {
-      return NextResponse.redirect(new URL('/verify-email', request.url));
+      const verifyUrl = new URL('/verify-email', request.url);
+      if (user?.email) {
+        verifyUrl.searchParams.set('email', user.email);
+      }
+      return NextResponse.redirect(verifyUrl);
     }
 
     // Must have user role to access dashboard

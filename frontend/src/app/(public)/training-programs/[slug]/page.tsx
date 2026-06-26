@@ -243,7 +243,7 @@ export default function TrainingProgramDetailPage({
   // Button states and labels
   const isPrimaryButtonDisabled =
     isPrimaryEnrollment
-      ? isEnrolled || enrollMutation.isPending
+      ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryCallback
       ? hasCallbackRequest || callbackMutation.isPending
       : isPrimaryRegisterInterest
@@ -256,7 +256,9 @@ export default function TrainingProgramDetailPage({
     : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50";
 
   const primaryButtonLabel = isPrimaryEnrollment
-    ? isEnrolled
+    ? (isAuthenticated && !isStudent)
+      ? "Students Only"
+      : isEnrolled
       ? "Already Enrolled"
       : enrollMutation.isPending
       ? "Enrolling..."

@@ -218,7 +218,7 @@ export default function CourseDetailPage({
   // Determine button states
   const isPrimaryButtonDisabled = 
     isPrimaryEnrollment 
-      ? isEnrolled || enrollMutation.isPending
+      ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryRegisterInterest
       ? hasCallbackRequest || activeMutation.isPending
       : activeMutation.isPending;
@@ -228,7 +228,9 @@ export default function CourseDetailPage({
   // Button labels
   const primaryButtonLabel = 
     isPrimaryEnrollment
-      ? (isEnrolled ? "Already Enrolled" : enrollMutation.isPending ? "Enrolling..." : primaryCTA)
+      ? (isAuthenticated && !isStudent)
+        ? "Students Only"
+        : (isEnrolled ? "Already Enrolled" : enrollMutation.isPending ? "Enrolling..." : primaryCTA)
       : isPrimaryRegisterInterest
       ? (hasCallbackRequest ? "Interest Registered" : activeMutation.isPending ? "Submitting..." : primaryCTA)
       : (activeMutation.isPending ? "Submitting..." : primaryCTA);

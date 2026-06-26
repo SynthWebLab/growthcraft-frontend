@@ -364,9 +364,16 @@ export default function EventDetailPage({
   const seatsRemaining = event.maxSeats - event.enrolledCount;
   const isSeatsFull = seatsRemaining <= 0;
   const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
-  const isPrimaryButtonDisabled = isFinalizedStatus || (isRegistrationAction && (isSeatsFull || event.status === "Completed"));
+  const isPrimaryButtonDisabled = 
+    isFinalizedStatus || 
+    (isRegistrationAction && isAuthenticated && !isStudent) ||
+    (isRegistrationAction && (isSeatsFull || event.status === "Completed"));
   const isSecondaryButtonDisabled = false;
-  const primaryButtonLabel = isFinalizedStatus ? eventStatus : primaryCTA;
+  const primaryButtonLabel = isFinalizedStatus 
+    ? eventStatus 
+    : (isRegistrationAction && isAuthenticated && !isStudent)
+    ? "Students Only"
+    : primaryCTA;
   const primaryButtonClasses = isFinalizedStatus || isPrimaryCallback
     ? ""
     : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50";
