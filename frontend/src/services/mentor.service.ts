@@ -19,8 +19,11 @@ import type {
 
 export const mentorService = {
   /** Get aggregated mentor dashboard details. */
-  getDashboard: async (): Promise<MentorDashboardResponse> => {
-    return apiClient.get<MentorDashboardResponse>(API_ENDPOINTS.mentor.dashboard);
+  getDashboard: async (period?: string): Promise<MentorDashboardResponse> => {
+    const url = period
+      ? `${API_ENDPOINTS.mentor.dashboard}?period=${period}`
+      : API_ENDPOINTS.mentor.dashboard;
+    return apiClient.get<MentorDashboardResponse>(url);
   },
 
   /** Get list of sessions filtered by status. */

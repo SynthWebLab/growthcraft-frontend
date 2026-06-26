@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Star, Calendar, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard, ChartCard } from "@/components/panel";
@@ -51,7 +52,8 @@ const DashboardSkeleton = () => (
 );
 
 export default function MentorDashboard() {
-  const { data: dashboardResponse, isLoading, error } = useMentorDashboard();
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("Weekly");
+  const { data: dashboardResponse, isLoading, error } = useMentorDashboard(selectedPeriod.toLowerCase());
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -137,7 +139,12 @@ export default function MentorDashboard() {
           )}
         </DataCard>
 
-        <ChartCard title="Earnings Trend">
+        <ChartCard
+          title="Earnings Trend"
+          periods={["Weekly", "Monthly", "Yearly"]}
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+        >
           {earningsTrend.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[220px] text-center">
               <p className="text-sm font-medium text-muted-foreground">No earnings data available</p>

@@ -28,10 +28,10 @@ export const mentorKeys = {
 const STALE = 2 * 60 * 1000; // 2 minutes
 
 /** Fetch aggregated mentor dashboard summary. */
-export function useMentorDashboard() {
+export function useMentorDashboard(period: string = "monthly") {
   return useQuery({
-    queryKey: mentorKeys.dashboard(),
-    queryFn: () => mentorService.getDashboard(),
+    queryKey: [...mentorKeys.dashboard(), period],
+    queryFn: () => mentorService.getDashboard(period),
     staleTime: STALE,
     retry: 1,
   });
