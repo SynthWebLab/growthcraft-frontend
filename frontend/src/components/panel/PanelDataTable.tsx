@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,10 +28,19 @@ interface PanelDataTableProps<T> {
 function PanelDataTable<T extends Record<string, any>>({
   columns, data, searchKey, pageSize = 10, className,
 }: PanelDataTableProps<T>) {
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const querySearch = searchParams ? (searchParams.get("search") || searchParams.get("q") || "") : "";
+  const [search, setSearch] = useState(querySearch);
   const [page, setPage] = useState(0);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  useEffect(() => {
+    if (querySearch) {
+      setSearch(querySearch);
+      setPage(0);
+    }
+  }, [querySearch]);
 
   const filtered = useMemo(() => {
     if (!search || !searchKey) return data;
