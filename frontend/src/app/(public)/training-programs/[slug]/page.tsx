@@ -102,13 +102,20 @@ export default function TrainingProgramDetailPage({
 
   // Determine CTA behavior
   const isPrimaryCallback = primaryCTA.toLowerCase().includes("callback");
-  const isPrimaryEnrollment = primaryCTA.toLowerCase().includes("enroll");
+  const isPrimaryEnrollment = 
+    primaryCTA.toLowerCase().includes("enroll") || 
+    primaryCTA.toLowerCase().includes("reserve") || 
+    primaryCTA.toLowerCase().includes("seat");
   const isPrimaryRegisterInterest =
     primaryCTA.toLowerCase().includes("register") ||
     primaryCTA.toLowerCase().includes("interest");
 
   // Handle primary CTA click
   const handlePrimaryCTAClick = async () => {
+    if (user?.role === "mentor") {
+      toast.error("Students Only");
+      return;
+    }
     // For "Request Callback"
     if (isPrimaryCallback) {
       if (!isAuthenticated) {
@@ -208,6 +215,10 @@ export default function TrainingProgramDetailPage({
 
   // Handle secondary CTA click
   const handleSecondaryCTAClick = async () => {
+    if (user?.role === "mentor") {
+      toast.error("Students Only");
+      return;
+    }
     if (!isAuthenticated) {
       if (secondaryCTA) {
         openForm(
@@ -242,21 +253,26 @@ export default function TrainingProgramDetailPage({
 
   // Button states and labels
   const isPrimaryButtonDisabled =
-    isPrimaryEnrollment
-      ? isEnrolled || enrollMutation.isPending
+    (isAuthenticated && user?.role === "mentor") ||
+    (isPrimaryEnrollment
+      ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryCallback
       ? hasCallbackRequest || callbackMutation.isPending
       : isPrimaryRegisterInterest
       ? hasCallbackRequest || callbackMutation.isPending
-      : callbackMutation.isPending;
+      : callbackMutation.isPending);
 
-  const isSecondaryButtonDisabled = hasCallbackRequest || callbackMutation.isPending;
+  const isSecondaryButtonDisabled = hasCallbackRequest || callbackMutation.isPending || (isAuthenticated && user?.role === "mentor");
   const primaryButtonClasses = isPrimaryCallback
     ? ""
     : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50";
 
-  const primaryButtonLabel = isPrimaryEnrollment
-    ? isEnrolled
+  const primaryButtonLabel = (isAuthenticated && user?.role === "mentor")
+    ? "Students Only"
+    : isPrimaryEnrollment
+    ? (isAuthenticated && !isStudent)
+      ? "Students Only"
+      : isEnrolled
       ? "Already Enrolled"
       : enrollMutation.isPending
       ? "Enrolling..."
@@ -275,7 +291,9 @@ export default function TrainingProgramDetailPage({
       : primaryCTA
     : primaryCTA;
 
-  const secondaryButtonLabel = hasCallbackRequest
+  const secondaryButtonLabel = (isAuthenticated && user?.role === "mentor")
+    ? "Students Only"
+    : hasCallbackRequest
     ? "Callback Requested"
     : callbackMutation.isPending
     ? "Requesting..."

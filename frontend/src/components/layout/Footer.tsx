@@ -6,7 +6,6 @@ import { Mail, Phone, MapPin, Linkedin, Twitter, Instagram, Youtube } from "luci
 const footerLinks = {
   platform: [
     { name: "Courses", path: "/courses" },
-    { name: "Bootcamps", path: "/bootcamps" },
     { name: "Mentorship", path: "/for-mentors" },
     { name: "Career Services", path: "/for-students" },
   ],

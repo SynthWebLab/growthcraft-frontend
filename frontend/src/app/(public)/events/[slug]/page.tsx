@@ -278,6 +278,10 @@ export default function EventDetailPage({
 
   // Handle primary CTA click
   const handlePrimaryCTAClick = () => {
+    if (user?.role === "mentor") {
+      toast.error("Students Only");
+      return;
+    }
     // For "Request Callback" - no login required
     if (isPrimaryCallback) {
       if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
@@ -338,6 +342,10 @@ export default function EventDetailPage({
 
   // Handle secondary CTA click
   const handleSecondaryCTAClick = () => {
+    if (user?.role === "mentor") {
+      toast.error("Students Only");
+      return;
+    }
     if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
       openEventActionForm("callback");
       return;
@@ -363,15 +371,30 @@ export default function EventDetailPage({
   // "Request Callback" buttons should always be enabled
   const seatsRemaining = event.maxSeats - event.enrolledCount;
   const isSeatsFull = seatsRemaining <= 0;
-  const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
-  const isPrimaryButtonDisabled = isFinalizedStatus || (isRegistrationAction && (isSeatsFull || event.status === "Completed"));
-  const isSecondaryButtonDisabled = false;
-  const primaryButtonLabel = isFinalizedStatus ? eventStatus : primaryCTA;
+  const isRegistrationAction = 
+    primaryCTA.toLowerCase().includes("register") || 
+    primaryCTA.toLowerCase().includes("reserve") || 
+    primaryCTA.toLowerCase().includes("enroll");
+  const isPrimaryButtonDisabled = 
+    isFinalizedStatus || 
+    (isAuthenticated && user?.role === "mentor") ||
+    (isRegistrationAction && isAuthenticated && !isStudent) ||
+    (isRegistrationAction && (isSeatsFull || event.status === "Completed"));
+  const isSecondaryButtonDisabled = isAuthenticated && user?.role === "mentor";
+  const primaryButtonLabel = isFinalizedStatus 
+    ? eventStatus 
+    : (isAuthenticated && user?.role === "mentor")
+    ? "Students Only"
+    : (isRegistrationAction && isAuthenticated && !isStudent)
+    ? "Students Only"
+    : primaryCTA;
   const primaryButtonClasses = isFinalizedStatus || isPrimaryCallback
     ? ""
     : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50";
 
-  const secondaryButtonLabel = secondaryCTA || "Request Callback";
+  const secondaryButtonLabel = (isAuthenticated && user?.role === "mentor")
+    ? "Students Only"
+    : secondaryCTA || "Request Callback";
 
   return (
     <>

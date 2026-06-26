@@ -31,16 +31,40 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
     e.preventDefault();
     const term = search.trim();
     if (term) {
-      if (pathname.includes("/bootcamps")) {
-        router.push(`${basePath}/bootcamps?q=${encodeURIComponent(term)}`);
-      } else if (pathname.includes("/workshops")) {
-        router.push(`${basePath}/workshops?q=${encodeURIComponent(term)}`);
-      } else if (pathname.includes("/hackathons")) {
-        router.push(`${basePath}/hackathons?q=${encodeURIComponent(term)}`);
-      } else if (pathname.includes("/training-programs")) {
-        router.push(`${basePath}/training-programs?q=${encodeURIComponent(term)}`);
+      if (basePath === "/mentor") {
+        const lower = term.toLowerCase();
+        if (["dashboard", "home", "overview"].includes(lower)) {
+          router.push(`${basePath}/dashboard`);
+        } else if (["sessions", "session", "calendar", "meeting"].includes(lower)) {
+          router.push(`${basePath}/sessions`);
+        } else if (["availability", "schedule", "time", "slots", "rate", "hourly"].includes(lower)) {
+          router.push(`${basePath}/availability`);
+        } else if (["students", "student", "mentees", "mentee"].includes(lower)) {
+          router.push(`${basePath}/students`);
+        } else if (["earnings", "earning", "payout", "payouts", "money", "wallet", "withdraw"].includes(lower)) {
+          router.push(`${basePath}/earnings`);
+        } else if (["profile", "bio", "cv", "expert"].includes(lower)) {
+          router.push(`${basePath}/profile`);
+        } else if (["settings", "account", "password"].includes(lower)) {
+          router.push(`${basePath}/settings`);
+        } else if (["support", "help", "query", "faq", "contact", "ticket"].includes(lower)) {
+          router.push(`${basePath}/support`);
+        } else {
+          // Fallback to student search
+          router.push(`${basePath}/students?search=${encodeURIComponent(term)}`);
+        }
       } else {
-        router.push(`${basePath}/courses?q=${encodeURIComponent(term)}`);
+        if (pathname.includes("/bootcamps")) {
+          router.push(`${basePath}/bootcamps?q=${encodeURIComponent(term)}`);
+        } else if (pathname.includes("/workshops")) {
+          router.push(`${basePath}/workshops?q=${encodeURIComponent(term)}`);
+        } else if (pathname.includes("/hackathons")) {
+          router.push(`${basePath}/hackathons?q=${encodeURIComponent(term)}`);
+        } else if (pathname.includes("/training-programs")) {
+          router.push(`${basePath}/training-programs?q=${encodeURIComponent(term)}`);
+        } else {
+          router.push(`${basePath}/courses?q=${encodeURIComponent(term)}`);
+        }
       }
       setSearch("");
     }
@@ -66,9 +90,9 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search courses…"
+            placeholder={basePath === "/mentor" ? "Search pages, students..." : "Search courses..."}
             className="pl-9 pr-12 h-9 bg-marble border-none"
-            aria-label="Search courses"
+            aria-label={basePath === "/mentor" ? "Search pages or students" : "Search courses"}
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono bg-white border border-border rounded px-1.5 py-0.5 text-muted-foreground">
             ↵

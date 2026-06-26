@@ -96,5 +96,17 @@ export const API_ENDPOINTS = {
   leads: {
     create: "/leads",
   },
-  // Add more as needed
+  mentor: {
+    dashboard: "/mentor/dashboard",
+    sessions: "/mentor/sessions",
+    updateSessionStatus: (id: string) => `/mentor/sessions/${id}/status`,
+    availability: "/mentor/availability",
+    students: "/mentor/students",
+    earnings: "/mentor/earnings",
+    withdraw: "/mentor/earnings/withdraw",
+    profile: "/mentor/profile",
+    support: "/mentor/support",
+    settingsAccount: "/mentor/settings/account",
+    settingsPassword: "/mentor/settings/password",
+  },
 } as const;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback, useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,17 +8,72 @@ import { Label } from "@/components/ui/label";
 import DataCard from "@/components/ui/data-card";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useMentorAvailability, useUpdateMentorAvailability } from "@/hooks/queries/useMentor";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8 AM – 8 PM
 
-const initialSlots: Record<string, boolean> = {};
+const DAY_MAP_SHORT_TO_FULL: Record<string, string> = {
+  Mon: "Monday",
+  Tue: "Tuesday",
+  Wed: "Wednesday",
+  Thu: "Thursday",
+  Fri: "Friday",
+  Sat: "Saturday",
+  Sun: "Sunday",
+};
+
+const DAY_MAP_FULL_TO_SHORT: Record<string, string> = {
+  Monday: "Mon",
+  Tuesday: "Tue",
+  Wednesday: "Wed",
+  Thursday: "Thu",
+  Friday: "Fri",
+  Saturday: "Sat",
+  Sunday: "Sun",
+};
+
+const AvailabilitySkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    <div className="space-y-2">
+      <div className="h-8 w-48 bg-muted/40 rounded" />
+      <div className="h-4 w-80 bg-muted/40 rounded" />
+    </div>
+    <div className="h-[500px] bg-muted/40 rounded-xl" />
+    <div className="h-32 bg-muted/40 rounded-xl" />
+  </div>
+);
 
 const MentorAvailability = () => {
-  const [slots, setSlots] = useState<Record<string, boolean>>(initialSlots);
+  const [slots, setSlots] = useState<Record<string, boolean>>({});
   const [rate, setRate] = useState("1500");
   const [isDragging, setIsDragging] = useState(false);
   const [dragValue, setDragValue] = useState(false);
+
+  const { data: availabilityResponse, isLoading, error } = useMentorAvailability();
+  const { mutate: updateAvailability, isPending: isSaving } = useUpdateMentorAvailability();
+
+  useEffect(() => {
+    if (availabilityResponse?.data) {
+      const avail = availabilityResponse.data.availability || [];
+      const loadedSlots: Record<string, boolean> = {};
+
+      avail.forEach((dayData: any) => {
+        const shortDay = DAY_MAP_FULL_TO_SHORT[dayData.day];
+        if (shortDay && Array.isArray(dayData.slots)) {
+          dayData.slots.forEach((slot: any) => {
+            const hour = parseInt(slot.startTime.split(":")[0], 10);
+            if (!isNaN(hour)) {
+              loadedSlots[`${shortDay}-${hour}`] = true;
+            }
+          });
+        }
+      });
+
+      setSlots(loadedSlots);
+      setRate(availabilityResponse.data.hourlyRate?.toString() || "1500");
+    }
+  }, [availabilityResponse]);
 
   const key = (day: string, hour: number) => `${day}-${hour}`;
 
@@ -39,8 +94,55 @@ const MentorAvailability = () => {
   const handleMouseUp = useCallback(() => setIsDragging(false), []);
 
   const handleSave = () => {
-    toast.success("Availability saved successfully!");
+    const availabilityMap: Record<string, { startTime: string; endTime: string }[]> = {};
+
+    Object.values(DAY_MAP_SHORT_TO_FULL).forEach((fullDay) => {
+      availabilityMap[fullDay] = [];
+    });
+
+    Object.keys(slots).forEach((k) => {
+      if (slots[k]) {
+        const [shortDay, hourStr] = k.split("-");
+        const hour = parseInt(hourStr, 10);
+        const fullDay = DAY_MAP_SHORT_TO_FULL[shortDay];
+        if (fullDay && !isNaN(hour)) {
+          const startStr = `${hour.toString().padStart(2, "0")}:00`;
+          const endStr = `${(hour + 1).toString().padStart(2, "0")}:00`;
+          availabilityMap[fullDay].push({
+            startTime: startStr,
+            endTime: endStr,
+          });
+        }
+      }
+    });
+
+    const availability = Object.entries(availabilityMap)
+      .map(([day, slots]) => ({ day, slots }))
+      .filter((item) => item.slots.length > 0);
+
+    const hourlyRate = parseFloat(rate);
+    if (isNaN(hourlyRate) || hourlyRate < 0) {
+      toast.error("Invalid session rate");
+      return;
+    }
+
+    updateAvailability({ availability, hourlyRate });
   };
+
+  if (isLoading) {
+    return <AvailabilitySkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+        <p className="text-red-500 font-medium">Failed to load availability schedule</p>
+        <p className="text-sm text-muted-foreground">
+          {(error as any)?.message || "Please check your connection to the server."}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
@@ -116,8 +218,12 @@ const MentorAvailability = () => {
               placeholder="e.g. 1500"
             />
           </div>
-          <Button onClick={handleSave} className="bg-magenta hover:bg-magenta/90 text-white">
-            Save Availability
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-magenta hover:bg-magenta/90 text-white"
+          >
+            {isSaving ? "Saving..." : "Save Availability"}
           </Button>
         </div>
       </DataCard>
@@ -126,3 +232,4 @@ const MentorAvailability = () => {
 };
 
 export default MentorAvailability;
+

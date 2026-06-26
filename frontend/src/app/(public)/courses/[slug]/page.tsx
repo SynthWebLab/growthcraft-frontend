@@ -109,7 +109,10 @@ export default function CourseDetailPage({
   const secondaryCTA = course.secondaryCTA;
 
   // Determine CTA behavior based on the label text
-  const isPrimaryEnrollment = primaryCTA.toLowerCase().includes("enroll");
+  const isPrimaryEnrollment = 
+    primaryCTA.toLowerCase().includes("enroll") || 
+    primaryCTA.toLowerCase().includes("reserve") || 
+    primaryCTA.toLowerCase().includes("seat");
   const isPrimaryRegisterInterest = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("interest");
 
   // Select the appropriate mutation based on CTA type
@@ -117,6 +120,10 @@ export default function CourseDetailPage({
 
   // Handle primary CTA click (Enroll Now / Register Interest)
   const handlePrimaryCTAClick = async () => {
+    if (user?.role === "mentor") {
+      toast.error("Students Only");
+      return;
+    }
     // For "Register Interest" - treat like callback (no login required)
     if (isPrimaryRegisterInterest) {
       if (!isAuthenticated) {
@@ -184,6 +191,10 @@ export default function CourseDetailPage({
 
   // Handle secondary CTA click (Request Callback)
   const handleSecondaryCTAClick = async () => {
+    if (user?.role === "mentor") {
+      toast.error("Students Only");
+      return;
+    }
     if (!isAuthenticated) {
       // Not logged in - show form popup (no authentication required for callback)
       if (secondaryCTA) {
@@ -217,23 +228,33 @@ export default function CourseDetailPage({
 
   // Determine button states
   const isPrimaryButtonDisabled = 
-    isPrimaryEnrollment 
-      ? isEnrolled || enrollMutation.isPending
+    (isAuthenticated && user?.role === "mentor") ||
+    (isPrimaryEnrollment 
+      ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryRegisterInterest
       ? hasCallbackRequest || activeMutation.isPending
-      : activeMutation.isPending;
+      : activeMutation.isPending);
       
-  const isSecondaryButtonDisabled = hasCallbackRequest || callbackMutation.isPending;
+  const isSecondaryButtonDisabled = 
+    hasCallbackRequest || 
+    callbackMutation.isPending || 
+    (isAuthenticated && user?.role === "mentor");
 
   // Button labels
   const primaryButtonLabel = 
-    isPrimaryEnrollment
-      ? (isEnrolled ? "Already Enrolled" : enrollMutation.isPending ? "Enrolling..." : primaryCTA)
+    (isAuthenticated && user?.role === "mentor")
+      ? "Students Only"
+      : isPrimaryEnrollment
+      ? (isAuthenticated && !isStudent)
+        ? "Students Only"
+        : (isEnrolled ? "Already Enrolled" : enrollMutation.isPending ? "Enrolling..." : primaryCTA)
       : isPrimaryRegisterInterest
       ? (hasCallbackRequest ? "Interest Registered" : activeMutation.isPending ? "Submitting..." : primaryCTA)
       : (activeMutation.isPending ? "Submitting..." : primaryCTA);
 
-  const secondaryButtonLabel = hasCallbackRequest 
+  const secondaryButtonLabel = (isAuthenticated && user?.role === "mentor")
+    ? "Students Only"
+    : hasCallbackRequest 
     ? "Callback Requested" 
     : callbackMutation.isPending 
     ? "Requesting..." 

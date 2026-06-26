@@ -2,6 +2,7 @@ import { Calendar, ArrowRight, MapPin } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Bootcamp } from "@/types/bootcamp";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface BootcampEventCardProps {
   bootcamp: Bootcamp;
@@ -30,9 +31,11 @@ export function BootcampEventCard({
   onPrimaryCTAClick,
   onSecondaryCTAClick,
 }: BootcampEventCardProps) {
+  const { data: user } = useCurrentUser();
+  const isMentor = user?.role === "mentor";
   const isFinalizedStatus = bootcamp.status === "Closed" || bootcamp.status === "Completed";
-  const isPrimaryDisabled = bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus);
-  const primaryButtonLabel = isFinalizedStatus ? bootcamp.status : bootcamp.primaryCTA;
+  const isPrimaryDisabled = isMentor || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus));
+  const primaryButtonLabel = isMentor ? "Students Only" : (isFinalizedStatus ? bootcamp.status : bootcamp.primaryCTA);
 
   return (
     <Link 
@@ -135,9 +138,11 @@ export function BootcampEventCard({
                 variant="outline"
                 size="sm"
                 className="w-full sm:w-auto"
+                disabled={isMentor}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  if (isMentor) return;
                   if (onSecondaryCTAClick) {
                     onSecondaryCTAClick(bootcamp);
                     return;
@@ -145,7 +150,7 @@ export function BootcampEventCard({
                   onPrimaryCTAClick(bootcamp);
                 }}
               >
-                {bootcamp.secondaryCTA}
+                {isMentor ? "Students Only" : bootcamp.secondaryCTA}
               </Button>
             )}
             <Button
@@ -157,14 +162,12 @@ export function BootcampEventCard({
                   : ""
               }`}
               size="default"
-              variant={isFinalizedStatus ? "outline" : bootcamp.canRegister ? "default" : "outline"}
+              variant={isFinalizedStatus || isMentor ? "outline" : bootcamp.canRegister ? "default" : "outline"}
               disabled={isPrimaryDisabled}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!isPrimaryDisabled) {
-                  onPrimaryCTAClick(bootcamp);
-                }
+                if (!isMentor) onPrimaryCTAClick(bootcamp);
               }}
             >
               {primaryButtonLabel}

@@ -8,6 +8,8 @@ import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { useBootcamps } from "@/hooks/queries/useBootcamps";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { toast } from "sonner";
 import {
   BOOTCAMP_FILTER_STATUSES,
   BOOTCAMP_MODES,
@@ -31,6 +33,8 @@ const BootcampsPage = () => {
   const [selectedMode, setSelectedMode] = useState<(typeof BOOTCAMP_MODES)[number] | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<(typeof BOOTCAMP_FILTER_STATUSES)[number] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const { data: user } = useCurrentUser();
+  const isMentor = user?.role === "mentor";
   const { isOpen, formType, formTitle, courseId, courseTitle, itemType, openForm, closeForm } = usePopupForm();
 
   const queryParams: BootcampQueryParams = {
@@ -86,11 +90,18 @@ const BootcampsPage = () => {
     if (bootcamp.status === "Closed" || bootcamp.status === "Completed") {
       return bootcamp.status;
     }
+    if (isMentor) {
+      return "Students Only";
+    }
 
     return bootcamp.primaryCTA;
   };
 
   const handlePrimaryCTA = (bootcamp: typeof bootcamps[0]) => {
+    if (isMentor) {
+      toast.error("Students Only");
+      return;
+    }
     if (bootcamp.primaryCTA.toLowerCase().includes("reserve")) {
       openForm("reserve-seat", `Reserve Seat - ${bootcamp.title}`, bootcamp.id, bootcamp.title, "bootcamp");
       return;
@@ -100,6 +111,10 @@ const BootcampsPage = () => {
   };
 
   const handleSecondaryCTA = (bootcamp: typeof bootcamps[0]) => {
+    if (isMentor) {
+      toast.error("Students Only");
+      return;
+    }
     openForm("callback", `Request Callback - ${bootcamp.title}`, bootcamp.id, bootcamp.title, "bootcamp");
   };
 
@@ -238,7 +253,7 @@ const BootcampsPage = () => {
       {/* Bootcamp cards — alternating white/marble */}
       {bootcamps.map((bootcamp, i) => {
         const isPrimaryDisabled =
-          bootcamp.cta?.disabled ?? (!bootcamp.canRegister || bootcamp.status === "Completed");
+          isMentor || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || bootcamp.status === "Completed"));
 
         return (
         <Section key={bootcamp.id} variant={i % 2 === 0 ? "white" : "marble"}>
@@ -334,9 +349,14 @@ const BootcampsPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleSecondaryCTA(bootcamp)}
+                      disabled={isMentor}
+                      onClick={() => {
+                        if (!isMentor) {
+                          handleSecondaryCTA(bootcamp);
+                        }
+                      }}
                     >
-                      {bootcamp.secondaryCTA}
+                      {isMentor ? "Students Only" : bootcamp.secondaryCTA}
                     </Button>
                   )}
                   <Button

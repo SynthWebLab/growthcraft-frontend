@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useSubmitMentorSupport } from "@/hooks/queries/useMentor";
 
 const SupportQueryForm = () => {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const { mutate: submitSupport, isPending: submitting } = useSubmitMentorSupport();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,14 +22,15 @@ const SupportQueryForm = () => {
       return;
     }
 
-    setSubmitting(true);
-    // No support endpoint yet — acknowledge the submission.
-    toast.success("Message sent", {
-      description: "Our mentor team will get back to you shortly.",
-    });
-    setSubject("");
-    setMessage("");
-    setSubmitting(false);
+    submitSupport(
+      { subject, message },
+      {
+        onSuccess: () => {
+          setSubject("");
+          setMessage("");
+        },
+      }
+    );
   };
 
   return (

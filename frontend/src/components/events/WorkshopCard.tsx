@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
 import type { Workshop } from "@/types/workshop";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface WorkshopCardProps {
   workshop: Workshop;
@@ -20,16 +21,18 @@ const formatEventTime = (date: string) =>
   });
 
 export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick }: WorkshopCardProps) {
+  const { data: user } = useCurrentUser();
+  const isMentor = user?.role === "mentor";
   const toneStyles = getEventCardToneStyles("purple");
 
   const primaryCTA = workshop.primaryCTA || "Reserve Seat";
   const secondaryCTA = workshop.secondaryCTA;
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = workshop.status === "Closed" || workshop.status === "Completed";
-  const primaryButtonLabel = isFinalizedStatus ? workshop.status : primaryCTA;
+  const primaryButtonLabel = isMentor ? "Students Only" : (isFinalizedStatus ? workshop.status : primaryCTA);
 
   const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
-  const isPrimaryDisabled = isFinalizedStatus || (isRegistrationAction && (
+  const isPrimaryDisabled = isMentor || isFinalizedStatus || (isRegistrationAction && (
     workshop.status === "Completed" || 
     workshop.availableSeats <= 0 ||
     !workshop.canRegister
@@ -103,28 +106,29 @@ export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick }: Work
                 variant="outline"
                 size="default"
                 className="w-full sm:w-auto"
+                disabled={isMentor}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onSecondaryCTAClick(workshop);
+                  if (!isMentor) onSecondaryCTAClick(workshop);
                 }}
               >
-                {secondaryCTA}
+                {isMentor ? "Students Only" : secondaryCTA}
               </Button>
             )}
             <Button
               className={`w-full sm:w-auto shadow-none ${
-                isFinalizedStatus || isCallbackAction
+                isFinalizedStatus || isCallbackAction || isMentor
                   ? ""
                   : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50"
               }`}
               size="default"
-              variant={isFinalizedStatus || isCallbackAction ? "outline" : "default"}
+              variant={isFinalizedStatus || isCallbackAction || isMentor ? "outline" : "default"}
               disabled={isPrimaryDisabled}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!isPrimaryDisabled) onCTAClick(workshop);
+                if (!isPrimaryDisabled && !isMentor) onCTAClick(workshop);
               }}
             >
               <span className="hidden sm:inline">
