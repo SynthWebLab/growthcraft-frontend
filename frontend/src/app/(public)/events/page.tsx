@@ -8,12 +8,15 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkshopEvents } from "@/components/events/WorkshopEvents";
 import { HackathonEvents } from "@/components/events/HackathonEvents";
 import { BootcampEvents } from "@/components/events/BootcampEvents";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type EventTab = "workshops" | "bootcamps" | "hackathons";
 
 export default function EventsPage() {
   const { isOpen, formType, formTitle, courseId, courseTitle, itemType, openForm, closeForm } = usePopupForm();
   const [activeTab, setActiveTab] = useState<EventTab>("workshops");
+  const { data: user } = useCurrentUser();
+  const isMentor = user?.role === "mentor";
 
   return (
     <>
@@ -72,9 +75,14 @@ export default function EventsPage() {
           <Button
             className="bg-magenta text-white hover:bg-magenta/90"
             size="lg"
-            onClick={() => openForm("register-interest", "Notify Me About Events")}
+            disabled={isMentor}
+            onClick={() => {
+              if (!isMentor) {
+                openForm("register-interest", "Notify Me About Events");
+              }
+            }}
           >
-            Register Interest
+            {isMentor ? "Students Only" : "Register Interest"}
           </Button>
         </div>
       </Section>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
 import type { Hackathon } from "@/types/hackathon";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface HackathonCardProps {
   hackathon: Hackathon;
@@ -14,6 +15,8 @@ const formatEventDate = (date: string) =>
   new Date(date).toLocaleDateString("en-GB");
 
 export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: HackathonCardProps) {
+  const { data: user } = useCurrentUser();
+  const isMentor = user?.role === "mentor";
   const toneStyles = getEventCardToneStyles("orange");
   
   // Get CTAs from hackathon data
@@ -21,12 +24,12 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: Ha
   const secondaryCTA = hackathon.secondaryCTA;
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = hackathon.status === "Closed" || hackathon.status === "Completed";
-  const primaryButtonLabel = isFinalizedStatus ? hackathon.status : primaryCTA;
+  const primaryButtonLabel = isMentor ? "Students Only" : (isFinalizedStatus ? hackathon.status : primaryCTA);
   
   // Only disable primary button if it's a registration action AND (seats full OR event completed)
   // "Request Callback" buttons should always be enabled
   const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
-  const isPrimaryDisabled = isFinalizedStatus || (isRegistrationAction && (
+  const isPrimaryDisabled = isMentor || isFinalizedStatus || (isRegistrationAction && (
     hackathon.status === "Completed" || 
     hackathon.availableSeats === 0
   ));
@@ -93,28 +96,29 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: Ha
                 variant="outline"
                 size="default"
                 className="w-full sm:w-auto"
+                disabled={isMentor}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onSecondaryCTAClick(hackathon);
+                  if (!isMentor) onSecondaryCTAClick(hackathon);
                 }}
               >
-                {secondaryCTA}
+                {isMentor ? "Students Only" : secondaryCTA}
               </Button>
             )}
             <Button
               className={`w-full sm:w-auto shadow-none ${
-                isFinalizedStatus || isCallbackAction
+                isFinalizedStatus || isCallbackAction || isMentor
                   ? ""
                   : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50"
               }`}
               size="default"
-              variant={isFinalizedStatus || isCallbackAction ? "outline" : "default"}
+              variant={isFinalizedStatus || isCallbackAction || isMentor ? "outline" : "default"}
               disabled={isPrimaryDisabled}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!isPrimaryDisabled) onCTAClick(hackathon);
+                if (!isPrimaryDisabled && !isMentor) onCTAClick(hackathon);
               }}
             >
               <span className="hidden sm:inline">

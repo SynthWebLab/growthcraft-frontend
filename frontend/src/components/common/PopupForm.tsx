@@ -18,6 +18,7 @@ import { useRegisterHackathon, useRequestHackathonCallback } from "@/hooks/queri
 import { useEnrollInTrainingProgram, useRequestTrainingProgramCallback } from "@/hooks/queries/useTrainingPrograms";
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 // Validation schemas
 const enrollmentSchema = z.object({
@@ -55,6 +56,10 @@ interface PopupFormProps {
 }
 
 export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle, itemType = "course" }: PopupFormProps) => {
+  const { data: user } = useCurrentUser();
+  const isMentor = user?.role === "mentor";
+  const isStudentAction = ["enrollment", "reserve-seat", "callback", "register-interest"].includes(type);
+
   // Mutations for enroll and callback
   const enrollMutation = useEnrollCourse();
   const bootcampRegisterMutation = useRegisterBootcamp();
@@ -356,7 +361,17 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+        {isMentor && isStudentAction ? (
+          <div className="py-6 text-center space-y-4">
+            <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm font-medium">
+              This feature is reserved for students only. As a logged-in Mentor, you cannot perform this action.
+            </div>
+            <Button type="button" onClick={onClose} className="w-full">
+              Close
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <div>
             <Input
               placeholder="Your Name *"
@@ -451,7 +466,8 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
               )}
             </Button>
           </div>
-        </form>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
