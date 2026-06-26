@@ -194,3 +194,88 @@ export function useUpdateMentorProfile() {
     },
   });
 }
+
+/** Fetch mentor support tickets. */
+export function useMentorSupportTickets() {
+  return useQuery({
+    queryKey: ["mentor", "support"],
+    queryFn: () => mentorService.getSupportTickets(),
+    staleTime: STALE,
+  });
+}
+
+/** Mutation to submit mentor support query ticket. */
+export function useSubmitMentorSupport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { subject: string; message: string }) => mentorService.submitSupportTicket(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Query submitted", {
+          description: response.message || "Our mentor support team will get back to you shortly.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["mentor", "support"] });
+      } else {
+        toast.error("Submission failed", {
+          description: response.message || "Please try again.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", {
+        description: extractApiError(error, "An unexpected error occurred."),
+      });
+    },
+  });
+}
+
+/** Mutation to update mentor settings account (fullName, phone). */
+export function useUpdateMentorAccount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { fullName?: string; phone?: string }) => mentorService.updateAccountSettings(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Settings updated", {
+          description: response.message || "Your account settings have been saved.",
+        });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.profile() });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.dashboard() });
+      } else {
+        toast.error("Update failed", {
+          description: response.message || "Please try again.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Update failed", {
+        description: extractApiError(error, "An unexpected error occurred."),
+      });
+    },
+  });
+}
+
+/** Mutation to change mentor password. */
+export function useChangeMentorPassword() {
+  return useMutation({
+    mutationFn: (data: { currentPassword?: string; newPassword?: string; confirmPassword?: string }) => mentorService.changePassword(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Password updated", {
+          description: response.message || "Your password has been changed.",
+        });
+      } else {
+        toast.error("Couldn't change password", {
+          description: response.message || "Please try again.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Couldn't change password", {
+        description: extractApiError(error, "An unexpected error occurred."),
+      });
+    },
+  });
+}

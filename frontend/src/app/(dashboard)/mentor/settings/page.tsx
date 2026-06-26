@@ -8,8 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
-import { useMentorProfile, useUpdateMentorProfile } from "@/hooks/queries/useMentor";
-import { useChangePassword } from "@/hooks/queries/useStudent";
+import { useMentorProfile, useUpdateMentorAccount, useChangeMentorPassword } from "@/hooks/queries/useMentor";
 import { toast } from "sonner";
 
 const notificationPrefs = [
@@ -38,8 +37,8 @@ export default function MentorSettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const { data: profileResponse, isLoading, error } = useMentorProfile();
-  const { mutate: updateProfile, isPending: isSavingProfile } = useUpdateMentorProfile();
-  const { mutate: changePassword, isPending: isSavingPassword } = useChangePassword();
+  const { mutate: updateAccount, isPending: isSavingProfile } = useUpdateMentorAccount();
+  const { mutate: changePassword, isPending: isSavingPassword } = useChangeMentorPassword();
 
   const profile = profileResponse?.data?.profile;
 
@@ -55,7 +54,7 @@ export default function MentorSettingsPage() {
       toast.error("Full name is required");
       return;
     }
-    updateProfile({ fullName, phone });
+    updateAccount({ fullName, phone });
   };
 
   const handleUpdatePassword = () => {

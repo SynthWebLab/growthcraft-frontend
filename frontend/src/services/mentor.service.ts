@@ -81,4 +81,24 @@ export const mentorService = {
   updateProfile: async (data: any): Promise<MentorProfileResponse> => {
     return apiClient.put<MentorProfileResponse>(API_ENDPOINTS.mentor.profile, data);
   },
+
+  /** Submit support query ticket. */
+  submitSupportTicket: async (data: { subject: string; message: string }): Promise<ApiResponse<any>> => {
+    return apiClient.post<ApiResponse<any>>(API_ENDPOINTS.mentor.support, data);
+  },
+
+  /** Get support query tickets submitted by the mentor. */
+  getSupportTickets: async (): Promise<ApiResponse<any>> => {
+    return apiClient.get<ApiResponse<any>>(API_ENDPOINTS.mentor.support);
+  },
+
+  /** Update mentor account settings (fullName, phone). */
+  updateAccountSettings: async (data: { fullName?: string; phone?: string }): Promise<ApiResponse<any>> => {
+    return apiClient.put<ApiResponse<any>>(API_ENDPOINTS.mentor.settingsAccount, data);
+  },
+
+  /** Change mentor password. */
+  changePassword: async (data: { currentPassword?: string; newPassword?: string; confirmPassword?: string }): Promise<ApiResponse<any>> => {
+    return apiClient.post<ApiResponse<any>>(API_ENDPOINTS.mentor.settingsPassword, data);
+  },
 };

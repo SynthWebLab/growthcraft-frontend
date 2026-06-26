@@ -105,5 +105,8 @@ export const API_ENDPOINTS = {
     earnings: "/mentor/earnings",
     withdraw: "/mentor/earnings/withdraw",
     profile: "/mentor/profile",
+    support: "/mentor/support",
+    settingsAccount: "/mentor/settings/account",
+    settingsPassword: "/mentor/settings/password",
   },
 } as const;
