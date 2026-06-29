@@ -23,6 +23,10 @@ export const mentorKeys = {
   students: () => [...mentorKeys.all, "students"] as const,
   earnings: () => [...mentorKeys.all, "earnings"] as const,
   profile: () => [...mentorKeys.all, "profile"] as const,
+  batches: (status?: string) => [...mentorKeys.all, "batches", status ?? "all"] as const,
+  batchDetail: (id: string) => [...mentorKeys.all, "batch-detail", id] as const,
+  checkInStatus: () => [...mentorKeys.all, "check-in-status"] as const,
+  checkInsHistory: (batchId?: string) => [...mentorKeys.all, "check-ins-history", batchId ?? "all"] as const,
 };
 
 const STALE = 2 * 60 * 1000; // 2 minutes
@@ -274,6 +278,166 @@ export function useChangeMentorPassword() {
     },
     onError: (error: any) => {
       toast.error("Couldn't change password", {
+        description: extractApiError(error, "An unexpected error occurred."),
+      });
+    },
+  });
+}
+
+/** Fetch assigned batches. */
+export function useMentorBatches(params?: { status?: string; page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: mentorKeys.batches(params?.status),
+    queryFn: () => mentorService.getBatches(params),
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Fetch details of a single batch. */
+export function useMentorBatchDetail(id: string) {
+  return useQuery({
+    queryKey: mentorKeys.batchDetail(id),
+    queryFn: () => mentorService.getBatchDetail(id),
+    enabled: !!id,
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Fetch active check-in status. */
+export function useMentorCheckInStatus() {
+  return useQuery({
+    queryKey: mentorKeys.checkInStatus(),
+    queryFn: () => mentorService.getCheckInStatus(),
+    staleTime: 10 * 1000,
+    retry: 1,
+  });
+}
+
+/** Fetch check-ins history. */
+export function useMentorCheckInsHistory(params?: { batchId?: string; page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: mentorKeys.checkInsHistory(params?.batchId),
+    queryFn: () => mentorService.getCheckInsHistory(params),
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Mutation to check-in. */
+export function useMentorCheckIn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (batchId: string) => mentorService.checkIn(batchId),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Checked in successfully", {
+          description: response.message || "Your mentoring session check-in has been logged.",
+        });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.checkInStatus() });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.checkInsHistory() });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.dashboard() });
+      } else {
+        toast.error("Check-in failed", {
+          description: response.message || "Please try again.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Check-in failed", {
+        description: extractApiError(error, "An unexpected error occurred."),
+      });
+    },
+  });
+}
+
+/** Mutation to check-out. */
+export function useMentorCheckOut() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { batchId: string; notes?: string }) => mentorService.checkOut(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Checked out successfully", {
+          description: response.message || "Your mentoring session check-out has been logged.",
+        });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.checkInStatus() });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.checkInsHistory() });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.dashboard() });
+      } else {
+        toast.error("Check-out failed", {
+          description: response.message || "Please try again.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Check-out failed", {
+        description: extractApiError(error, "An unexpected error occurred."),
+      });
+    },
+  });
+}
+
+/** Mutation to log student attendance. */
+export function useMentorMarkAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      batchId: string;
+      date: string | Date;
+      records: { studentUserId: string; status: 'Present' | 'Absent' | 'Late' | 'Excused'; remarks?: string }[];
+    }) => mentorService.markAttendance(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Attendance saved successfully", {
+          description: response.message || "Student attendance has been logged.",
+        });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.batches() });
+      } else {
+        toast.error("Saving attendance failed", {
+          description: response.message || "Please try again.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Saving attendance failed", {
+        description: extractApiError(error, "An unexpected error occurred."),
+      });
+    },
+  });
+}
+
+/** Mutation to submit progress note. */
+export function useMentorCreateProgressNote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      studentUserId: string;
+      batchId: string;
+      rubricScore: number;
+      feedback: string;
+      strengths?: string;
+      areasForImprovement?: string;
+    }) => mentorService.createProgressNote(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Progress note saved successfully", {
+          description: response.message || "Student progress log has been created.",
+        });
+        queryClient.invalidateQueries({ queryKey: mentorKeys.batches() });
+      } else {
+        toast.error("Saving progress note failed", {
+          description: response.message || "Please try again.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Saving progress note failed", {
         description: extractApiError(error, "An unexpected error occurred."),
       });
     },

@@ -279,3 +279,21 @@ export function useUpdateEventAccess() {
     },
   });
 }
+
+export function useToggleAmbassadorStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (studentId: string) => collegeService.toggleAmbassadorStatus(studentId),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Ambassador status updated", { description: response.message || "Student ambassador flag updated successfully." });
+        queryClient.invalidateQueries({ queryKey: collegeKeys.students() });
+      } else {
+        toast.error("Failed to update status", { description: response.message || "Please try again." });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Failed to update status", { description: extractApiError(error, "Please try again.") });
+    },
+  });
+}

@@ -123,4 +123,8 @@ export const collegeService = {
   ): Promise<ApiResponse<{ success: boolean; modifiedCount: number }>> => {
     return apiClient.post(API_ENDPOINTS.colleges.eventAccess(eventId), data);
   },
+
+  toggleAmbassadorStatus: async (studentId: string): Promise<ApiResponse<any>> => {
+    return apiClient.post<ApiResponse<any>>(API_ENDPOINTS.colleges.toggleAmbassador(studentId), {});
+  },
 };

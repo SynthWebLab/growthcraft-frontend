@@ -163,7 +163,13 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
   const userRole = user?.role?.toLowerCase();
   const pathRole = panelKey === "hiring" ? "employer" : panelKey;
 
-  const isRoleMismatch = !!(isAuthenticated && userRole && pathRole && userRole !== pathRole);
+  const isRoleMismatch = !!(
+    isAuthenticated &&
+    userRole &&
+    pathRole &&
+    userRole !== pathRole &&
+    !(userRole === "student" && pathRole === "ambassador")
+  );
 
   useEffect(() => {
     if (!isLoading && isRoleMismatch && userRole) {

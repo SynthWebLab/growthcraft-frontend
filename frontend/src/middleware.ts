@@ -26,7 +26,7 @@ const alwaysAccessibleAuthRoutes = [
 
 // Define role-based route access
 const roleRoutes = {
-  student: ['/student'],
+  student: ['/student', '/ambassador'],
   mentor: ['/mentor'],
   college: ['/college'],
   employer: ['/employer'],
@@ -182,6 +182,17 @@ export async function middleware(request: NextRequest) {
       // No user role - redirect to login
       const loginUrl = new URL('/login/student', request.url);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Special check for ambassador routes
+    if (pathname.startsWith('/ambassador')) {
+      if (userRole !== 'student') {
+        const userDashboard = roleRoutes[userRole]?.[0] || '/';
+        return NextResponse.redirect(new URL(userDashboard, request.url));
+      }
+      if (!user?.isAmbassador) {
+        return NextResponse.redirect(new URL('/student', request.url));
+      }
     }
 
     // Check if user has access to this dashboard

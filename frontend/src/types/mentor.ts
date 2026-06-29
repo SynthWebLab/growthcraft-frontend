@@ -115,9 +115,14 @@ export interface MentorEarningsData {
 export type MentorEarningsResponse = ApiResponse<MentorEarningsData>;
 
 export interface MentorProfileData {
-  fullName: string;
-  email: string;
-  phone: string;
+  userId?: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+  };
+  fullName?: string;
+  email?: string;
+  phone?: string;
   bio: string;
   experienceYears: number;
   areaOfExpertise: string;
