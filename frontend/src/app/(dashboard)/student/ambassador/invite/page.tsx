@@ -2,7 +2,8 @@
 
 import { useInviteFriends } from "@/hooks/queries/useAmbassador";
 import { useCourses } from "@/hooks/queries/useCourses";
-import { useBootcamps } from "@/hooks/queries/useBootcamps";
+import { useEvents } from "@/hooks/queries/useEvents";
+import { useTrainingPrograms } from "@/hooks/queries/useTrainingPrograms";
 import DataCard from "@/components/ui/data-card";
 import { Loader2, Mail, Megaphone, HelpCircle } from "lucide-react";
 import { useState } from "react";
@@ -13,8 +14,9 @@ export default function AmbassadorInvitePage() {
   const [programType, setProgramType] = useState<string>("");
   const [programId, setProgramId] = useState<string>("");
 
-  const { data: coursesData, isLoading: coursesLoading } = useCourses({});
-  const { data: bootcampsData, isLoading: bootcampsLoading } = useBootcamps();
+  const { data: coursesData } = useCourses({ limit: 50 });
+  const { data: eventsData } = useEvents({ limit: 50 });
+  const { data: programsData } = useTrainingPrograms({ limit: 50 });
   const { mutate: sendInvites, isPending } = useInviteFriends();
 
   const handleSendInvites = (e: React.FormEvent) => {
@@ -29,10 +31,14 @@ export default function AmbassadorInvitePage() {
       return;
     }
 
+    const apiProgramType = (programType === "Workshop" || programType === "Hackathon" || programType === "Bootcamp")
+      ? "Bootcamp"
+      : programType;
+
     sendInvites(
       {
         emails,
-        programType: programType || undefined,
+        programType: apiProgramType || undefined,
         programId: programId || undefined,
       },
       {
@@ -46,7 +52,8 @@ export default function AmbassadorInvitePage() {
   };
 
   const courses = coursesData?.data || [];
-  const bootcamps = bootcampsData?.items || [];
+  const events = (eventsData as any)?.items || (eventsData as any)?.data || [];
+  const trainingPrograms = programsData?.data || [];
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -92,9 +99,12 @@ export default function AmbassadorInvitePage() {
                   disabled={isPending}
                   className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:outline-none focus:border-magenta transition-all bg-white"
                 >
-                  <option value="">Any Course/Bootcamp</option>
-                  <option value="course">Course</option>
-                  <option value="event">Bootcamp</option>
+                  <option value="">Any Course/Program/Event</option>
+                  <option value="Course">Course</option>
+                  <option value="TrainingProgram">Training Program</option>
+                  <option value="Bootcamp">Bootcamp</option>
+                  <option value="Workshop">Workshop</option>
+                  <option value="Hackathon">Hackathon</option>
                 </select>
               </div>
 
@@ -109,18 +119,26 @@ export default function AmbassadorInvitePage() {
                   className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:outline-none focus:border-magenta transition-all bg-white disabled:opacity-50"
                 >
                   <option value="">Select recommended program</option>
-                  {programType === "course" &&
+                  {programType === "Course" &&
                     courses.map((c: any) => (
                       <option key={c._id || c.id} value={c._id || c.id}>
                         {c.title}
                       </option>
                     ))}
-                  {programType === "event" &&
-                    bootcamps.map((b: any) => (
-                      <option key={b.id || b._id} value={b.id || b._id}>
-                        {b.title}
+                  {programType === "TrainingProgram" &&
+                    trainingPrograms.map((p: any) => (
+                      <option key={p._id || p.id} value={p._id || p.id}>
+                        {p.title}
                       </option>
                     ))}
+                  {(programType === "Bootcamp" || programType === "Workshop" || programType === "Hackathon") &&
+                    events
+                      .filter((b: any) => b.type?.toLowerCase() === programType.toLowerCase())
+                      .map((b: any) => (
+                        <option key={b.id || b._id || b._id} value={b.id || b._id || b._id}>
+                          {b.title}
+                        </option>
+                      ))}
                 </select>
               </div>
             </div>
