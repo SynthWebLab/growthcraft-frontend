@@ -7,7 +7,7 @@ import { StatusPill } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useCollegeStudents, useCollegeCohort, useImportStudents, useToggleAmbassadorStatus } from "@/hooks/queries/useCollege";
+import { useCollegeStudents, useCollegeCohort, useImportStudents, useActivateCollegeAmbassadors, useDeactivateCollegeAmbassador } from "@/hooks/queries/useCollege";
 import type { CollegeStudentRow } from "@/types/college";
 
 type Student = CollegeStudentRow;
@@ -51,7 +51,8 @@ const CollegeStudents = () => {
   const { data, isLoading } = useCollegeStudents({ limit: 1000 });
   const { data: cohortRes } = useCollegeCohort();
   const importStudents = useImportStudents();
-  const toggleAmbassador = useToggleAmbassadorStatus();
+  const activateAmbassadors = useActivateCollegeAmbassadors();
+  const deactivateAmbassador = useDeactivateCollegeAmbassador();
 
   const columns: Column<Student>[] = [
     {
@@ -101,8 +102,14 @@ const CollegeStudents = () => {
         <Button
           size="sm"
           variant={row.isAmbassador ? "default" : "outline"}
-          onClick={() => toggleAmbassador.mutate(row.userId)}
-          disabled={toggleAmbassador.isPending}
+          onClick={() => {
+            if (row.isAmbassador) {
+              deactivateAmbassador.mutate(row.userId);
+            } else {
+              activateAmbassadors.mutate([row.userId]);
+            }
+          }}
+          disabled={activateAmbassadors.isPending || deactivateAmbassador.isPending}
           className={row.isAmbassador ? "bg-magenta text-white hover:bg-magenta/90 text-xs py-1 h-7" : "text-xs py-1 h-7 border-border hover:bg-marble text-muted-foreground"}
         >
           {row.isAmbassador ? "Active" : "Activate"}

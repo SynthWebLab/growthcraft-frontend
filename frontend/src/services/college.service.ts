@@ -124,7 +124,39 @@ export const collegeService = {
     return apiClient.post(API_ENDPOINTS.colleges.eventAccess(eventId), data);
   },
 
-  toggleAmbassadorStatus: async (studentId: string): Promise<ApiResponse<any>> => {
-    return apiClient.post<ApiResponse<any>>(API_ENDPOINTS.colleges.toggleAmbassador(studentId), {});
+  getAttendance: async (query?: {
+    batchId?: string;
+    studentId?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<any>> => {
+    const params = new URLSearchParams();
+    if (query?.batchId) params.set("batchId", query.batchId);
+    if (query?.studentId) params.set("studentId", query.studentId);
+    if (query?.startDate) params.set("startDate", query.startDate);
+    if (query?.endDate) params.set("endDate", query.endDate);
+    if (query?.page) params.set("page", String(query.page));
+    if (query?.limit) params.set("limit", String(query.limit));
+    const qs = params.toString();
+    const url = qs ? `${API_ENDPOINTS.colleges.attendance}?${qs}` : API_ENDPOINTS.colleges.attendance;
+    return apiClient.get<ApiResponse<any>>(url);
+  },
+
+  getAttendanceSummary: async (): Promise<ApiResponse<any>> => {
+    return apiClient.get<ApiResponse<any>>(API_ENDPOINTS.colleges.attendanceSummary);
+  },
+
+  activateAmbassadors: async (studentUserIds: string[]): Promise<ApiResponse<any>> => {
+    return apiClient.post<ApiResponse<any>>(API_ENDPOINTS.colleges.ambassadors, { studentUserIds });
+  },
+
+  getAmbassadors: async (): Promise<ApiResponse<any>> => {
+    return apiClient.get<ApiResponse<any>>(API_ENDPOINTS.colleges.ambassadors);
+  },
+
+  deactivateAmbassador: async (studentUserId: string): Promise<ApiResponse<any>> => {
+    return apiClient.delete<ApiResponse<any>>(API_ENDPOINTS.colleges.deleteAmbassador(studentUserId));
   },
 };

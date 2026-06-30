@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
-import { useCollegeReports } from "@/hooks/queries/useCollege";
+import { useCollegeReports, useCollegeAttendanceSummary } from "@/hooks/queries/useCollege";
 import type { CollegeMonthlyReport } from "@/types/college";
 
 type Report = CollegeMonthlyReport;
@@ -185,9 +185,42 @@ const columns: Column<Report>[] = [
 
 const metrics = ["Enrollments", "Completion Rate", "Student Progress", "Placement Stats", "Mentor Sessions"];
 
+interface AttendanceSummaryRow {
+  studentName: string;
+  batchTitle: string;
+  totalSessions: number;
+  present: number;
+  absent: number;
+  late: number;
+  attendancePercent: number;
+}
+
+const attendanceColumns: Column<AttendanceSummaryRow>[] = [
+  { key: "studentName", label: "Student Name", sortable: true },
+  { key: "batchTitle", label: "Batch", sortable: true },
+  { key: "totalSessions", label: "Total Sessions", sortable: true },
+  { key: "present", label: "Present", sortable: true },
+  { key: "absent", label: "Absent", sortable: true },
+  { key: "late", label: "Late", sortable: true },
+  {
+    key: "attendancePercent",
+    label: "Attendance Rate",
+    sortable: true,
+    render: (row) => (
+      <span className={`font-semibold ${row.attendancePercent >= 75 ? "text-emerald-600" : "text-amber-600"}`}>
+        {row.attendancePercent}%
+      </span>
+    ),
+  },
+];
+
 const CollegeReports = () => {
-  const { data, isLoading } = useCollegeReports();
-  const reports = data?.data?.reports ?? [];
+  const [activeTab, setActiveTab] = useState<"monthly" | "attendance">("monthly");
+  const { data: reportsData, isLoading: reportsLoading } = useCollegeReports();
+  const { data: attendanceData, isLoading: attendanceLoading } = useCollegeAttendanceSummary();
+
+  const reports = reportsData?.data?.reports ?? [];
+  const attendanceRows = (attendanceData?.data ?? []) as AttendanceSummaryRow[];
 
   const [modalOpen, setModalOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
@@ -222,27 +255,88 @@ const CollegeReports = () => {
     setModalOpen(false);
   };
 
+  const handleExportCSV = () => {
+    if (!attendanceRows || attendanceRows.length === 0) {
+      toast.error("No attendance data to export");
+      return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Student Name,Batch,Total Sessions,Present,Absent,Late,Attendance Rate (%)\n";
+
+    attendanceRows.forEach((row) => {
+      csvContent += `"${row.studentName}","${row.batchTitle}",${row.totalSessions},${row.present},${row.absent},${row.late},${row.attendancePercent}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `attendance_summary_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("CSV Exported successfully!");
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Reports"
-        description="View and download reports for your campus programs"
+        title="Campus Insights"
+        description="Monitor student progress, monthly program reports, and attendance summaries."
         action={
-          <Button onClick={() => setModalOpen(true)} className="bg-magenta hover:bg-magenta/90 text-white">
-            <Plus className="h-4 w-4 mr-2" /> Generate Custom Report
-          </Button>
+          activeTab === "monthly" ? (
+            <Button onClick={() => setModalOpen(true)} className="bg-magenta hover:bg-magenta/90 text-white">
+              <Plus className="h-4 w-4 mr-2" /> Generate Custom Report
+            </Button>
+          ) : (
+            <Button onClick={handleExportCSV} className="bg-magenta hover:bg-magenta/90 text-white">
+              <Download className="h-4 w-4 mr-2" /> Export CSV Ledger
+            </Button>
+          )
         }
       />
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading reports…</p>
+      {/* Tabs Switcher */}
+      <div className="flex border-b border-slate-200">
+        <button
+          onClick={() => setActiveTab("monthly")}
+          className={`py-3 px-6 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === "monthly"
+              ? "border-magenta text-magenta"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Monthly Reports
+        </button>
+        <button
+          onClick={() => setActiveTab("attendance")}
+          className={`py-3 px-6 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === "attendance"
+              ? "border-magenta text-magenta"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Student Attendance
+        </button>
+      </div>
+
+      {activeTab === "monthly" ? (
+        reportsLoading ? (
+          <p className="text-sm text-slate-500">Loading reports…</p>
+        ) : (
+          <PanelDataTable columns={columns} data={reports} pageSize={10} />
+        )
+      ) : attendanceLoading ? (
+        <p className="text-sm text-slate-500">Loading attendance summaries…</p>
       ) : (
-        <PanelDataTable columns={columns} data={reports} pageSize={10} />
+        <PanelDataTable columns={attendanceColumns} data={attendanceRows} pageSize={10} />
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Generate Custom Report</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Generate Custom Report</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -257,24 +351,25 @@ const CollegeReports = () => {
             <div className="space-y-2">
               <Label>Metrics to include</Label>
               <div className="space-y-2">
-                {metrics.map(m => (
+                {metrics.map((m) => (
                   <div key={m} className="flex items-center gap-2">
                     <Checkbox
                       id={m}
                       checked={selectedMetrics.includes(m)}
                       onCheckedChange={(checked) => toggleMetric(m, checked === true)}
                     />
-                    <label htmlFor={m} className="text-sm">{m}</label>
+                    <label htmlFor={m} className="text-sm">
+                      {m}
+                    </label>
                   </div>
                 ))}
               </div>
             </div>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
-              <Button
-                className="bg-magenta hover:bg-magenta/90 text-white"
-                onClick={handleGenerate}
-              >
+              <Button variant="outline" onClick={() => setModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="bg-magenta hover:bg-magenta/90 text-white" onClick={handleGenerate}>
                 Generate
               </Button>
             </div>
