@@ -42,6 +42,7 @@ export interface CollegeStudentRow {
   avgProgress: number;
   status: CollegeStudentStatus;
   lastActive: string;
+  isAmbassador?: boolean;
 }
 
 export interface CollegeProfile {

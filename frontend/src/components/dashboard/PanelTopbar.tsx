@@ -102,6 +102,21 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
 
       {/* Right */}
       <div className="flex items-center gap-2">
+        {profile?.role === "student" && profile?.isAmbassador && (
+          <button
+            onClick={() => {
+              if (pathname.startsWith("/ambassador")) {
+                router.push("/student");
+              } else {
+                router.push("/ambassador");
+              }
+            }}
+            className="text-xs font-semibold px-3 py-1.5 rounded-full border border-magenta text-magenta hover:bg-magenta/5 transition-colors shrink-0 mr-2"
+          >
+            {pathname.startsWith("/ambassador") ? "Student View" : "Ambassador View"}
+          </button>
+        )}
+
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

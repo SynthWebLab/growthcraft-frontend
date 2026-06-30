@@ -104,4 +104,65 @@ export const mentorService = {
   changePassword: async (data: { currentPassword?: string; newPassword?: string; confirmPassword?: string }): Promise<ApiResponse<any>> => {
     return apiClient.post<ApiResponse<any>>(API_ENDPOINTS.mentor.settingsPassword, data);
   },
+
+  /** Get assigned batches */
+  getBatches: async (params?: { status?: string; page?: number; limit?: number }): Promise<any> => {
+    const q = new URLSearchParams();
+    if (params?.status) q.append("status", params.status);
+    if (params?.page) q.append("page", params.page.toString());
+    if (params?.limit) q.append("limit", params.limit.toString());
+    const url = q.toString() ? `${API_ENDPOINTS.mentor.batches}?${q.toString()}` : API_ENDPOINTS.mentor.batches;
+    return apiClient.get<any>(url);
+  },
+
+  /** Get single batch details (students, attendance, logs) */
+  getBatchDetail: async (id: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.mentor.batchDetail(id));
+  },
+
+  /** Check in */
+  checkIn: async (batchId: string): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.mentor.checkIn, { batchId });
+  },
+
+  /** Check out */
+  checkOut: async (data: { batchId: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.mentor.checkOut, data);
+  },
+
+  /** Get check-in status */
+  getCheckInStatus: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.mentor.checkInStatus);
+  },
+
+  /** Get check-ins history */
+  getCheckInsHistory: async (params?: { batchId?: string; page?: number; limit?: number }): Promise<any> => {
+    const q = new URLSearchParams();
+    if (params?.batchId) q.append("batchId", params.batchId);
+    if (params?.page) q.append("page", params.page.toString());
+    if (params?.limit) q.append("limit", params.limit.toString());
+    const url = q.toString() ? `${API_ENDPOINTS.mentor.checkInsHistory}?${q.toString()}` : API_ENDPOINTS.mentor.checkInsHistory;
+    return apiClient.get<any>(url);
+  },
+
+  /** Mark student attendance */
+  markAttendance: async (data: {
+    batchId: string;
+    date: string | Date;
+    records: { studentUserId: string; status: 'Present' | 'Absent' | 'Late' | 'Excused'; remarks?: string }[];
+  }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.mentor.attendance, data);
+  },
+
+  /** Create student progress note */
+  createProgressNote: async (data: {
+    studentUserId: string;
+    batchId: string;
+    rubricScore: number;
+    feedback: string;
+    strengths?: string;
+    areasForImprovement?: string;
+  }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.mentor.progressNotes, data);
+  },
 };

@@ -44,8 +44,9 @@ export default function MentorSettingsPage() {
 
   useEffect(() => {
     if (profile) {
-      setFullName(profile.fullName || "");
-      setPhone(profile.phone || "");
+      const userDoc = profile.userId && typeof profile.userId === "object" ? profile.userId : {};
+      setFullName(userDoc.fullName || profile.fullName || "");
+      setPhone(userDoc.phone || profile.phone || "");
     }
   }, [profile]);
 
@@ -120,7 +121,7 @@ export default function MentorSettingsPage() {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    value={profile?.email || ""}
+                    value={(profile?.userId as any)?.email || profile?.email || ""}
                     type="email"
                     className="mt-1.5"
                     disabled

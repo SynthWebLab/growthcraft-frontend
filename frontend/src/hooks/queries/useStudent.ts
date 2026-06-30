@@ -31,6 +31,8 @@ export const studentKeys = {
   supportTickets: () => [...studentKeys.all, "support"] as const,
   mentors: (expertise?: string) => [...studentKeys.all, "mentors", expertise ?? null] as const,
   mentorSessions: () => [...studentKeys.all, "mentor-sessions"] as const,
+  ambassadorDashboard: () => [...studentKeys.all, "ambassador", "dashboard"] as const,
+  ambassadorReferrals: () => [...studentKeys.all, "ambassador", "referrals"] as const,
 };
 
 const STALE = 2 * 60 * 1000; // 2 minutes
@@ -240,6 +242,54 @@ export function useUpdateAccount(userId?: string) {
     },
     onError: (error: any) => {
       toast.error("Update failed", { description: extractApiError(error, "Please try again.") });
+    },
+  });
+}
+
+export function useAmbassadorDashboard() {
+  return useQuery({
+    queryKey: studentKeys.ambassadorDashboard(),
+    queryFn: () => studentService.getAmbassadorDashboard(),
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+export function useAmbassadorReferrals() {
+  return useQuery({
+    queryKey: studentKeys.ambassadorReferrals(),
+    queryFn: () => studentService.getAmbassadorReferrals(),
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+export function useCreateReferral() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      referredEmail: string;
+      referredItemType: 'Course' | 'TrainingProgram' | 'Bootcamp';
+      referredItemId: string;
+    }) => studentService.createReferral(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Referral created", {
+          description: "Invitation logged and referral link tracked.",
+        });
+        queryClient.invalidateQueries({ queryKey: studentKeys.ambassadorReferrals() });
+        queryClient.invalidateQueries({ queryKey: studentKeys.ambassadorDashboard() });
+      } else {
+        toast.error("Referral failed", {
+          description: response.message || "Please try again.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Referral failed", {
+        description: extractApiError(error, "Please try again."),
+      });
     },
   });
 }

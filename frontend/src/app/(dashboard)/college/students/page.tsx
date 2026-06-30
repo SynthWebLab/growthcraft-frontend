@@ -7,62 +7,10 @@ import { StatusPill } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useCollegeStudents, useCollegeCohort, useImportStudents } from "@/hooks/queries/useCollege";
+import { useCollegeStudents, useCollegeCohort, useImportStudents, useToggleAmbassadorStatus } from "@/hooks/queries/useCollege";
 import type { CollegeStudentRow } from "@/types/college";
 
 type Student = CollegeStudentRow;
-
-const columns: Column<Student>[] = [
-  {
-    key: "name",
-    label: "Student",
-    sortable: true,
-    render: (row) => (
-      <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-full bg-lavender/10 text-lavender flex items-center justify-center text-xs font-bold">
-          {row.name.split(" ").map((n) => n[0]).join("")}
-        </div>
-        <div>
-          <p className="text-sm font-medium">{row.name}</p>
-          <p className="text-xs text-muted-foreground">{row.email}</p>
-        </div>
-      </div>
-    ),
-  },
-  { key: "courses", label: "Enrolled Courses/Events", sortable: true },
-  {
-    key: "avgProgress",
-    label: "Avg Progress",
-    sortable: true,
-    render: (row) => (
-      <div className="flex items-center gap-2">
-        <div className="w-16 bg-muted rounded-full h-1.5">
-          <div className="bg-magenta rounded-full h-1.5" style={{ width: `${row.avgProgress}%` }} />
-        </div>
-        <span className="text-xs font-medium">{row.avgProgress}%</span>
-      </div>
-    ),
-  },
-  {
-    key: "status",
-    label: "Status",
-    render: (row) => (
-      <StatusPill
-        variant={row.status === "completed" ? "completed" : row.status === "pending" ? "pending" : "active"}
-      />
-    ),
-  },
-  {
-    key: "lastActive",
-    label: "Last Active",
-    sortable: true,
-    render: (row) => (
-      <span className="text-sm text-muted-foreground">
-        {row.lastActive ? new Date(row.lastActive).toLocaleDateString() : "—"}
-      </span>
-    ),
-  },
-];
 
 const exportColumns: { key: keyof Student; label: string }[] = [
   { key: "name", label: "Name" },
@@ -73,7 +21,7 @@ const exportColumns: { key: keyof Student; label: string }[] = [
   { key: "lastActive", label: "Last Active" },
 ];
 
-const toCsvValue = (value: string | number) => {
+const toCsvValue = (value: any) => {
   const str = String(value ?? "");
   return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 };
@@ -103,6 +51,75 @@ const CollegeStudents = () => {
   const { data, isLoading } = useCollegeStudents({ limit: 1000 });
   const { data: cohortRes } = useCollegeCohort();
   const importStudents = useImportStudents();
+  const toggleAmbassador = useToggleAmbassadorStatus();
+
+  const columns: Column<Student>[] = [
+    {
+      key: "name",
+      label: "Student",
+      sortable: true,
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-lavender/10 text-lavender flex items-center justify-center text-xs font-bold">
+            {row.name.split(" ").map((n) => n[0]).join("")}
+          </div>
+          <div>
+            <p className="text-sm font-medium">{row.name}</p>
+            <p className="text-xs text-muted-foreground">{row.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    { key: "courses", label: "Enrolled Courses/Events", sortable: true },
+    {
+      key: "avgProgress",
+      label: "Avg Progress",
+      sortable: true,
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <div className="w-16 bg-muted rounded-full h-1.5">
+            <div className="bg-magenta rounded-full h-1.5" style={{ width: `${row.avgProgress}%` }} />
+          </div>
+          <span className="text-xs font-medium">{row.avgProgress}%</span>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (row) => (
+        <StatusPill
+          variant={row.status === "completed" ? "completed" : row.status === "pending" ? "pending" : "active"}
+        />
+      ),
+    },
+    {
+      key: "isAmbassador",
+      label: "Ambassador Status",
+      sortable: true,
+      render: (row) => (
+        <Button
+          size="sm"
+          variant={row.isAmbassador ? "default" : "outline"}
+          onClick={() => toggleAmbassador.mutate(row.userId)}
+          disabled={toggleAmbassador.isPending}
+          className={row.isAmbassador ? "bg-magenta text-white hover:bg-magenta/90 text-xs py-1 h-7" : "text-xs py-1 h-7 border-border hover:bg-marble text-muted-foreground"}
+        >
+          {row.isAmbassador ? "Active" : "Activate"}
+        </Button>
+      ),
+    },
+    {
+      key: "lastActive",
+      label: "Last Active",
+      sortable: true,
+      render: (row) => (
+        <span className="text-sm text-muted-foreground">
+          {row.lastActive ? new Date(row.lastActive).toLocaleDateString() : "—"}
+        </span>
+      ),
+    },
+  ];
 
   const students = data?.data ?? [];
   const cohort = cohortRes?.data;
