@@ -9,6 +9,7 @@ export interface RegisterStudentData {
   phone: string;
   password: string;
   role: "student";
+  referralCode?: string;
 }
 
 export interface RegisterMentorData {
