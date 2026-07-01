@@ -71,28 +71,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
       },
     ],
   },
-  ambassador: {
-    role: "Ambassador",
-    basePath: "/ambassador",
-    navSections: [
-      {
-        label: "Main",
-        items: [
-          { icon: LayoutDashboard, label: "Dashboard", href: "dashboard" },
-          { icon: Megaphone, label: "Referrals", href: "referrals" },
-          { icon: Award, label: "Share & Earn", href: "share" },
-          { icon: DollarSign, label: "Payouts", href: "payouts" },
-        ],
-      },
-      {
-        label: "Account",
-        items: [
-          { icon: User, label: "Profile", href: "profile" },
-          { icon: HelpCircle, label: "Support", href: "support" },
-        ],
-      },
-    ],
-  },
+
   mentor: {
     role: "Mentor",
     basePath: "/mentor",
@@ -156,6 +135,24 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const isMobile = useIsMobile();
+  const [viewMode, setViewMode] = useState<string>("student");
+
+  useEffect(() => {
+    const mode = localStorage.getItem("student_view_mode");
+    if (mode) {
+      setViewMode(mode);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (pathname.startsWith("/student/ambassador")) {
+      localStorage.setItem("student_view_mode", "ambassador");
+      setViewMode("ambassador");
+    } else if (pathname.startsWith("/student/dashboard") || pathname === "/student") {
+      localStorage.setItem("student_view_mode", "student");
+      setViewMode("student");
+    }
+  }, [pathname]);
 
   const panelKey = getPanelKey(pathname);
   const config = panelConfigs[panelKey] || panelConfigs.student;
@@ -167,8 +164,7 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
     isAuthenticated &&
     userRole &&
     pathRole &&
-    userRole !== pathRole &&
-    !(userRole === "student" && pathRole === "ambassador")
+    userRole !== pathRole
   );
 
   useEffect(() => {
@@ -205,11 +201,37 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
+  let resolvedNavSections = config.navSections;
+  let resolvedRole = config.role;
+
+  if (panelKey === "student" && user?.isAmbassador && viewMode === "ambassador") {
+    resolvedRole = "Ambassador";
+    resolvedNavSections = [
+      {
+        label: "Ambassador Mode",
+        items: [
+          { icon: LayoutDashboard, label: "Dashboard", href: "ambassador" },
+          { icon: Award, label: "Invite Students", href: "ambassador/invite" },
+          { icon: Megaphone, label: "Referrals", href: "ambassador/referrals" },
+          { icon: DollarSign, label: "Earnings", href: "ambassador/earnings" },
+        ],
+      },
+      {
+        label: "Account",
+        items: [
+          { icon: User, label: "Profile", href: "profile" },
+          { icon: Settings, label: "Settings", href: "settings" },
+          { icon: HelpCircle, label: "Support", href: "support" },
+        ],
+      },
+    ];
+  }
+
   return (
     <div className="min-h-screen flex">
       <PanelSidebar
-        navSections={config.navSections}
-        role={config.role}
+        navSections={resolvedNavSections}
+        role={resolvedRole as any}
         basePath={config.basePath}
         collapsed={collapsed}
         mobileOpen={mobileOpen}

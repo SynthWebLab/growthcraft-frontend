@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Mail, ArrowRight, Lock, Eye, EyeOff } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { studentRegisterSchema, type StudentRegisterFormData } from "@/lib/validations/auth-forms.schema";
 import { useRegister } from "@/hooks/queries/useAuthentication";
 
 export function StudentRegisterForm({ callbackUrl }: { callbackUrl?: string }) {
   const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("ref") || "";
   const registerMutation = useRegister(callbackUrl);
 
   const {
@@ -30,6 +33,7 @@ export function StudentRegisterForm({ callbackUrl }: { callbackUrl?: string }) {
       phone: data.phone,
       password: data.password,
       role: "student",
+      referralCode: referralCode || undefined,
     });
   };
 

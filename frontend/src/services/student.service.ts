@@ -91,20 +91,4 @@ export const studentService = {
   bookMentorSession: async (data: BookMentorSessionData): Promise<MentorSessionResponse> => {
     return apiClient.post<MentorSessionResponse>(API_ENDPOINTS.students.mentorSessions, data);
   },
-
-  getAmbassadorDashboard: async (): Promise<any> => {
-    return apiClient.get<any>(API_ENDPOINTS.students.ambassadorDashboard);
-  },
-
-  getAmbassadorReferrals: async (): Promise<any> => {
-    return apiClient.get<any>(API_ENDPOINTS.students.ambassadorReferrals);
-  },
-
-  createReferral: async (data: {
-    referredEmail: string;
-    referredItemType: 'Course' | 'TrainingProgram' | 'Bootcamp';
-    referredItemId: string;
-  }): Promise<any> => {
-    return apiClient.post<any>(API_ENDPOINTS.students.createReferral, data);
-  },
 };

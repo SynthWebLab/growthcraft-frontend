@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Menu, Search, Bell, LogOut, User, Settings } from "lucide-react";
@@ -26,6 +26,14 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
   const router = useRouter();
   const pathname = usePathname();
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<string>("student");
+
+  useEffect(() => {
+    const mode = localStorage.getItem("student_view_mode");
+    if (mode) {
+      setViewMode(mode);
+    }
+  }, [pathname]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,15 +113,19 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
         {profile?.role === "student" && profile?.isAmbassador && (
           <button
             onClick={() => {
-              if (pathname.startsWith("/ambassador")) {
-                router.push("/student");
+              if (viewMode === "ambassador") {
+                localStorage.setItem("student_view_mode", "student");
+                setViewMode("student");
+                router.push("/student/dashboard");
               } else {
-                router.push("/ambassador");
+                localStorage.setItem("student_view_mode", "ambassador");
+                setViewMode("ambassador");
+                router.push("/student/ambassador");
               }
             }}
             className="text-xs font-semibold px-3 py-1.5 rounded-full border border-magenta text-magenta hover:bg-magenta/5 transition-colors shrink-0 mr-2"
           >
-            {pathname.startsWith("/ambassador") ? "Student View" : "Ambassador View"}
+            {viewMode === "ambassador" ? "Student View" : "Ambassador View"}
           </button>
         )}
 

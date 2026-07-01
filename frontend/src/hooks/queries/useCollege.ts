@@ -280,20 +280,68 @@ export function useUpdateEventAccess() {
   });
 }
 
-export function useToggleAmbassadorStatus() {
+export function useCollegeAttendance(params?: {
+  batchId?: string;
+  studentId?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: [...collegeKeys.all, "attendance", params],
+    queryFn: () => collegeService.getAttendance(params),
+  });
+}
+
+export function useCollegeAttendanceSummary() {
+  return useQuery({
+    queryKey: [...collegeKeys.all, "attendance", "summary"],
+    queryFn: () => collegeService.getAttendanceSummary(),
+  });
+}
+
+export function useCollegeAmbassadors() {
+  return useQuery({
+    queryKey: [...collegeKeys.all, "ambassadors"],
+    queryFn: () => collegeService.getAmbassadors(),
+  });
+}
+
+export function useActivateCollegeAmbassadors() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (studentId: string) => collegeService.toggleAmbassadorStatus(studentId),
+    mutationFn: (studentUserIds: string[]) => collegeService.activateAmbassadors(studentUserIds),
     onSuccess: (response) => {
       if (response.success) {
-        toast.success("Ambassador status updated", { description: response.message || "Student ambassador flag updated successfully." });
+        toast.success("Ambassadors activated", { description: response.message || "Students successfully promoted." });
         queryClient.invalidateQueries({ queryKey: collegeKeys.students() });
+        queryClient.invalidateQueries({ queryKey: [...collegeKeys.all, "ambassadors"] });
       } else {
-        toast.error("Failed to update status", { description: response.message || "Please try again." });
+        toast.error("Failed to activate", { description: response.message || "Please try again." });
       }
     },
     onError: (error: any) => {
-      toast.error("Failed to update status", { description: extractApiError(error, "Please try again.") });
+      toast.error("Failed to activate", { description: extractApiError(error, "Please try again.") });
+    },
+  });
+}
+
+export function useDeactivateCollegeAmbassador() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (studentUserId: string) => collegeService.deactivateAmbassador(studentUserId),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Ambassador deactivated", { description: response.message || "Student ambassador status removed." });
+        queryClient.invalidateQueries({ queryKey: collegeKeys.students() });
+        queryClient.invalidateQueries({ queryKey: [...collegeKeys.all, "ambassadors"] });
+      } else {
+        toast.error("Failed to deactivate", { description: response.message || "Please try again." });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Failed to deactivate", { description: extractApiError(error, "Please try again.") });
     },
   });
 }
