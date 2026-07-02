@@ -1,7 +1,9 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+export const dynamic = "force-dynamic";
 import { Suspense } from "react";
+
 import { Mail } from "lucide-react";
 import { VerifyEmailForm } from "@/components/auth/VerifyEmailForm";
 import { AuthPageLayout } from "@/components/auth/AuthPageLayout";

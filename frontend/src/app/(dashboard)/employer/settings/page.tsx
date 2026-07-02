@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
 import { toast } from "sonner";
+import { useEmployerProfile, useUpdateEmployerProfile } from "@/hooks/queries/useEmployer";
+import { useChangePassword } from "@/hooks/queries/useStudent";
 
 const notificationPrefs = [
   { label: "New applications", desc: "Candidates applying to your job postings" },
@@ -18,15 +20,34 @@ const notificationPrefs = [
 ];
 
 export default function EmployerSettingsPage() {
-  const [companyName, setCompanyName] = useState("Acme Technologies");
-  const [phone, setPhone] = useState("+91 98765 43210");
+  const { data: profile, isLoading } = useEmployerProfile();
+  const updateProfileMutation = useUpdateEmployerProfile();
+  const changePasswordMutation = useChangePassword();
+
+  const [companyName, setCompanyName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  // Sync state with loaded profile data
+  useEffect(() => {
+    if (profile) {
+      setCompanyName(profile.companyName || "");
+      setPhone(profile.contactPerson?.phone || "");
+    }
+  }, [profile]);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleSaveAccount = () => {
-    toast.success("Account updated", { description: "Your account details have been saved." });
+    if (!profile) return;
+    updateProfileMutation.mutate({
+      companyName,
+      contactPerson: {
+        ...profile.contactPerson,
+        phone,
+      },
+    });
   };
 
   const handleUpdatePassword = () => {
@@ -36,11 +57,25 @@ export default function EmployerSettingsPage() {
       });
       return;
     }
-    toast.success("Password updated", { description: "Your password has been changed." });
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    changePasswordMutation.mutate(
+      { currentPassword, newPassword, confirmPassword },
+      {
+        onSuccess: () => {
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+        },
+      }
+    );
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Settings" description="Loading settings details..." />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -64,7 +99,7 @@ export default function EmployerSettingsPage() {
                 </div>
                 <div>
                   <Label>Email</Label>
-                  <Input value="hr@acmetech.com" type="email" className="mt-1.5" disabled readOnly />
+                  <Input value={profile?.contactPerson?.email || ""} type="email" className="mt-1.5" disabled readOnly />
                   <p className="text-xs text-muted-foreground mt-1">Email cannot be changed here.</p>
                 </div>
                 <div>
@@ -72,8 +107,12 @@ export default function EmployerSettingsPage() {
                   <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" className="mt-1.5" />
                 </div>
               </div>
-              <Button className="bg-magenta text-white hover:bg-magenta/90" onClick={handleSaveAccount}>
-                Save Changes
+              <Button
+                className="bg-magenta text-white hover:bg-magenta/90"
+                onClick={handleSaveAccount}
+                disabled={updateProfileMutation.isPending}
+              >
+                {updateProfileMutation.isPending ? "Saving Changes..." : "Save Changes"}
               </Button>
             </div>
           </DataCard>
@@ -117,9 +156,9 @@ export default function EmployerSettingsPage() {
               <Button
                 className="bg-magenta text-white hover:bg-magenta/90"
                 onClick={handleUpdatePassword}
-                disabled={!currentPassword || !newPassword || !confirmPassword}
+                disabled={!currentPassword || !newPassword || !confirmPassword || changePasswordMutation.isPending}
               >
-                Update Password
+                {changePasswordMutation.isPending ? "Updating Password..." : "Update Password"}
               </Button>
             </div>
           </DataCard>

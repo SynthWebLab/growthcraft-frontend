@@ -127,4 +127,18 @@ export const API_ENDPOINTS = {
     attendance: "/mentor/attendance",
     progressNotes: "/mentor/progress-notes",
   },
+  employers: {
+    dashboard: "/employers/dashboard",
+    jobs: "/employers/jobs",
+    jobStatus: (id: string) => `/employers/jobs/${id}/status`,
+    jobDetail: (id: string) => `/employers/jobs/${id}`,
+    profile: "/employers/profile",
+  },
+  talent: {
+    list: "/talent",
+  },
+  publicJobs: {
+    list: "/public/jobs",
+  },
 } as const;
+

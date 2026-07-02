@@ -9,29 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-
-interface Candidate {
-  id: number;
-  name: string;
-  skills: string[];
-  course: string;
-  location: string;
-  availability: "Available" | "Interviewing" | "Hired";
-  latestProject: string;
-}
-
-const candidates: Candidate[] = [
-  { id: 1, name: "Rahul Sharma", skills: ["React", "Node.js", "MongoDB"], course: "Full Stack Dev", location: "Guwahati", availability: "Available", latestProject: "E-commerce platform with Stripe integration" },
-  { id: 2, name: "Priya Devi", skills: ["Python", "Pandas", "ML"], course: "Data Science", location: "Delhi", availability: "Available", latestProject: "Sales forecasting model with 92% accuracy" },
-  { id: 3, name: "Amit Kumar", skills: ["React", "TypeScript", "Next.js"], course: "React Masterclass", location: "Bangalore", availability: "Interviewing", latestProject: "SaaS dashboard with real-time analytics" },
-  { id: 4, name: "Sneha Gupta", skills: ["Figma", "UI/UX"], course: "Design Sprint", location: "Mumbai", availability: "Available", latestProject: "Mobile banking app redesign" },
-  { id: 5, name: "Ravi Patel", skills: ["Java", "Spring Boot", "AWS"], course: "Backend Dev", location: "Hyderabad", availability: "Available", latestProject: "Microservices architecture for e-commerce" },
-  { id: 6, name: "Meera Singh", skills: ["React", "Node.js", "PostgreSQL"], course: "Full Stack Dev", location: "Pune", availability: "Hired", latestProject: "Open source contribution to React Query" },
-];
-
-const allSkills = ["React", "Node.js", "Python", "TypeScript", "Java", "Figma", "AWS", "PostgreSQL"];
-const allCourses = ["Full Stack Dev", "Data Science", "React Masterclass", "Design Sprint", "Backend Dev"];
-const allAvailability = ["Available", "Interviewing", "Hired"];
+import { useTalentPool } from "@/hooks/queries/useEmployer";
 
 const FilterGroup = ({
   title,
@@ -58,11 +36,17 @@ const FilterGroup = ({
 );
 
 const EmployerTalent = () => {
+  const { data: candidates = [], isLoading, isError } = useTalentPool();
   const [search, setSearch] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [selectedAvailability, setSelectedAvailability] = useState<string[]>([]);
-  const [shortlisted, setShortlisted] = useState<number[]>([]);
+  const [shortlisted, setShortlisted] = useState<string[]>([]);
+
+  // Dynamically extract filter lists from backend data
+  const allSkills = Array.from(new Set(candidates.flatMap((c) => c.skills))).slice(0, 12);
+  const allCourses = Array.from(new Set(candidates.map((c) => c.course)));
+  const allAvailability = ["Available", "Interviewing", "Hired"];
 
   const toggle = (arr: string[], setter: (v: string[]) => void, value: string) => {
     setter(arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]);
@@ -78,7 +62,7 @@ const EmployerTalent = () => {
     return matchSearch && matchSkills && matchCourse && matchAvail;
   });
 
-  const handleShortlist = (c: Candidate) => {
+  const handleShortlist = (c: any) => {
     if (shortlisted.includes(c.id)) {
       setShortlisted((p) => p.filter((id) => id !== c.id));
       toast("Removed from shortlist");
@@ -95,27 +79,37 @@ const EmployerTalent = () => {
         description="Browse job-ready candidates from GrowthCraft programs"
       />
 
+      {isError && (
+        <p className="text-sm text-destructive">Couldn&apos;t load talent pool. Please try again.</p>
+      )}
+
       <div className="grid lg:grid-cols-[260px_1fr] gap-6">
         {/* Filters sidebar */}
         <DataCard className="h-fit space-y-6">
-          <FilterGroup
-            title="Skills"
-            options={allSkills}
-            selected={selectedSkills}
-            onToggle={(v) => toggle(selectedSkills, setSelectedSkills, v)}
-          />
-          <FilterGroup
-            title="Course Completed"
-            options={allCourses}
-            selected={selectedCourses}
-            onToggle={(v) => toggle(selectedCourses, setSelectedCourses, v)}
-          />
-          <FilterGroup
-            title="Availability"
-            options={allAvailability}
-            selected={selectedAvailability}
-            onToggle={(v) => toggle(selectedAvailability, setSelectedAvailability, v)}
-          />
+          {isLoading ? (
+            <p className="text-xs text-muted-foreground">Loading filters...</p>
+          ) : (
+            <>
+              <FilterGroup
+                title="Skills"
+                options={allSkills.length > 0 ? allSkills : ["React", "Node.js", "Python"]}
+                selected={selectedSkills}
+                onToggle={(v) => toggle(selectedSkills, setSelectedSkills, v)}
+              />
+              <FilterGroup
+                title="Course Completed"
+                options={allCourses.length > 0 ? allCourses : ["Full Stack Dev"]}
+                selected={selectedCourses}
+                onToggle={(v) => toggle(selectedCourses, setSelectedCourses, v)}
+              />
+              <FilterGroup
+                title="Availability"
+                options={allAvailability}
+                selected={selectedAvailability}
+                onToggle={(v) => toggle(selectedAvailability, setSelectedAvailability, v)}
+              />
+            </>
+          )}
         </DataCard>
 
         {/* Candidate grid */}
@@ -130,50 +124,56 @@ const EmployerTalent = () => {
             />
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            {filtered.map((c) => {
-              const isShortlisted = shortlisted.includes(c.id);
-              return (
-                <DataCard key={c.id} className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-full bg-magenta/10 text-magenta flex items-center justify-center font-bold text-sm shrink-0">
-                      {c.name.split(" ").map((n) => n[0]).join("")}
+          {isLoading ? (
+            <DataCard className="text-center py-12">
+              <p className="text-muted-foreground">Loading candidates...</p>
+            </DataCard>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {filtered.map((c) => {
+                const isShortlisted = shortlisted.includes(c.id);
+                return (
+                  <DataCard key={c.id} className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-full bg-magenta/10 text-magenta flex items-center justify-center font-bold text-sm shrink-0">
+                        {c.name.split(" ").map((n: string) => n[0]).join("")}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground">{c.name}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3" /> {c.location} · {c.course}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-[10px]">{c.availability}</Badge>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-foreground">{c.name}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" /> {c.location} · {c.course}
-                      </p>
+
+                    <div className="flex flex-wrap gap-1">
+                      {c.skills.map((s: string) => (
+                        <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                      ))}
                     </div>
-                    <Badge variant="outline" className="text-[10px]">{c.availability}</Badge>
-                  </div>
 
-                  <div className="flex flex-wrap gap-1">
-                    {c.skills.map((s) => (
-                      <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
-                    ))}
-                  </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Latest Project</p>
+                      <p className="text-xs text-foreground line-clamp-2">{c.latestProject}</p>
+                    </div>
 
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Latest Project</p>
-                    <p className="text-xs text-foreground line-clamp-2">{c.latestProject}</p>
-                  </div>
+                    <Button
+                      size="sm"
+                      variant={isShortlisted ? "default" : "outline"}
+                      className={isShortlisted ? "w-full bg-magenta hover:bg-magenta/90" : "w-full"}
+                      onClick={() => handleShortlist(c)}
+                    >
+                      <Bookmark className={`h-3.5 w-3.5 mr-1 ${isShortlisted ? "fill-current" : ""}`} />
+                      {isShortlisted ? "Shortlisted" : "Shortlist"}
+                    </Button>
+                  </DataCard>
+                );
+              })}
+            </div>
+          )}
 
-                  <Button
-                    size="sm"
-                    variant={isShortlisted ? "default" : "outline"}
-                    className={isShortlisted ? "w-full bg-magenta hover:bg-magenta/90" : "w-full"}
-                    onClick={() => handleShortlist(c)}
-                  >
-                    <Bookmark className={`h-3.5 w-3.5 mr-1 ${isShortlisted ? "fill-current" : ""}`} />
-                    {isShortlisted ? "Shortlisted" : "Shortlist"}
-                  </Button>
-                </DataCard>
-              );
-            })}
-          </div>
-
-          {filtered.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <DataCard className="text-center py-12">
               <p className="text-muted-foreground">No candidates match your filters.</p>
             </DataCard>

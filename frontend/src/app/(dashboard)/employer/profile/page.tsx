@@ -1,18 +1,51 @@
 "use client";
 
 import { Save } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect } from "react";
 import DataCard from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useEmployerProfile, useUpdateEmployerProfile } from "@/hooks/queries/useEmployer";
 
-const EmployerProfile = () => {
+const EmployerProfilePage = () => {
+  const { data: profile, isLoading } = useEmployerProfile();
+  const updateProfileMutation = useUpdateProfile();
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Profile updated", { description: "Your company profile has been saved." });
+    const fd = new FormData(e.target as HTMLFormElement);
+
+    const payload = {
+      companyName: fd.get("companyName") as string,
+      industry: fd.get("industry") as any,
+      companySize: fd.get("companySize") as any,
+      website: fd.get("website") as string,
+      hiringNeeds: fd.get("hiringNeeds") as string,
+      contactPerson: {
+        name: fd.get("contactPersonName") as string,
+        email: fd.get("contactPersonEmail") as string,
+        phone: fd.get("contactPersonPhone") as string,
+      },
+    };
+
+    updateProfileMutation.mutate(payload);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground font-display">Company Profile</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Loading profile details...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -25,21 +58,53 @@ const EmployerProfile = () => {
         <DataCard>
           <h3 className="text-base font-semibold font-display mb-4">Company Details</h3>
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Company Name</Label><Input defaultValue="Acme Technologies" /></div>
-            <div className="space-y-2"><Label>Industry</Label><Input defaultValue="IT / Software" /></div>
-            <div className="space-y-2"><Label>Contact Person</Label><Input defaultValue="Jane Doe" /></div>
-            <div className="space-y-2"><Label>Designation</Label><Input defaultValue="HR Manager" /></div>
-            <div className="space-y-2"><Label>Email</Label><Input type="email" defaultValue="hr@acmetech.com" /></div>
-            <div className="space-y-2"><Label>Phone</Label><Input defaultValue="+91 98765 43210" /></div>
-            <div className="space-y-2"><Label>Website</Label><Input defaultValue="https://acmetech.com" /></div>
-            <div className="space-y-2"><Label>Company Size</Label><Input defaultValue="201-500" /></div>
-          </div>
-          <div className="space-y-2 mt-4">
-            <Label>Company Description</Label>
-            <Textarea
-              defaultValue="Acme Technologies is a leading software company specializing in enterprise solutions and digital transformation."
-              rows={3}
-            />
+            <div className="space-y-2">
+              <Label>Company Name</Label>
+              <Input name="companyName" defaultValue={profile?.companyName} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Industry</Label>
+              <Select name="industry" defaultValue={profile?.industry || "IT/Software"}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IT/Software">IT/Software</SelectItem>
+                  <SelectItem value="Fintech">Fintech</SelectItem>
+                  <SelectItem value="E-Commerce">E-Commerce</SelectItem>
+                  <SelectItem value="Healthcare">Healthcare</SelectItem>
+                  <SelectItem value="EdTech">EdTech</SelectItem>
+                  <SelectItem value="Startup">Startup</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Contact Person</Label>
+              <Input name="contactPersonName" defaultValue={profile?.contactPerson?.name} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" name="contactPersonEmail" defaultValue={profile?.contactPerson?.email} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input name="contactPersonPhone" defaultValue={profile?.contactPerson?.phone} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Website</Label>
+              <Input name="website" defaultValue={profile?.website} />
+            </div>
+            <div className="space-y-2">
+              <Label>Company Size</Label>
+              <Select name="companySize" defaultValue={profile?.companySize || "1-50"}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1-50">1-50</SelectItem>
+                  <SelectItem value="51-200">51-200</SelectItem>
+                  <SelectItem value="201-500">201-500</SelectItem>
+                  <SelectItem value="500+">500+</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </DataCard>
 
@@ -47,30 +112,23 @@ const EmployerProfile = () => {
           <h3 className="text-base font-semibold font-display mb-4">Hiring Preferences</h3>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Skills We&apos;re Looking For</Label>
-              <Textarea defaultValue="React, Node.js, Python, AWS, Docker, PostgreSQL, TypeScript" rows={2} />
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Typical Roles</Label>
-                <Input defaultValue="Software Developer, Data Analyst, DevOps" />
-              </div>
-              <div className="space-y-2">
-                <Label>Hiring Frequency</Label>
-                <Input defaultValue="Quarterly" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Additional Notes</Label>
+              <Label>Skills We&apos;re Looking For / Hiring Needs</Label>
               <Textarea
-                defaultValue="We prefer candidates with project experience and good communication skills."
-                rows={2}
+                name="hiringNeeds"
+                defaultValue={profile?.hiringNeeds || ""}
+                placeholder="e.g. React, Node.js, Python, AWS, Docker"
+                rows={5}
               />
             </div>
           </div>
           <div className="mt-6 flex justify-end">
-            <Button type="submit" className="bg-magenta hover:bg-magenta/90">
-              <Save className="h-4 w-4 mr-2" /> Save Changes
+            <Button
+              type="submit"
+              disabled={updateProfileMutation.isPending}
+              className="bg-magenta hover:bg-magenta/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </DataCard>
@@ -79,4 +137,9 @@ const EmployerProfile = () => {
   );
 };
 
-export default EmployerProfile;
+// Helper hook local alias or import
+function useUpdateProfile() {
+  return useUpdateEmployerProfile();
+}
+
+export default EmployerProfilePage;
