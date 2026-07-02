@@ -17,6 +17,13 @@ const dashboardRoutes = {
   employer: "/employer",
 } as const;
 
+const loginRoutes: Record<string, string> = {
+  student: "/login/student",
+  mentor: "/login/mentor",
+  college: "/login/college",
+  employer: "/login/employer",
+};
+
 export function RoleConflictListener() {
   const { data: user } = useCurrentUser();
   const queryClient = useQueryClient();
@@ -71,34 +78,32 @@ export function RoleConflictListener() {
     setIsLoggingOut(true);
     try {
       await authService.logout();
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("gc_user");
-        
-        // Clear any non-httpOnly cookies
-        document.cookie.split(";").forEach((c) => {
-          document.cookie = c
-            .replace(/^ +/, "")
-            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-        });
-        
-        queryClient.clear();
-        toast.success("Logged out successfully");
-        
-        // Close modal and redirect or reload
-        setIsOpen(false);
-        if (expectedRole) {
-          window.location.href = `/register/${expectedRole}`;
-        } else {
-          window.location.reload();
-        }
-      }
-    } catch (err: any) {
-      toast.error("Logout failed", {
-        description: err.message || "An unexpected error occurred.",
-      });
-    } finally {
-      setIsLoggingOut(false);
+    } catch {
+      // Even if API call fails, clear local state
     }
+
+    // Always clear local state regardless of API success/failure
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gc_user");
+
+      // Clear any non-httpOnly cookies
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
+      // Clear ALL React Query cache to remove stale user data
+      queryClient.clear();
+
+      toast.success("Logged out successfully");
+      setIsOpen(false);
+
+      // Redirect to the target portal's login page for immediate access
+      const targetLoginPath = expectedRole ? loginRoutes[expectedRole] : "/";
+      window.location.href = targetLoginPath;
+    }
+    setIsLoggingOut(false);
   };
 
   if (!isOpen || !expectedRole || !user || !user.role) return null;
@@ -121,8 +126,8 @@ export function RoleConflictListener() {
 
         {/* Alert Content */}
         <p className="text-sm text-muted-foreground text-center mb-6 leading-relaxed">
-          You are currently signed in as a <span className="font-semibold text-foreground">{userRoleDisplay}</span> (<span className="text-foreground">{user.email}</span>). 
-          To register or sign in as a <span className="font-semibold text-foreground">{expectedRoleDisplay}</span>, please log out of your current account.
+          You are signed in as a <span className="font-semibold text-foreground">{userRoleDisplay}</span> (<span className="text-foreground">{user.email}</span>).
+          Click <span className="font-semibold text-foreground">Logout &amp; Switch</span> to log out and open the <span className="font-semibold text-foreground">{expectedRoleDisplay} Login</span> page, or go back to your dashboard.
         </p>
 
         {/* Alert Actions */}
@@ -148,7 +153,7 @@ export function RoleConflictListener() {
             ) : (
               <>
                 <LogOut className="mr-2 h-4 w-4" />
-                Logout & Continue
+                Logout &amp; Switch to {expectedRoleDisplay} Login
               </>
             )}
           </Button>

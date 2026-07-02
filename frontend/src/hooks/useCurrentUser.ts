@@ -16,6 +16,9 @@ export const getCachedUser = () => {
 };
 
 export function useCurrentUser() {
+  // Initialise from localStorage so first render has data (avoids flicker)
+  const [clientUser, setClientUser] = useState<any>(() => getCachedUser() ?? null);
+
   const query = useQuery({
     queryKey: authKeys.profile(),
     queryFn: async () => {
@@ -27,9 +30,13 @@ export function useCurrentUser() {
           }
           return response.data.user;
         }
+        // No valid session — clear stale localStorage
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("gc_user");
+        }
         return null;
       } catch (error) {
-        // User not authenticated (401) or other error
+        // User not authenticated (401) or other error — clear stale localStorage
         if (typeof window !== "undefined") {
           localStorage.removeItem("gc_user");
         }
@@ -40,18 +47,13 @@ export function useCurrentUser() {
     retry: false, // Don't retry on 401
   });
 
-  const [clientUser, setClientUser] = useState<any>(null);
-
   useEffect(() => {
-    const cached = getCachedUser();
-    if (query.data) {
-      setClientUser(query.data);
-    } else if (cached) {
-      setClientUser(cached);
-    } else {
-      setClientUser(null);
+    // Once the query has settled (not loading), always trust query.data over localStorage.
+    // This prevents stale localStorage from showing an old role after logout.
+    if (!query.isLoading) {
+      setClientUser(query.data ?? null);
     }
-  }, [query.data]);
+  }, [query.data, query.isLoading]);
 
   return {
     ...query,

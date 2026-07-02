@@ -19,6 +19,13 @@ interface AuthPageLayoutProps {
   children: ReactNode;
 }
 
+const loginRoutes: Record<string, string> = {
+  student: "/login/student",
+  mentor: "/login/mentor",
+  college: "/login/college",
+  employer: "/login/employer",
+};
+
 const dashboardRoutes = {
   student: "/student",
   mentor: "/mentor",
@@ -35,29 +42,30 @@ export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, chil
     setIsLoggingOut(true);
     try {
       await authService.logout();
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("gc_user");
-        
-        // Clear any non-httpOnly cookies
-        document.cookie.split(";").forEach((c) => {
-          document.cookie = c
-            .replace(/^ +/, "")
-            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-        });
-        
-        queryClient.clear();
-        toast.success("Logged out successfully");
-        
-        // Reload page to show the normal form
-        window.location.reload();
-      }
-    } catch (err: any) {
-      toast.error("Logout failed", {
-        description: err.message || "An unexpected error occurred.",
-      });
-    } finally {
-      setIsLoggingOut(false);
+    } catch {
+      // Even if API call fails, clear local state
     }
+
+    // Always clear local state regardless of API success/failure
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gc_user");
+
+      // Clear any non-httpOnly cookies
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
+      queryClient.clear();
+      toast.success("Logged out successfully");
+
+      // Redirect to the target portal's login page (not a reload of the current URL)
+      // so the user lands directly on the correct login form after switching accounts.
+      const targetLoginPath = expectedRole ? loginRoutes[expectedRole] : window.location.pathname;
+      window.location.href = targetLoginPath;
+    }
+    setIsLoggingOut(false);
   };
 
   const hasConflict = !!(user && expectedRole && user.role?.toLowerCase() !== expectedRole.toLowerCase());
@@ -105,8 +113,8 @@ export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, chil
 
             {/* Alert Content */}
             <p className="text-sm text-muted-foreground text-center mb-6 leading-relaxed">
-              You are currently signed in as a <span className="font-semibold text-foreground">{userRoleDisplay}</span> (<span className="text-foreground">{user?.email}</span>). 
-              To register or sign in as a <span className="font-semibold text-foreground">{expectedRoleDisplay}</span>, please log out of your current account.
+              You are signed in as a <span className="font-semibold text-foreground">{userRoleDisplay}</span> (<span className="text-foreground">{user?.email}</span>).
+              Click <span className="font-semibold text-foreground">Logout &amp; Switch</span> to log out and go to the <span className="font-semibold text-foreground">{expectedRoleDisplay} Login</span> page, or go back to your dashboard.
             </p>
 
             {/* Alert Actions */}
@@ -132,7 +140,7 @@ export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, chil
                 ) : (
                   <>
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout & Continue
+                    Logout &amp; Switch to {expectedRoleDisplay} Login
                   </>
                 )}
               </Button>

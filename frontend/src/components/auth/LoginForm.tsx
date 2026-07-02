@@ -5,10 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, ArrowRight, Eye, EyeOff, AlertTriangle, ExternalLink } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth-forms.schema";
 import { useState } from "react";
 import { useLogin } from "@/hooks/queries/useAuthentication";
+import Link from "next/link";
 
 interface LoginFormProps {
   role: string;
@@ -18,25 +19,63 @@ interface LoginFormProps {
 
 export function LoginForm({ role, redirectPath, callbackUrl }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const loginMutation = useLogin(role, callbackUrl);
-  
+
   const {
     register,
     handleSubmit,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
+  // Pass setError as callback so useLogin can show inline error for wrong-portal logins
+  const loginMutation = useLogin(role, callbackUrl, (message: string) => {
+    setError("root", { message });
+  });
+
   const onSubmit = async (data: LoginFormData) => {
+    // Clear any previous root errors on a fresh submit
+    clearErrors("root");
     loginMutation.mutate({
       email: data.email,
       password: data.password,
     });
   };
 
+  // Parse the portal path from the error message (format: "...portal: /login/college")
+  const rootErrorMsg = errors.root?.message ?? "";
+  const portalPathMatch = rootErrorMsg.match(/portal: (\/login\/\w+)/);
+  const correctPortalPath = portalPathMatch?.[1] ?? null;
+  const displayError = correctPortalPath
+    ? rootErrorMsg.replace(`: ${correctPortalPath}`, "")
+    : rootErrorMsg;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Inline wrong-portal error panel */}
+      {errors.root && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/50 dark:bg-amber-900/20">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Wrong Portal</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5 leading-relaxed">
+              {displayError}
+            </p>
+            {correctPortalPath && (
+              <Link
+                href={correctPortalPath}
+                className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-amber-800 hover:text-amber-900 underline underline-offset-2 dark:text-amber-300 dark:hover:text-amber-200"
+              >
+                Go to correct portal
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="login-email">Email</Label>
         <div className="relative">

@@ -73,8 +73,18 @@ export async function apiFetch<T = any>(
   try {
     const response = await fetch(url, config);
 
+    // Do not attempt token refresh for public auth endpoints (login, register, forgot-password, reset-password, verify-email, resend-verification) or the refresh endpoint itself
+    const isAuthRequest = 
+      endpoint.includes(API_ENDPOINTS.auth.login) ||
+      endpoint.includes(API_ENDPOINTS.auth.register) ||
+      endpoint.includes(API_ENDPOINTS.auth.refresh) ||
+      endpoint.includes(API_ENDPOINTS.auth.forgotPassword) ||
+      endpoint.includes(API_ENDPOINTS.auth.resetPassword) ||
+      endpoint.includes(API_ENDPOINTS.auth.verifyEmail) ||
+      endpoint.includes(API_ENDPOINTS.auth.resendVerification);
+
     // If 401 and we haven't tried refreshing yet
-    if (response.status === 401 && !skipRefresh) {
+    if (response.status === 401 && !skipRefresh && !isAuthRequest) {
       // If already refreshing, wait for that to complete
       if (isRefreshing && refreshPromise) {
         const refreshSuccess = await refreshPromise;

@@ -55,7 +55,7 @@ export function useRegister(callbackUrl?: string) {
  * Hook to login user
  * Uses direct backend authentication with httpOnly cookies
  */
-export function useLogin(expectedRole?: string, callbackUrl?: string) {
+export function useLogin(expectedRole?: string, callbackUrl?: string, setFormError?: (message: string) => void) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -97,11 +97,26 @@ export function useLogin(expectedRole?: string, callbackUrl?: string) {
         queryClient.setQueryData(authKeys.profile(), user);
         // Validate that user role matches the login form's expected role
         if (expectedRole && user.role?.toLowerCase() !== expectedRole.toLowerCase()) {
-          toast.error("Access Denied", {
-            description: `This login page is only for ${expectedRole} accounts.`,
-          });
           // Immediately log out to clear cookies and session state
           await authService.logout();
+          // Clear stale user data from cache and localStorage
+          queryClient.setQueryData(authKeys.profile(), null);
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("gc_user");
+          }
+
+          const actualRole = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase() : "another role";
+          const correctPortalPath = `/login/${user.role?.toLowerCase()}`;
+          const errorMessage = `This email is registered as a ${actualRole} account. Please sign in at the ${actualRole} portal: ${correctPortalPath}`;
+
+          if (setFormError) {
+            // Show inline form error for better UX — no popup, error appears in the form
+            setFormError(errorMessage);
+          } else {
+            toast.error("Wrong Portal", {
+              description: `This email is registered as a ${actualRole} account. Please use the ${actualRole} login portal.`,
+            });
+          }
           return;
         }
 
