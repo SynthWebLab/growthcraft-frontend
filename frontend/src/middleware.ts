@@ -121,25 +121,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/verify-email', request.url));
   }
 
-  // Redirect fully authenticated and verified users away from auth pages (login, register)
-  // EXCEPT if they have a callbackUrl - redirect them to the callback destination
+  // For authenticated + verified users visiting an auth page:
+  // - If visiting their OWN role's login page → redirect to their dashboard (or callbackUrl)
+  // - If visiting a DIFFERENT role's login page → ALLOW the page to render so that
+  //   AuthPageLayout can show the "Account Conflict" modal with Logout & Switch option.
   if (isAuthRoute && isAuthenticated && isEmailVerified && userRole) {
     const targetRole = getTargetRoleFromPath(pathname);
-    
-    // Only redirect if they are visiting their own role's page or a generic auth route
+
+    // Only auto-redirect for their own portal or generic auth routes (no role in path)
     if (targetRole === null || targetRole === userRole) {
-      // Check if there's a callbackUrl parameter
       const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
-      
+
       if (callbackUrl && callbackUrl !== '/') {
-        // User is already authenticated, redirect directly to the callback URL
         return NextResponse.redirect(new URL(callbackUrl, request.url));
       }
-      
-      // No callback URL - redirect to dashboard
+
       const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
       return NextResponse.redirect(new URL(dashboardRoute, request.url));
     }
+    // Different role portal → fall through and let the page render (conflict modal will show)
   }
 
   // Allow auth routes for non-authenticated users

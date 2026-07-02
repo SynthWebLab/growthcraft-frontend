@@ -61,6 +61,32 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
 
   return useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      // ── Guard: block login if already authenticated ──────────────────────────
+      // This is the last line of defence in case the AuthPageLayout conflict modal
+      // is somehow bypassed (e.g. via DevTools or a race condition).
+      const cachedUser: any =
+        queryClient.getQueryData(authKeys.profile()) ??
+        (typeof window !== "undefined"
+          ? (() => {
+              try {
+                const s = localStorage.getItem("gc_user");
+                return s ? JSON.parse(s) : null;
+              } catch {
+                return null;
+              }
+            })()
+          : null);
+
+      if (cachedUser) {
+        // If the cached user's role doesn't match the expected portal role, hard-block.
+        if (expectedRole && cachedUser.role?.toLowerCase() !== expectedRole.toLowerCase()) {
+          throw new Error(
+            `ALREADY_LOGGED_IN:${cachedUser.role}:${cachedUser.firstName ?? ""} ${cachedUser.lastName ?? ""}`
+          );
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────────────
+
       // Call backend directly - this will set httpOnly cookies in browser
       const response = await authService.login(email, password);
       return { response, email }; // Return email for use in onSuccess
@@ -141,6 +167,16 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
       }
     },
     onError: (error: Error, variables) => {
+      // Handle the already-logged-in guard
+      if (error.message?.startsWith("ALREADY_LOGGED_IN:")) {
+        const [, role, name] = error.message.split(":");
+        const roleDisplay = role ? role.charAt(0).toUpperCase() + role.slice(1) : "another account";
+        toast.error("Already signed in", {
+          description: `You are signed in as ${name?.trim() || "a user"} (${roleDisplay}). Please logout first to switch accounts.`,
+        });
+        return;
+      }
+
       // Check if error is due to unverified email
       if (error.message?.toLowerCase().includes("not verified") ||
           error.message?.toLowerCase().includes("verify your email")) {
