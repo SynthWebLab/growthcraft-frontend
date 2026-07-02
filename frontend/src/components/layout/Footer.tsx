@@ -16,10 +16,10 @@ const footerLinks = {
     { name: "For Employers", path: "/for-employers" },
   ],
   portals: [
-    { name: "Student Dashboard", path: "/student/login" },
-    { name: "College Dashboard", path: "/college/login" },
-    { name: "Mentor Dashboard", path: "/mentor/login" },
-    { name: "Employer Dashboard", path: "/employer/login" },
+    { name: "Student Dashboard", path: "/login/student" },
+    { name: "College Dashboard", path: "/login/college" },
+    { name: "Mentor Dashboard", path: "/login/mentor" },
+    { name: "Employer Dashboard", path: "/login/employer" },
   ],
   company: [
     { name: "About Us", path: "/about" },
