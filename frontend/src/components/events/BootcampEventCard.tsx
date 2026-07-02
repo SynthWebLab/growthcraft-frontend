@@ -33,9 +33,11 @@ export function BootcampEventCard({
 }: BootcampEventCardProps) {
   const { data: user } = useCurrentUser();
   const isMentor = user?.role === "mentor";
+  const isEmployer = user?.role === "employer";
+  const isRestrictedRole = isMentor || isEmployer;
   const isFinalizedStatus = bootcamp.status === "Closed" || bootcamp.status === "Completed";
-  const isPrimaryDisabled = isMentor || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus));
-  const primaryButtonLabel = isMentor ? "Students Only" : (isFinalizedStatus ? bootcamp.status : bootcamp.primaryCTA);
+  const isPrimaryDisabled = isRestrictedRole || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus));
+  const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? bootcamp.status : bootcamp.primaryCTA);
 
   return (
     <Link 
@@ -138,11 +140,11 @@ export function BootcampEventCard({
                 variant="outline"
                 size="sm"
                 className="w-full sm:w-auto"
-                disabled={isMentor}
+                disabled={isRestrictedRole}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (isMentor) return;
+                  if (isRestrictedRole) return;
                   if (onSecondaryCTAClick) {
                     onSecondaryCTAClick(bootcamp);
                     return;
@@ -150,7 +152,7 @@ export function BootcampEventCard({
                   onPrimaryCTAClick(bootcamp);
                 }}
               >
-                {isMentor ? "Students Only" : bootcamp.secondaryCTA}
+                {isRestrictedRole ? "Students Only" : bootcamp.secondaryCTA}
               </Button>
             )}
             <Button
@@ -162,12 +164,12 @@ export function BootcampEventCard({
                   : ""
               }`}
               size="default"
-              variant={isFinalizedStatus || isMentor ? "outline" : bootcamp.canRegister ? "default" : "outline"}
+              variant={isFinalizedStatus || isRestrictedRole ? "outline" : bootcamp.canRegister ? "default" : "outline"}
               disabled={isPrimaryDisabled}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!isMentor) onPrimaryCTAClick(bootcamp);
+                if (!isRestrictedRole) onPrimaryCTAClick(bootcamp);
               }}
             >
               {primaryButtonLabel}

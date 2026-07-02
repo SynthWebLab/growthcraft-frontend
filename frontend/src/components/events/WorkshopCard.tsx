@@ -23,16 +23,18 @@ const formatEventTime = (date: string) =>
 export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick }: WorkshopCardProps) {
   const { data: user } = useCurrentUser();
   const isMentor = user?.role === "mentor";
+  const isEmployer = user?.role === "employer";
+  const isRestrictedRole = isMentor || isEmployer;
   const toneStyles = getEventCardToneStyles("purple");
 
   const primaryCTA = workshop.primaryCTA || "Reserve Seat";
   const secondaryCTA = workshop.secondaryCTA;
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = workshop.status === "Closed" || workshop.status === "Completed";
-  const primaryButtonLabel = isMentor ? "Students Only" : (isFinalizedStatus ? workshop.status : primaryCTA);
+  const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? workshop.status : primaryCTA);
 
   const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
-  const isPrimaryDisabled = isMentor || isFinalizedStatus || (isRegistrationAction && (
+  const isPrimaryDisabled = isRestrictedRole || isFinalizedStatus || (isRegistrationAction && (
     workshop.status === "Completed" || 
     workshop.availableSeats <= 0 ||
     !workshop.canRegister
@@ -106,29 +108,29 @@ export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick }: Work
                 variant="outline"
                 size="default"
                 className="w-full sm:w-auto"
-                disabled={isMentor}
+                disabled={isRestrictedRole}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (!isMentor) onSecondaryCTAClick(workshop);
+                  if (!isRestrictedRole) onSecondaryCTAClick(workshop);
                 }}
               >
-                {isMentor ? "Students Only" : secondaryCTA}
+                {isRestrictedRole ? "Students Only" : secondaryCTA}
               </Button>
             )}
             <Button
               className={`w-full sm:w-auto shadow-none ${
-                isFinalizedStatus || isCallbackAction || isMentor
+                isFinalizedStatus || isCallbackAction || isRestrictedRole
                   ? ""
                   : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50"
               }`}
               size="default"
-              variant={isFinalizedStatus || isCallbackAction || isMentor ? "outline" : "default"}
+              variant={isFinalizedStatus || isCallbackAction || isRestrictedRole ? "outline" : "default"}
               disabled={isPrimaryDisabled}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!isPrimaryDisabled && !isMentor) onCTAClick(workshop);
+                if (!isPrimaryDisabled && !isRestrictedRole) onCTAClick(workshop);
               }}
             >
               <span className="hidden sm:inline">

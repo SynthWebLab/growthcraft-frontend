@@ -99,6 +99,7 @@ export default function CourseDetailPage({
 
   // Check if user is logged in and verified
   const isStudent = user?.role === "student";
+  const isRestrictedRole = user?.role === "mentor" || user?.role === "employer";
 
   // Get enrollment status flags
   const isEnrolled = enrollmentStatus?.data?.isEnrolled || false;
@@ -120,7 +121,7 @@ export default function CourseDetailPage({
 
   // Handle primary CTA click (Enroll Now / Register Interest)
   const handlePrimaryCTAClick = async () => {
-    if (user?.role === "mentor") {
+    if (isRestrictedRole) {
       toast.error("Students Only");
       return;
     }
@@ -191,7 +192,7 @@ export default function CourseDetailPage({
 
   // Handle secondary CTA click (Request Callback)
   const handleSecondaryCTAClick = async () => {
-    if (user?.role === "mentor") {
+    if (isRestrictedRole) {
       toast.error("Students Only");
       return;
     }
@@ -228,7 +229,7 @@ export default function CourseDetailPage({
 
   // Determine button states
   const isPrimaryButtonDisabled = 
-    (isAuthenticated && user?.role === "mentor") ||
+    (isAuthenticated && isRestrictedRole) ||
     (isPrimaryEnrollment 
       ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryRegisterInterest
@@ -238,11 +239,11 @@ export default function CourseDetailPage({
   const isSecondaryButtonDisabled = 
     hasCallbackRequest || 
     callbackMutation.isPending || 
-    (isAuthenticated && user?.role === "mentor");
+    (isAuthenticated && isRestrictedRole);
 
   // Button labels
   const primaryButtonLabel = 
-    (isAuthenticated && user?.role === "mentor")
+    (isAuthenticated && isRestrictedRole)
       ? "Students Only"
       : isPrimaryEnrollment
       ? (isAuthenticated && !isStudent)
@@ -252,7 +253,7 @@ export default function CourseDetailPage({
       ? (hasCallbackRequest ? "Interest Registered" : activeMutation.isPending ? "Submitting..." : primaryCTA)
       : (activeMutation.isPending ? "Submitting..." : primaryCTA);
 
-  const secondaryButtonLabel = (isAuthenticated && user?.role === "mentor")
+  const secondaryButtonLabel = (isAuthenticated && isRestrictedRole)
     ? "Students Only"
     : hasCallbackRequest 
     ? "Callback Requested" 

@@ -58,6 +58,8 @@ interface PopupFormProps {
 export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle, itemType = "course" }: PopupFormProps) => {
   const { data: user } = useCurrentUser();
   const isMentor = user?.role === "mentor";
+  const isEmployer = user?.role === "employer";
+  const isRestrictedRole = isMentor || isEmployer;
   const isStudentAction = ["enrollment", "reserve-seat", "callback", "register-interest"].includes(type);
 
   // Mutations for enroll and callback
@@ -361,10 +363,10 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
           </div>
         </DialogHeader>
 
-        {isMentor && isStudentAction ? (
+        {isRestrictedRole && isStudentAction ? (
           <div className="py-6 text-center space-y-4">
             <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm font-medium">
-              This feature is reserved for students only. As a logged-in Mentor, you cannot perform this action.
+              This feature is reserved for students only. As a logged-in {user?.role === "mentor" ? "Mentor" : "Employer"}, you cannot perform this action.
             </div>
             <Button type="button" onClick={onClose} className="w-full">
               Close

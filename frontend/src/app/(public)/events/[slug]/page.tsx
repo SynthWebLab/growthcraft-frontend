@@ -210,6 +210,7 @@ export default function EventDetailPage({
   // Check if user is logged in and verified
   const isAuthenticated = user && user.isEmailVerified;
   const isStudent = user?.role === "student";
+  const isRestrictedRole = user?.role === "mentor" || user?.role === "employer";
 
   // Use backend-provided CTAs
   const primaryCTA = event.primaryCTA || "Register Now";
@@ -278,7 +279,7 @@ export default function EventDetailPage({
 
   // Handle primary CTA click
   const handlePrimaryCTAClick = () => {
-    if (user?.role === "mentor") {
+    if (isRestrictedRole) {
       toast.error("Students Only");
       return;
     }
@@ -342,7 +343,7 @@ export default function EventDetailPage({
 
   // Handle secondary CTA click
   const handleSecondaryCTAClick = () => {
-    if (user?.role === "mentor") {
+    if (isRestrictedRole) {
       toast.error("Students Only");
       return;
     }
@@ -377,13 +378,13 @@ export default function EventDetailPage({
     primaryCTA.toLowerCase().includes("enroll");
   const isPrimaryButtonDisabled = 
     isFinalizedStatus || 
-    (isAuthenticated && user?.role === "mentor") ||
+    (isAuthenticated && isRestrictedRole) ||
     (isRegistrationAction && isAuthenticated && !isStudent) ||
     (isRegistrationAction && (isSeatsFull || event.status === "Completed"));
-  const isSecondaryButtonDisabled = isAuthenticated && user?.role === "mentor";
+  const isSecondaryButtonDisabled = isAuthenticated && isRestrictedRole;
   const primaryButtonLabel = isFinalizedStatus 
     ? eventStatus 
-    : (isAuthenticated && user?.role === "mentor")
+    : (isAuthenticated && isRestrictedRole)
     ? "Students Only"
     : (isRegistrationAction && isAuthenticated && !isStudent)
     ? "Students Only"
@@ -392,7 +393,7 @@ export default function EventDetailPage({
     ? ""
     : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50";
 
-  const secondaryButtonLabel = (isAuthenticated && user?.role === "mentor")
+  const secondaryButtonLabel = (isAuthenticated && isRestrictedRole)
     ? "Students Only"
     : secondaryCTA || "Request Callback";
 

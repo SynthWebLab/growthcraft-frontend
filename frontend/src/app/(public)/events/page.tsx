@@ -17,6 +17,8 @@ export default function EventsPage() {
   const [activeTab, setActiveTab] = useState<EventTab>("workshops");
   const { data: user } = useCurrentUser();
   const isMentor = user?.role === "mentor";
+  const isEmployer = user?.role === "employer";
+  const isRestrictedRole = isMentor || isEmployer;
 
   return (
     <>
@@ -75,14 +77,14 @@ export default function EventsPage() {
           <Button
             className="bg-magenta text-white hover:bg-magenta/90"
             size="lg"
-            disabled={isMentor}
+            disabled={isRestrictedRole}
             onClick={() => {
-              if (!isMentor) {
+              if (!isRestrictedRole) {
                 openForm("register-interest", "Notify Me About Events");
               }
             }}
           >
-            {isMentor ? "Students Only" : "Register Interest"}
+            {isRestrictedRole ? "Students Only" : "Register Interest"}
           </Button>
         </div>
       </Section>

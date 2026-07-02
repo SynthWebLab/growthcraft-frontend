@@ -92,6 +92,7 @@ export default function TrainingProgramDetailPage({
 
   // Check student role
   const isStudent = user?.role === "student";
+  const isRestrictedRole = user?.role === "mentor" || user?.role === "employer";
   const isEnrolled = enrollmentStatus?.data?.isEnrolled || false;
   const hasCallbackRequest = enrollmentStatus?.data?.hasCallbackRequest || false;
 
@@ -112,7 +113,7 @@ export default function TrainingProgramDetailPage({
 
   // Handle primary CTA click
   const handlePrimaryCTAClick = async () => {
-    if (user?.role === "mentor") {
+    if (isRestrictedRole) {
       toast.error("Students Only");
       return;
     }
@@ -215,7 +216,7 @@ export default function TrainingProgramDetailPage({
 
   // Handle secondary CTA click
   const handleSecondaryCTAClick = async () => {
-    if (user?.role === "mentor") {
+    if (isRestrictedRole) {
       toast.error("Students Only");
       return;
     }
@@ -253,7 +254,7 @@ export default function TrainingProgramDetailPage({
 
   // Button states and labels
   const isPrimaryButtonDisabled =
-    (isAuthenticated && user?.role === "mentor") ||
+    (isAuthenticated && isRestrictedRole) ||
     (isPrimaryEnrollment
       ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryCallback
@@ -262,12 +263,12 @@ export default function TrainingProgramDetailPage({
       ? hasCallbackRequest || callbackMutation.isPending
       : callbackMutation.isPending);
 
-  const isSecondaryButtonDisabled = hasCallbackRequest || callbackMutation.isPending || (isAuthenticated && user?.role === "mentor");
+  const isSecondaryButtonDisabled = hasCallbackRequest || callbackMutation.isPending || (isAuthenticated && isRestrictedRole);
   const primaryButtonClasses = isPrimaryCallback
     ? ""
     : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50";
 
-  const primaryButtonLabel = (isAuthenticated && user?.role === "mentor")
+  const primaryButtonLabel = (isAuthenticated && isRestrictedRole)
     ? "Students Only"
     : isPrimaryEnrollment
     ? (isAuthenticated && !isStudent)
@@ -291,7 +292,7 @@ export default function TrainingProgramDetailPage({
       : primaryCTA
     : primaryCTA;
 
-  const secondaryButtonLabel = (isAuthenticated && user?.role === "mentor")
+  const secondaryButtonLabel = (isAuthenticated && isRestrictedRole)
     ? "Students Only"
     : hasCallbackRequest
     ? "Callback Requested"

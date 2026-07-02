@@ -35,6 +35,8 @@ const BootcampsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const { data: user } = useCurrentUser();
   const isMentor = user?.role === "mentor";
+  const isEmployer = user?.role === "employer";
+  const isRestrictedRole = isMentor || isEmployer;
   const { isOpen, formType, formTitle, courseId, courseTitle, itemType, openForm, closeForm } = usePopupForm();
 
   const queryParams: BootcampQueryParams = {
@@ -90,7 +92,7 @@ const BootcampsPage = () => {
     if (bootcamp.status === "Closed" || bootcamp.status === "Completed") {
       return bootcamp.status;
     }
-    if (isMentor) {
+    if (isRestrictedRole) {
       return "Students Only";
     }
 
@@ -98,7 +100,7 @@ const BootcampsPage = () => {
   };
 
   const handlePrimaryCTA = (bootcamp: typeof bootcamps[0]) => {
-    if (isMentor) {
+    if (isRestrictedRole) {
       toast.error("Students Only");
       return;
     }
@@ -111,7 +113,7 @@ const BootcampsPage = () => {
   };
 
   const handleSecondaryCTA = (bootcamp: typeof bootcamps[0]) => {
-    if (isMentor) {
+    if (isRestrictedRole) {
       toast.error("Students Only");
       return;
     }
@@ -253,7 +255,7 @@ const BootcampsPage = () => {
       {/* Bootcamp cards — alternating white/marble */}
       {bootcamps.map((bootcamp, i) => {
         const isPrimaryDisabled =
-          isMentor || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || bootcamp.status === "Completed"));
+          isRestrictedRole || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || bootcamp.status === "Completed"));
 
         return (
         <Section key={bootcamp.id} variant={i % 2 === 0 ? "white" : "marble"}>
@@ -349,14 +351,14 @@ const BootcampsPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={isMentor}
+                      disabled={isRestrictedRole}
                       onClick={() => {
-                        if (!isMentor) {
+                        if (!isRestrictedRole) {
                           handleSecondaryCTA(bootcamp);
                         }
                       }}
                     >
-                      {isMentor ? "Students Only" : bootcamp.secondaryCTA}
+                      {isRestrictedRole ? "Students Only" : bootcamp.secondaryCTA}
                     </Button>
                   )}
                   <Button
