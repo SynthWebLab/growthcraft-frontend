@@ -1,28 +1,42 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  ExternalLink,
+  Mail,
+  GraduationCap,
+  Award,
+  X
+} from "lucide-react";
 import { toast } from "sonner";
 import DataCard from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useTalentPool } from "@/hooks/queries/useEmployer";
+import { useEmployerApplications, useUpdateApplicationStatus } from "@/hooks/queries/useEmployer";
 
 type Stage = "Applied" | "Shortlisted" | "Interview" | "Hired" | "Rejected";
 
 interface Application {
   id: string;
   name: string;
+  email: string;
   role: string;
   appliedDate: string;
   stage: Stage;
+  degree: string;
+  skills: string[];
+  resumeUrl: string;
+  coverLetter?: string;
 }
 
 const stages: Stage[] = ["Applied", "Shortlisted", "Interview", "Hired", "Rejected"];
 
 const stageColors: Record<Stage, string> = {
-  Applied: "border-t-lavender",
+  Applied: "border-t-slate-500",
   Shortlisted: "border-t-info",
   Interview: "border-t-warning",
   Hired: "border-t-success",
@@ -30,36 +44,41 @@ const stageColors: Record<Stage, string> = {
 };
 
 const EmployerApplications = () => {
-  const { data: talent = [], isLoading } = useTalentPool();
+  const { data: applications = [], isLoading } = useEmployerApplications();
+  const { mutate: updateStatus, isPending: updatingStatus } = useUpdateApplicationStatus();
+  
   const [apps, setApps] = useState<Application[]>([]);
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
+  // Sync React Query data to local state for instant optimistic updates
   useEffect(() => {
-    if (talent.length > 0 && apps.length === 0) {
-      const mappedApps: Application[] = talent.map((c, i) => {
-        const stageList: Stage[] = ["Applied", "Shortlisted", "Interview", "Hired", "Rejected"];
-        return {
-          id: c.id,
-          name: c.name,
-          role: c.course,
-          appliedDate: `Apr ${5 + (i % 5)}`,
-          stage: stageList[i % stageList.length],
-        };
-      });
-      setApps(mappedApps);
+    if (applications) {
+      setApps(applications);
     }
-  }, [talent, apps.length]);
+  }, [applications]);
 
   const move = (id: string, direction: 1 | -1) => {
+    const app = apps.find((a) => a.id === id);
+    if (!app) return;
+    const idx = stages.indexOf(app.stage);
+    const nextIdx = idx + direction;
+    if (nextIdx < 0 || nextIdx >= stages.length) return;
+    const newStage = stages[nextIdx];
+
+    // Optimistically update local state
     setApps((prev) =>
-      prev.map((a) => {
-        if (a.id !== id) return a;
-        const idx = stages.indexOf(a.stage);
-        const next = idx + direction;
-        if (next < 0 || next >= stages.length) return a;
-        const newStage = stages[next];
-        toast(`Moved to ${newStage}`, { description: `${a.name} → ${newStage}` });
-        return { ...a, stage: newStage };
-      })
+      prev.map((a) => (a.id === id ? { ...a, stage: newStage } : a))
+    );
+
+    // Call mutation to update backend
+    updateStatus(
+      { id, status: newStage },
+      {
+        onError: () => {
+          // Revert local state on error by syncing back to query data
+          setApps(applications);
+        },
+      }
     );
   };
 
@@ -70,77 +89,187 @@ const EmployerApplications = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground font-display">Applications</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Move candidates through your hiring pipeline</p>
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground font-display">Applications</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Move candidates through your hiring pipeline</p>
+        </div>
       </div>
 
-      <div className="overflow-x-auto pb-2">
-        <div className="grid grid-cols-5 gap-3 min-w-[1000px]">
+      <div className="overflow-x-auto pb-6 scrollbar-hide">
+        <div className="grid grid-cols-5 gap-4 min-w-[1100px]">
           {stages.map((stage) => (
-            <div key={stage} className="space-y-3">
+            <div key={stage} className="space-y-4 bg-graphite/20 p-3 rounded-2xl border border-border/40 min-h-[500px] flex flex-col">
               <div className="flex items-center justify-between px-1">
-                <h3 className="text-sm font-semibold text-foreground">{stage}</h3>
-                <Badge variant="outline" className="text-[10px]">{grouped[stage]?.length ?? 0}</Badge>
+                <h3 className="text-sm font-bold text-foreground font-display tracking-wide uppercase">{stage}</h3>
+                <Badge variant="outline" className="text-[10px] bg-white/5 border-none font-semibold text-slate-300">
+                  {grouped[stage]?.length ?? 0}
+                </Badge>
               </div>
 
-              <div className="space-y-2 min-h-[200px]">
+              <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] scrollbar-hide">
                 {isLoading ? (
-                  <p className="text-xs text-muted-foreground p-3">Loading...</p>
+                  <p className="text-xs text-muted-foreground p-3">Loading applications...</p>
+                ) : grouped[stage]?.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border/40 p-6 text-center bg-graphite/5 mt-2">
+                    <p className="text-xs text-muted-foreground">No candidates</p>
+                  </div>
                 ) : (
                   grouped[stage]?.map((app) => {
                     const idx = stages.indexOf(app.stage);
                     return (
                       <DataCard
                         key={app.id}
-                        className={cn("p-3 border-t-4", stageColors[stage])}
+                        onClick={() => setSelectedApp(app)}
+                        className={cn("p-4 border-t-4 bg-graphite/30 hover:bg-graphite/50 transition-all hover:scale-[1.01] cursor-pointer relative", stageColors[stage])}
                       >
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="h-8 w-8 rounded-full bg-magenta/10 text-magenta flex items-center justify-center text-[10px] font-bold">
-                            {app.name.split(" ").map((n) => n[0]).join("")}
+                        <div className="space-y-3">
+                          <div>
+                            <h4 className="font-bold text-foreground text-sm font-display truncate">
+                              {app.name}
+                            </h4>
+                            <p className="text-[11px] font-semibold text-magenta truncate">{app.role}</p>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-foreground text-sm truncate">{app.name}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">{app.role}</p>
+
+                          <div className="space-y-1.5 text-[10px] text-muted-foreground font-medium">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+                              <span>{app.degree}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Award className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">Applied {app.appliedDate}</span>
+                            </div>
                           </div>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mb-2">Applied {app.appliedDate}</p>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-6 w-6"
-                            disabled={idx === 0}
-                            onClick={() => move(app.id, -1)}
-                            title="Move left"
-                          >
-                            <ChevronLeft className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-6 w-6"
-                            disabled={idx === stages.length - 1}
-                            onClick={() => move(app.id, 1)}
-                            title="Move right"
-                          >
-                            <ChevronRight className="h-3 w-3" />
-                          </Button>
+
+                          {/* Footer Actions */}
+                          <div className="flex items-center justify-between pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                            <a
+                              href={app.resumeUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] text-magenta hover:underline font-semibold flex items-center gap-1 bg-magenta/5 px-2 py-1 rounded"
+                            >
+                              <FileText className="h-3 w-3" />
+                              <span>Resume</span>
+                            </a>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-6 w-6 rounded-lg bg-white/5 border-border hover:bg-white/10"
+                                disabled={idx === 0 || updatingStatus}
+                                onClick={() => move(app.id, -1)}
+                                title="Move left"
+                              >
+                                <ChevronLeft className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-6 w-6 rounded-lg bg-white/5 border-border hover:bg-white/10"
+                                disabled={idx === stages.length - 1 || updatingStatus}
+                                onClick={() => move(app.id, 1)}
+                                title="Move right"
+                              >
+                                <ChevronRight className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </DataCard>
                     );
                   })
-                )}
-                {!isLoading && grouped[stage]?.length === 0 && (
-                  <div className="rounded-lg border border-dashed border-border p-6 text-center">
-                    <p className="text-xs text-muted-foreground">No candidates</p>
-                  </div>
                 )}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Details View Modal */}
+      {selectedApp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-200">
+          <div className="bg-graphite border border-border/80 shadow-2xl w-full max-w-xl rounded-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-6 border-b border-border/60 flex items-start justify-between bg-graphite/40">
+              <div>
+                <Badge className="bg-magenta/10 text-magenta font-semibold border-none px-2.5 py-0.5 text-[10px] mb-2">
+                  {selectedApp.stage}
+                </Badge>
+                <h2 className="text-xl font-bold text-foreground font-display leading-tight">
+                  {selectedApp.name}
+                </h2>
+                <p className="text-sm font-medium text-magenta mt-1">{selectedApp.role}</p>
+              </div>
+              <button
+                onClick={() => setSelectedApp(null)}
+                className="h-8 w-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 space-y-5 text-sm">
+              <div className="space-y-3 bg-white/5 border border-white/10 p-4 rounded-xl text-xs font-medium text-slate-300">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span>Email: {selectedApp.email}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                  <span>Degree: {selectedApp.degree}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Award className="h-4 w-4 text-muted-foreground" />
+                  <span>Applied Date: {selectedApp.appliedDate}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <h4 className="font-bold text-foreground text-xs uppercase tracking-wider font-display">Candidate Skills</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedApp.skills.map((skill, idx) => (
+                    <Badge key={idx} variant="secondary" className="bg-white/5 border-none text-slate-300 text-xs px-2.5 py-1">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {selectedApp.coverLetter && (
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-foreground text-xs uppercase tracking-wider font-display">Cover Letter</h4>
+                  <p className="text-slate-300 leading-relaxed whitespace-pre-line bg-graphite/40 border border-white/5 p-3.5 rounded-xl text-xs">
+                    {selectedApp.coverLetter}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-6 justify-end border-t border-white/5">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedApp(null)}
+                  className="border-border text-foreground hover:bg-white/5 rounded-xl text-xs font-semibold px-4 h-9"
+                >
+                  Close
+                </Button>
+                <a
+                  href={selectedApp.resumeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-magenta hover:bg-magenta/90 text-white font-semibold rounded-xl text-xs px-5 h-9 inline-flex items-center justify-center gap-1.5"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>View Resume</span>
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

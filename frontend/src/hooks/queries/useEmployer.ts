@@ -17,6 +17,7 @@ export const employerKeys = {
   jobs: () => [...employerKeys.all, "jobs"] as const,
   profile: () => [...employerKeys.all, "profile"] as const,
   talent: () => ["talent"] as const,
+  applications: () => [...employerKeys.all, "applications"] as const,
 };
 
 const STALE = 2 * 60 * 1000; // 2 minutes
@@ -134,3 +135,29 @@ export function useUpdateEmployerProfile() {
     },
   });
 }
+
+export function useEmployerApplications() {
+  return useQuery({
+    queryKey: employerKeys.applications(),
+    queryFn: () => employerService.getApplications().then((res) => res.data),
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+export function useUpdateApplicationStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      employerService.updateApplicationStatus(id, status),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: employerKeys.applications() });
+      queryClient.invalidateQueries({ queryKey: employerKeys.dashboard() });
+      toast.success(res.message || "Candidate application status updated successfully");
+    },
+    onError: (err: any) => {
+      toast.error(extractApiError(err, "Failed to update candidate application status"));
+    },
+  });
+}
+

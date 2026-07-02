@@ -44,4 +44,13 @@ export const employerService = {
   updateProfile: async (profileData: Partial<EmployerProfile>): Promise<ApiResponse<EmployerProfile>> => {
     return apiClient.patch<ApiResponse<EmployerProfile>>(API_ENDPOINTS.employers.profile, profileData);
   },
+
+  getApplications: async (): Promise<ApiResponse<any[]>> => {
+    return apiClient.get<ApiResponse<any[]>>(API_ENDPOINTS.employers.applications);
+  },
+
+  updateApplicationStatus: async (id: string, status: string): Promise<ApiResponse<any>> => {
+    return apiClient.patch<ApiResponse<any>>(API_ENDPOINTS.employers.applicationStatus(id), { status });
+  },
 };
+
