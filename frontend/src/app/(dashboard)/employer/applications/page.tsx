@@ -44,7 +44,7 @@ const stageColors: Record<Stage, string> = {
 };
 
 const EmployerApplications = () => {
-  const { data: applications = [], isLoading } = useEmployerApplications();
+  const { data: applications, isLoading } = useEmployerApplications();
   const { mutate: updateStatus, isPending: updatingStatus } = useUpdateApplicationStatus();
   
   const [apps, setApps] = useState<Application[]>([]);
@@ -76,7 +76,7 @@ const EmployerApplications = () => {
       {
         onError: () => {
           // Revert local state on error by syncing back to query data
-          setApps(applications);
+          setApps(applications || []);
         },
       }
     );
@@ -99,10 +99,10 @@ const EmployerApplications = () => {
       <div className="overflow-x-auto pb-6 scrollbar-hide">
         <div className="grid grid-cols-5 gap-4 min-w-[1100px]">
           {stages.map((stage) => (
-            <div key={stage} className="space-y-4 bg-graphite/20 p-3 rounded-2xl border border-border/40 min-h-[500px] flex flex-col">
+            <div key={stage} className="space-y-4 bg-muted/30 p-3 rounded-2xl border border-border/80 min-h-[500px] flex flex-col">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-sm font-bold text-foreground font-display tracking-wide uppercase">{stage}</h3>
-                <Badge variant="outline" className="text-[10px] bg-white/5 border-none font-semibold text-slate-300">
+                <Badge variant="outline" className="text-[10px] bg-muted border-none font-semibold text-muted-foreground">
                   {grouped[stage]?.length ?? 0}
                 </Badge>
               </div>
@@ -111,7 +111,7 @@ const EmployerApplications = () => {
                 {isLoading ? (
                   <p className="text-xs text-muted-foreground p-3">Loading applications...</p>
                 ) : grouped[stage]?.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border/40 p-6 text-center bg-graphite/5 mt-2">
+                  <div className="rounded-xl border border-dashed border-border/60 p-6 text-center bg-muted/10 mt-2">
                     <p className="text-xs text-muted-foreground">No candidates</p>
                   </div>
                 ) : (
@@ -121,7 +121,7 @@ const EmployerApplications = () => {
                       <DataCard
                         key={app.id}
                         onClick={() => setSelectedApp(app)}
-                        className={cn("p-4 border-t-4 bg-graphite/30 hover:bg-graphite/50 transition-all hover:scale-[1.01] cursor-pointer relative", stageColors[stage])}
+                        className={cn("p-4 border-t-4 bg-card hover:-translate-y-0.5 transition-all hover:scale-[1.01] cursor-pointer relative", stageColors[stage])}
                       >
                         <div className="space-y-3">
                           <div>
@@ -143,7 +143,7 @@ const EmployerApplications = () => {
                           </div>
 
                           {/* Footer Actions */}
-                          <div className="flex items-center justify-between pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
                             <a
                               href={app.resumeUrl}
                               target="_blank"
@@ -157,7 +157,7 @@ const EmployerApplications = () => {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-6 w-6 rounded-lg bg-white/5 border-border hover:bg-white/10"
+                                className="h-6 w-6 rounded-lg bg-muted/50 border-border hover:bg-muted"
                                 disabled={idx === 0 || updatingStatus}
                                 onClick={() => move(app.id, -1)}
                                 title="Move left"
@@ -167,7 +167,7 @@ const EmployerApplications = () => {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-6 w-6 rounded-lg bg-white/5 border-border hover:bg-white/10"
+                                className="h-6 w-6 rounded-lg bg-muted/50 border-border hover:bg-muted"
                                 disabled={idx === stages.length - 1 || updatingStatus}
                                 onClick={() => move(app.id, 1)}
                                 title="Move right"
@@ -190,9 +190,9 @@ const EmployerApplications = () => {
       {/* Details View Modal */}
       {selectedApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-200">
-          <div className="bg-graphite border border-border/80 shadow-2xl w-full max-w-xl rounded-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-card border border-border shadow-2xl w-full max-w-xl rounded-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="p-6 border-b border-border/60 flex items-start justify-between bg-graphite/40">
+            <div className="p-6 border-b border-border flex items-start justify-between bg-muted/20">
               <div>
                 <Badge className="bg-magenta/10 text-magenta font-semibold border-none px-2.5 py-0.5 text-[10px] mb-2">
                   {selectedApp.stage}
@@ -204,7 +204,7 @@ const EmployerApplications = () => {
               </div>
               <button
                 onClick={() => setSelectedApp(null)}
-                className="h-8 w-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors hover:bg-white/10"
+                className="h-8 w-8 rounded-lg bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors hover:bg-muted/80"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -212,7 +212,7 @@ const EmployerApplications = () => {
 
             {/* Content Body */}
             <div className="p-6 space-y-5 text-sm">
-              <div className="space-y-3 bg-white/5 border border-white/10 p-4 rounded-xl text-xs font-medium text-slate-300">
+              <div className="space-y-3 bg-muted/30 border border-border p-4 rounded-xl text-xs font-medium text-foreground">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   <span>Email: {selectedApp.email}</span>
@@ -231,7 +231,7 @@ const EmployerApplications = () => {
                 <h4 className="font-bold text-foreground text-xs uppercase tracking-wider font-display">Candidate Skills</h4>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedApp.skills.map((skill, idx) => (
-                    <Badge key={idx} variant="secondary" className="bg-white/5 border-none text-slate-300 text-xs px-2.5 py-1">
+                    <Badge key={idx} variant="secondary" className="bg-muted/60 border-none text-foreground text-xs px-2.5 py-1">
                       {skill}
                     </Badge>
                   ))}
@@ -241,17 +241,18 @@ const EmployerApplications = () => {
               {selectedApp.coverLetter && (
                 <div className="space-y-1.5">
                   <h4 className="font-bold text-foreground text-xs uppercase tracking-wider font-display">Cover Letter</h4>
-                  <p className="text-slate-300 leading-relaxed whitespace-pre-line bg-graphite/40 border border-white/5 p-3.5 rounded-xl text-xs">
+                  <p className="text-foreground leading-relaxed whitespace-pre-line bg-muted/20 border border-border p-3.5 rounded-xl text-xs">
                     {selectedApp.coverLetter}
                   </p>
                 </div>
               )}
 
-              <div className="flex items-center gap-3 pt-6 justify-end border-t border-white/5">
+              <div className="flex items-center gap-3 pt-6 justify-end border-t border-border">
                 <Button
+                  type="button"
                   variant="outline"
                   onClick={() => setSelectedApp(null)}
-                  className="border-border text-foreground hover:bg-white/5 rounded-xl text-xs font-semibold px-4 h-9"
+                  className="border-border text-foreground hover:bg-muted rounded-xl text-xs font-semibold px-4 h-9"
                 >
                   Close
                 </Button>
