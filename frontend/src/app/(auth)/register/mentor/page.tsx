@@ -1,7 +1,9 @@
 "use client";
 
 import { Suspense } from "react";
+export const dynamic = "force-dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
+
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

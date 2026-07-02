@@ -33,6 +33,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
           { icon: Target, label: "Training Programs", href: "training-programs" },
           { icon: Users, label: "Mentors", href: "mentors" },
           { icon: Award, label: "Certificates", href: "certificates" },
+          { icon: Briefcase, label: "Jobs", href: "jobs" },
         ],
       },
       {

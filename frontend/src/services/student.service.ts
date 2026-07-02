@@ -91,4 +91,26 @@ export const studentService = {
   bookMentorSession: async (data: BookMentorSessionData): Promise<MentorSessionResponse> => {
     return apiClient.post<MentorSessionResponse>(API_ENDPOINTS.students.mentorSessions, data);
   },
+
+  getJobs: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.jobs);
+  },
+
+  applyJob: async (
+    jobId: string,
+    data: { resumeUrl: string; coverLetter?: string }
+  ): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.applyJob(jobId), data);
+  },
+
+  getApplications: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.applications);
+  },
+
+  uploadResume: async (file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append("resume", file);
+    return apiClient.post<any>(API_ENDPOINTS.students.uploadResume, formData);
+  },
 };
+

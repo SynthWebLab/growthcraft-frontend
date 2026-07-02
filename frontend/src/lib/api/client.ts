@@ -53,14 +53,18 @@ export async function apiFetch<T = any>(
 ): Promise<T> {
   const { skipRefresh = false, ...fetchOptions } = options;
 
+  const isFormData = fetchOptions.body instanceof FormData;
+
   // Ensure credentials are included for cookie-based auth
   const config: RequestInit = {
     ...fetchOptions,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...fetchOptions.headers,
-    },
+    headers: isFormData 
+      ? { ...fetchOptions.headers }
+      : {
+          "Content-Type": "application/json",
+          ...fetchOptions.headers,
+        },
   };
 
   // Build full URL
@@ -152,21 +156,21 @@ export const apiClient = {
     apiFetch<T>(endpoint, {
       ...options,
       method: "POST",
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
     }),
 
   put: <T = any>(endpoint: string, data?: any, options?: FetchOptions) =>
     apiFetch<T>(endpoint, {
       ...options,
       method: "PUT",
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
     }),
 
   patch: <T = any>(endpoint: string, data?: any, options?: FetchOptions) =>
     apiFetch<T>(endpoint, {
       ...options,
       method: "PATCH",
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
     }),
 
   delete: <T = any>(endpoint: string, options?: FetchOptions) =>

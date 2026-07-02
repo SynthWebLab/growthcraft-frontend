@@ -80,6 +80,10 @@ export const API_ENDPOINTS = {
     ambassadorReferrals: "/students/ambassador/referrals",
     ambassadorInvite: "/students/ambassador/invite",
     ambassadorEarnings: "/students/ambassador/earnings",
+    jobs: "/students/jobs",
+    applyJob: (id: string) => `/students/jobs/${id}/apply`,
+    applications: "/students/applications",
+    uploadResume: "/students/resume/upload",
   },
   colleges: {
     dashboard: "/colleges/dashboard",
@@ -127,4 +131,20 @@ export const API_ENDPOINTS = {
     attendance: "/mentor/attendance",
     progressNotes: "/mentor/progress-notes",
   },
+  employers: {
+    dashboard: "/employers/dashboard",
+    jobs: "/employers/jobs",
+    jobStatus: (id: string) => `/employers/jobs/${id}/status`,
+    jobDetail: (id: string) => `/employers/jobs/${id}`,
+    profile: "/employers/profile",
+    applications: "/employers/applications",
+    applicationStatus: (id: string) => `/employers/applications/${id}/status`,
+  },
+  talent: {
+    list: "/talent",
+  },
+  publicJobs: {
+    list: "/public/jobs",
+  },
 } as const;
+

@@ -1,7 +1,9 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+export const dynamic = "force-dynamic";
 import { Suspense } from "react";
+
 import { Lock } from "lucide-react";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 import { AuthPageLayout } from "@/components/auth/AuthPageLayout";
