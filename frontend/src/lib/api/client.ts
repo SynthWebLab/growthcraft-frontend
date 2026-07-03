@@ -98,14 +98,11 @@ export async function apiFetch<T = any>(
         // Ignore parse errors — proceed with normal refresh logic
       }
 
-      // TOKEN_REVOKED means the backend blacklisted this token on logout.
-      // NO_TOKEN means no token exists at all (fully logged out session).
-      // Attempting a refresh is pointless in both cases (refresh token is also gone).
-      // Clear local state and redirect to login immediately.
-      if (errorCode === "TOKEN_REVOKED" || errorCode === "NO_TOKEN") {
+      // TOKEN_REVOKED: backend blacklisted this token on logout.
+      // The session was explicitly terminated — redirect to the correct portal login.
+      if (errorCode === "TOKEN_REVOKED") {
         if (typeof window !== "undefined") {
           localStorage.removeItem("gc_user");
-          // Determine which portal the user was on from the current path and redirect
           const path = window.location.pathname;
           const portalMatch = path.match(/^\/(student|college|mentor|employer|admin)/);
           const loginPath = portalMatch ? `/login/${portalMatch[1]}` : "/login/student";
@@ -115,6 +112,19 @@ export async function apiFetch<T = any>(
         revokedError.code = "SESSION_REVOKED";
         throw revokedError;
       }
+
+      // NO_TOKEN: no token exists at all (unauthenticated request).
+      // Skip the pointless refresh attempt but do NOT redirect here —
+      // this code is also called from the login page (useCurrentUser) where
+      // NO_TOKEN is completely normal and redirecting would cause an infinite reload.
+      // The middleware and dashboard layouts handle unauthenticated routing.
+      if (errorCode === "NO_TOKEN") {
+        const noTokenError: any = new Error("Authentication required. Please login.");
+        noTokenError.code = "NO_TOKEN";
+        noTokenError.response = { status: 401, data: null };
+        throw noTokenError;
+      }
+
 
       // If already refreshing, wait for that to complete
       if (isRefreshing && refreshPromise) {
