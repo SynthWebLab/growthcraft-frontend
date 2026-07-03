@@ -78,6 +78,8 @@ export async function apiFetch<T = any>(
       endpoint.includes(API_ENDPOINTS.auth.login) ||
       endpoint.includes(API_ENDPOINTS.auth.register) ||
       endpoint.includes(API_ENDPOINTS.auth.refresh) ||
+      endpoint.includes(API_ENDPOINTS.auth.logout) ||     // never auto-refresh on logout
+      endpoint.includes(API_ENDPOINTS.auth.logoutAll) ||  // never auto-refresh on logout-all
       endpoint.includes(API_ENDPOINTS.auth.forgotPassword) ||
       endpoint.includes(API_ENDPOINTS.auth.resetPassword) ||
       endpoint.includes(API_ENDPOINTS.auth.verifyEmail) ||
@@ -85,6 +87,35 @@ export async function apiFetch<T = any>(
 
     // If 401 and we haven't tried refreshing yet
     if (response.status === 401 && !skipRefresh && !isAuthRequest) {
+      // Peek at the body to check for terminal error codes before attempting refresh.
+      // We clone so the body stream can still be read later if needed.
+      let errorCode: string | undefined;
+      try {
+        const cloned = response.clone();
+        const body = await cloned.json();
+        errorCode = body?.error?.code;
+      } catch {
+        // Ignore parse errors — proceed with normal refresh logic
+      }
+
+      // TOKEN_REVOKED means the backend blacklisted this token on logout.
+      // NO_TOKEN means no token exists at all (fully logged out session).
+      // Attempting a refresh is pointless in both cases (refresh token is also gone).
+      // Clear local state and redirect to login immediately.
+      if (errorCode === "TOKEN_REVOKED" || errorCode === "NO_TOKEN") {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("gc_user");
+          // Determine which portal the user was on from the current path and redirect
+          const path = window.location.pathname;
+          const portalMatch = path.match(/^\/(student|college|mentor|employer|admin)/);
+          const loginPath = portalMatch ? `/login/${portalMatch[1]}` : "/login/student";
+          window.location.href = loginPath;
+        }
+        const revokedError: any = new Error("Your session has been revoked. Please login again.");
+        revokedError.code = "SESSION_REVOKED";
+        throw revokedError;
+      }
+
       // If already refreshing, wait for that to complete
       if (isRefreshing && refreshPromise) {
         const refreshSuccess = await refreshPromise;
@@ -112,6 +143,7 @@ export async function apiFetch<T = any>(
         throw new Error("Authentication failed");
       }
     }
+
 
     // Parse response
     let data;
