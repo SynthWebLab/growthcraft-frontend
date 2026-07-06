@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Bell, Search, User, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,14 +24,20 @@ interface AdminHeaderProps {
 }
 
 export const AdminHeader = ({ user, onLogout, onMenuClick }: AdminHeaderProps) => {
-  const displayName: string = user?.full_name || (user as any)?.fullName || "";
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const displayName: string = mounted && user ? (user?.full_name || (user as any)?.fullName || "") : "";
   const initials = displayName
     ? displayName
         .split(" ")
         .map((n: string) => n[0])
         .join("")
         .toUpperCase()
-    : user?.email?.[0]?.toUpperCase() || "A";
+    : "A";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 sm:gap-4 border-b border-border bg-background px-3 sm:px-4 md:px-6">

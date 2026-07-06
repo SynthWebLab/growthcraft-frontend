@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEvents } from "@/hooks/queries/useEvents";
+import {
+  useCreateEvent,
+  useUpdateEvent,
+  useDeleteEvent,
+} from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -37,63 +44,13 @@ interface Event {
   created_at: string;
 }
 
-const eventTypes = [
-  "Webinar",
-  "Workshop",
-  "Hackathon",
-  "Career Fair",
-  "Tech Talk",
-  "Conference",
-  "Meetup",
-  "Seminar",
-];
+const eventTypes = ["Workshop", "Bootcamp", "Hackathon"];
 
-const INITIAL_EVENTS: Event[] = [
-  {
-    id: "1",
-    title: "Mastering Next.js 14 Seminar",
-    description: "Join us for an exclusive 2-hour technical webinar on Next.js 14 App Router, caching patterns, and server actions.",
-    event_type: "Webinar",
-    event_date: new Date(Date.now() + 3600000 * 24 * 5).toISOString().split('T')[0],
-    event_time: "18:00",
-    location: "Virtual (Zoom)",
-    is_online: true,
-    is_published: true,
-    is_featured: true,
-    created_at: new Date(Date.now() - 3600000 * 24 * 10).toISOString(),
-  },
-  {
-    id: "2",
-    title: "National GenAI Hackathon 2026",
-    description: "Build innovative AI solutions and agentic workflows using Google Gemini APIs. ₹2,00,000 in cash prizes!",
-    event_type: "Hackathon",
-    event_date: new Date(Date.now() + 3600000 * 24 * 25).toISOString().split('T')[0],
-    event_time: "09:00",
-    location: "GrowthCraft HQ, Bangalore",
-    is_online: false,
-    is_published: true,
-    is_featured: true,
-    created_at: new Date(Date.now() - 3600000 * 24 * 12).toISOString(),
-  },
-  {
-    id: "3",
-    title: "React Native Performance Workshop",
-    description: "An intensive hands-on workshop focused on optimizing React Native app start times, bridge layouts, and list rendering.",
-    event_type: "Workshop",
-    event_date: null,
-    event_time: null,
-    location: "Virtual",
-    is_online: true,
-    is_published: false,
-    is_featured: false,
-    created_at: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-  },
-];
+function AdminEventsContent() {
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get("type"); // Workshop, Bootcamp, Hackathon
 
-export default function AdminEvents() {
-  const [events, setEvents] = useState<Event[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [formData, setFormData] = useState({
@@ -108,33 +65,41 @@ export default function AdminEvents() {
     is_featured: false,
   });
 
-  const fetchEvents = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API fetch delay
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setEvents(INITIAL_EVENTS);
-    } catch (error) {
-      console.error("Error fetching events:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Queries & Mutations
+  // We pass the type parameter to filter in backend public events API
+  const { data: eventsData, isLoading } = useEvents({
+    type: (typeParam as any) || undefined,
+  });
+  
+  const createMutation = useCreateEvent();
+  const updateMutation = useUpdateEvent();
+  const deleteMutation = useDeleteEvent();
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  const rawEvents = (eventsData as any)?.items || (eventsData as any)?.data || [];
+  const events: Event[] = rawEvents.map((e: any) => ({
+    id: e._id || e.id,
+    title: e.title,
+    description: e.description || null,
+    event_type: e.type || "Workshop",
+    event_date: e.startDate ? new Date(e.startDate).toISOString().split('T')[0] : null,
+    event_time: e.startDate ? new Date(e.startDate).toTimeString().split(' ')[0].substring(0, 5) : "",
+    location: e.venue?.name || e.zoomLink || "Virtual",
+    is_online: e.mode === "Online",
+    is_published: e.isPublished,
+    is_featured: e.isFeatured,
+    created_at: e.createdAt || new Date().toISOString(),
+  }));
 
   const handleAdd = () => {
     setEditingEvent(null);
     setFormData({
       title: "",
       description: "",
-      event_type: "",
+      event_type: typeParam || "Workshop",
       event_date: "",
       event_time: "",
       location: "",
-      is_online: false,
+      is_online: true,
       is_published: false,
       is_featured: false,
     });
@@ -146,7 +111,7 @@ export default function AdminEvents() {
     setFormData({
       title: event.title,
       description: event.description || "",
-      event_type: event.event_type || "",
+      event_type: event.event_type || "Workshop",
       event_date: event.event_date || "",
       event_time: event.event_time || "",
       location: event.location || "",
@@ -158,56 +123,57 @@ export default function AdminEvents() {
   };
 
   const handleDelete = async (event: Event) => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+    if (!confirm(`Are you sure you want to delete "${event.title}"?`)) return;
 
-    try {
-      setEvents((prev) => prev.filter((e) => e.id !== event.id));
-      toast.success("Event deleted successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Error deleting event");
-    }
+    deleteMutation.mutate(event.id);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const eventData = {
-        title: formData.title,
-        description: formData.description || null,
-        event_type: formData.event_type || null,
-        event_date: formData.event_date || null,
-        event_time: formData.event_time || null,
-        location: formData.location || null,
-        is_online: formData.is_online,
-        is_published: formData.is_published,
-        is_featured: formData.is_featured,
-      };
+    const startDateTime = formData.event_date
+      ? new Date(`${formData.event_date}T${formData.event_time || "00:00"}:00`).toISOString()
+      : new Date().toISOString();
+      
+    const endDateStr = new Date(new Date(startDateTime).getTime() + 24 * 60 * 60 * 1000).toISOString();
 
-      if (editingEvent) {
-        setEvents((prev) =>
-          prev.map((e) => (e.id === editingEvent.id ? { ...e, ...eventData } : e))
-        );
-        toast.success("Event updated successfully");
-      } else {
-        const newEvent: Event = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...eventData,
-          created_at: new Date().toISOString(),
-        };
-        setEvents((prev) => [newEvent, ...prev]);
-        toast.success("Event created successfully");
-      }
+    const eventData = {
+      title: formData.title,
+      type: formData.event_type || typeParam || "Workshop",
+      domain: "Technology", // default domain
+      durationDays: 1,
+      price: 0,
+      startDate: startDateTime,
+      endDate: endDateStr,
+      maxSeats: 50,
+      description: formData.description || null,
+      mode: formData.is_online ? "Online" : "Offline",
+      venue: formData.is_online ? undefined : { name: formData.location || "On Campus", address: "Campus Venue", city: "Campus", state: "Campus" },
+      zoomLink: formData.is_online ? (formData.location || "http://zoom.us") : undefined,
+      isPublished: formData.is_published,
+      isFeatured: formData.is_featured,
+    };
 
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Error saving event");
+    if (editingEvent) {
+      updateMutation.mutate(
+        { id: editingEvent.id, data: eventData },
+        {
+          onSuccess: () => {
+            setIsDialogOpen(false);
+          },
+        }
+      );
+    } else {
+      createMutation.mutate(eventData, {
+        onSuccess: () => {
+          setIsDialogOpen(false);
+        },
+      });
     }
   };
 
   const filteredEvents = events.filter((event) =>
-    event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (event.event_type && event.event_type.toLowerCase().includes(searchQuery.toLowerCase()))
+    event.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const columns = [
@@ -238,22 +204,24 @@ export default function AdminEvents() {
     },
   ];
 
+  const pageTitle = typeParam ? `${typeParam}s` : "Events";
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Events</h1>
-        <p className="text-muted-foreground mt-1">Manage all events</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{pageTitle}</h1>
+        <p className="text-muted-foreground mt-1">Manage scheduled {pageTitle.toLowerCase()}</p>
       </div>
 
       <DataTable
         columns={columns}
         data={filteredEvents}
-        searchPlaceholder="Search events..."
+        searchPlaceholder={`Search ${pageTitle.toLowerCase()}...`}
         onSearch={setSearchQuery}
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        addButtonLabel="Add Event"
+        addButtonLabel={`Add ${typeParam || "Event"}`}
         isLoading={isLoading}
       />
 
@@ -261,7 +229,7 @@ export default function AdminEvents() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingEvent ? "Edit Event" : "Add New Event"}
+              {editingEvent ? `Edit ${typeParam || "Event"}` : `Add New ${typeParam || "Event"}`}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -284,6 +252,7 @@ export default function AdminEvents() {
                   onValueChange={(value) =>
                     setFormData({ ...formData, event_type: value })
                   }
+                  disabled={!!typeParam} // Disable if preset by sidebar submenu
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />
@@ -320,14 +289,14 @@ export default function AdminEvents() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">Location / URL</Label>
                 <Input
                   id="location"
                   value={formData.location}
                   onChange={(e) =>
                     setFormData({ ...formData, location: e.target.value })
                   }
-                  placeholder="e.g., Virtual / City Name"
+                  placeholder={formData.is_online ? "Zoom/Meet URL" : "e.g., Room 101, City Campus"}
                 />
               </div>
             </div>
@@ -382,13 +351,25 @@ export default function AdminEvents() {
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {editingEvent ? "Update" : "Create"} Event
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                {editingEvent ? "Update" : "Create"} {typeParam || "Event"}
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function AdminEvents() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    }>
+      <AdminEventsContent />
+    </Suspense>
   );
 }

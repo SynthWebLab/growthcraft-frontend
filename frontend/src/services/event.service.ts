@@ -31,7 +31,37 @@ export async function getEvents(filters?: EventFilters): Promise<EventsResponse>
     }
   }
 
-  return await apiClient.get<EventsResponse>(endpoint);
+  const response = await apiClient.get<any>(endpoint);
+  
+  // Format items from backend to match frontend Event type
+  const items = (response?.items || response?.data || []).map((e: any) => ({
+    ...e,
+    _id: e._id || e.id,
+    id: e.id || e._id,
+    type: e.type || "Workshop",
+  }));
+
+  const pagination = response?.pagination || response?.meta?.pagination || {
+    page: filters?.page || 1,
+    limit: filters?.limit || 10,
+    total: items.length,
+    totalPages: 1,
+  };
+
+  return {
+    success: true,
+    message: "Events retrieved successfully",
+    data: items,
+    meta: {
+      timestamp: new Date().toISOString(),
+      pagination: {
+        page: pagination.page || 1,
+        limit: pagination.limit || 10,
+        total: pagination.total || items.length,
+        totalPages: pagination.totalPages || 1,
+      },
+    },
+  };
 }
 
 /**

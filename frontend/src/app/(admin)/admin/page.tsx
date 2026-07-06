@@ -1,170 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React from "react";
+import {
+  useAdminAnalytics,
+  useAdminRevenue,
+  useAdminAuditLogs,
+} from "@/hooks/queries/useAdmin";
 import { StatsCard } from "@/components/admin/StatsCard";
 import {
   BookOpen,
   GraduationCap,
   Calendar,
   Users,
-  MessageSquare,
-  ClipboardList,
   TrendingUp,
   Building2,
+  DollarSign,
+  Briefcase,
+  History,
+  Award,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-interface DashboardStats {
-  courses: number;
-  trainingPrograms: number;
-  events: number;
-  users: number;
-  enquiries: number;
-  registrations: number;
-  colleges: number;
-  employers: number;
-}
-
-interface RecentEnquiry {
-  id: string;
-  name: string;
-  email: string;
-  enquiry_type: string;
-  status: string;
-  created_at: string;
-}
-
-interface RecentRegistration {
-  id: string;
-  name: string;
-  email: string;
-  status: string;
-  created_at: string;
-}
-
-// Mock Data
-const MOCK_STATS: DashboardStats = {
-  courses: 24,
-  trainingPrograms: 12,
-  events: 18,
-  users: 1250,
-  enquiries: 84,
-  registrations: 312,
-  colleges: 15,
-  employers: 42,
-};
-
-const MOCK_ENQUIRIES: RecentEnquiry[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    enquiry_type: "Course Inquiry",
-    status: "new",
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
-  },
-  {
-    id: "2",
-    name: "Sarah Smith",
-    email: "sarah.s@example.com",
-    enquiry_type: "Admission",
-    status: "pending",
-    created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-  },
-  {
-    id: "3",
-    name: "Michael Brown",
-    email: "m.brown@example.com",
-    enquiry_type: "Corporate Training",
-    status: "contacted",
-    created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    id: "4",
-    name: "Emily Davis",
-    email: "emily.d@example.com",
-    enquiry_type: "Partnership",
-    status: "approved",
-    created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
-  },
-];
-
-const MOCK_REGISTRATIONS: RecentRegistration[] = [
-  {
-    id: "1",
-    name: "Alex Johnson",
-    email: "alex.j@example.com",
-    status: "approved",
-    created_at: new Date(Date.now() - 3600000 * 1).toISOString(), // 1 hour ago
-  },
-  {
-    id: "2",
-    name: "Jessica Taylor",
-    email: "jessica.t@example.com",
-    status: "pending",
-    created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-  },
-  {
-    id: "3",
-    name: "David Wilson",
-    email: "david.w@example.com",
-    status: "approved",
-    created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-  },
-  {
-    id: "4",
-    name: "Rachel Green",
-    email: "rachel.g@example.com",
-    status: "rejected",
-    created_at: new Date(Date.now() - 3600000 * 72).toISOString(),
-  },
-];
-
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    courses: 0,
-    trainingPrograms: 0,
-    events: 0,
-    users: 0,
-    enquiries: 0,
-    registrations: 0,
-    colleges: 0,
-    employers: 0,
-  });
-  const [recentEnquiries, setRecentEnquiries] = useState<RecentEnquiry[]>([]);
-  const [recentRegistrations, setRecentRegistrations] = useState<RecentRegistration[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Real API Queries
+  const { data: analyticsRes, isLoading: analyticsLoading } = useAdminAnalytics();
+  const { data: revenueRes, isLoading: revenueLoading } = useAdminRevenue();
+  const { data: auditRes, isLoading: auditLoading } = useAdminAuditLogs({ page: 1, limit: 5 });
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Simulate API fetch delay
-        await new Promise((resolve) => setTimeout(resolve, 600));
+  const analytics = analyticsRes?.data || {};
+  const revenue = revenueRes?.data || {};
+  const auditLogs = auditRes?.data || [];
 
-        setStats(MOCK_STATS);
-        setRecentEnquiries(MOCK_ENQUIRIES);
-        setRecentRegistrations(MOCK_REGISTRATIONS);
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const usersByRole = analytics.usersByRole || {};
+  const topCourses = analytics.topCourses || [];
+  const monthlyTrends = analytics.monthlyTrends || [];
 
-    fetchStats();
-  }, []);
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      new: "default",
-      pending: "secondary",
-      approved: "default",
-      rejected: "destructive",
-      contacted: "outline",
-    };
-    return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
-  };
+  const isLoading = analyticsLoading || revenueLoading;
 
   if (isLoading) {
     return (
@@ -177,123 +49,153 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-sans">Admin Console</h1>
         <p className="text-muted-foreground mt-1">
-          Welcome to GrowthCraft Admin Panel
+          Real-time operations, cohort performance, and billing metrics.
         </p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Cards Section */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Total Courses"
-          value={stats.courses}
-          icon={BookOpen}
-          trend={{ value: 12, isPositive: true }}
+          title="Total Revenue"
+          value={`₹${(revenue.totalCollected || 0).toLocaleString()}`}
+          icon={DollarSign}
         />
         <StatsCard
-          title="Training Programs"
-          value={stats.trainingPrograms}
-          icon={GraduationCap}
-          trend={{ value: 8, isPositive: true }}
-        />
-        <StatsCard
-          title="Events"
-          value={stats.events}
-          icon={Calendar}
-          trend={{ value: 5, isPositive: true }}
-        />
-        <StatsCard
-          title="Total Users"
-          value={stats.users}
+          title="Mentor Payout Costs"
+          value={`₹${(revenue.totalMentorCosts || 0).toLocaleString()}`}
           icon={Users}
-          trend={{ value: 15, isPositive: true }}
         />
         <StatsCard
-          title="Enquiries"
-          value={stats.enquiries}
-          icon={MessageSquare}
-          trend={{ value: 23, isPositive: true }}
-        />
-        <StatsCard
-          title="Registrations"
-          value={stats.registrations}
-          icon={ClipboardList}
-          trend={{ value: 18, isPositive: true }}
-        />
-        <StatsCard
-          title="Partner Colleges"
-          value={stats.colleges}
-          icon={Building2}
-          trend={{ value: 3, isPositive: true }}
-        />
-        <StatsCard
-          title="Employers"
-          value={stats.employers}
+          title="Gross Margin"
+          value={`₹${(revenue.margin || 0).toLocaleString()}`}
           icon={TrendingUp}
-          trend={{ value: 7, isPositive: true }}
+          trend={{ value: revenue.marginPercent || 0, isPositive: (revenue.margin || 0) >= 0 }}
+        />
+        <StatsCard
+          title="Total Enrollments"
+          value={analytics.totalEnrollments || 0}
+          icon={Award}
         />
       </div>
 
-      {/* Recent Activity */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent Enquiries */}
-        <Card>
+      {/* Role Counts */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-4">User Registrations by Portal</h3>
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-card hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Students</p>
+                <h4 className="text-xl font-bold mt-1">{usersByRole.student || 0}</h4>
+              </div>
+              <GraduationCap className="h-8 w-8 text-primary/30" />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Mentors</p>
+                <h4 className="text-xl font-bold mt-1">{usersByRole.mentor || 0}</h4>
+              </div>
+              <Users className="h-8 w-8 text-indigo-500/30" />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Colleges</p>
+                <h4 className="text-xl font-bold mt-1">{usersByRole.college || 0}</h4>
+              </div>
+              <Building2 className="h-8 w-8 text-emerald-500/30" />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Employers</p>
+                <h4 className="text-xl font-bold mt-1">{usersByRole.employer || 0}</h4>
+              </div>
+              <Briefcase className="h-8 w-8 text-amber-500/30" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Trends & Lists Section */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Top Cohorts table */}
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg">Recent Enquiries</CardTitle>
+            <CardTitle>Top Performing Cohorts</CardTitle>
+            <CardDescription>Active training batches ranked by total confirmed student enrollments.</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentEnquiries.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No recent enquiries</p>
+            {topCourses.length === 0 ? (
+              <p className="text-muted-foreground text-sm text-center py-6">No cohort data recorded yet.</p>
             ) : (
-              <div className="space-y-4">
-                {recentEnquiries.map((enquiry) => (
-                  <div
-                    key={enquiry.id}
-                    className="flex items-center justify-between border-b border-border pb-3 last:border-0"
-                  >
-                    <div>
-                      <p className="font-medium text-sm">{enquiry.name}</p>
-                      <p className="text-xs text-muted-foreground">{enquiry.email}</p>
-                    </div>
-                    <div className="text-right">
-                      {getStatusBadge(enquiry.status)}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(enquiry.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left border-collapse">
+                  <thead className="text-xs text-muted-foreground uppercase bg-muted/40 font-medium">
+                    <tr>
+                      <th className="px-4 py-2">Batch Code</th>
+                      <th className="px-4 py-2">Program / Course Name</th>
+                      <th className="px-4 py-2 text-right">Student Enrolled</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {topCourses.map((c: any, index: number) => (
+                      <tr key={index} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-xs font-mono">{c.batchCode}</td>
+                        <td className="px-4 py-3 text-xs">{c.title}</td>
+                        <td className="px-4 py-3 text-right text-xs font-bold text-primary">{c.enrollmentsCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Recent Registrations */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Recent Registrations</CardTitle>
+        {/* Audit log overview */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>System Activity</CardTitle>
+              <CardDescription>Recent audit logs</CardDescription>
+            </div>
+            <History className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {recentRegistrations.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No recent registrations</p>
+            {auditLoading ? (
+              <div className="text-center py-6">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+              </div>
+            ) : auditLogs.length === 0 ? (
+              <p className="text-muted-foreground text-sm text-center py-6">No logs available.</p>
             ) : (
               <div className="space-y-4">
-                {recentRegistrations.map((registration) => (
-                  <div
-                    key={registration.id}
-                    className="flex items-center justify-between border-b border-border pb-3 last:border-0"
-                  >
-                    <div>
-                      <p className="font-medium text-sm">{registration.name}</p>
-                      <p className="text-xs text-muted-foreground">{registration.email}</p>
+                {auditLogs.map((log: any) => (
+                  <div key={log._id} className="text-xs pb-3 border-b border-border last:border-0">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="font-mono text-[9px] uppercase">
+                        {log.action}
+                      </Badge>
+                      <span className="text-muted-foreground text-[10px]">
+                        {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                    <div className="text-right">
-                      {getStatusBadge(registration.status)}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(registration.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
+                    <p className="mt-1 font-semibold text-foreground text-[11px]">
+                      By {log.performedBy?.fullName || "System"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                      ID: {log.target}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -301,7 +203,36 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly trends chart visualizer */}
+      {monthlyTrends.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Enrollment Trends</CardTitle>
+            <CardDescription>Monthly student admissions ledger (Last 6 Months).</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end justify-between gap-2 h-36 pt-4 border-b border-border">
+              {monthlyTrends.map((trend: any, index: number) => (
+                <div key={index} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
+                  <div className="text-xs font-bold text-primary mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {trend.enrollments}
+                  </div>
+                  <div
+                    className="w-full bg-primary/80 rounded-t group-hover:bg-primary transition-all duration-300 min-h-[4px]"
+                    style={{
+                      height: `${Math.max(4, Math.min(100, (trend.enrollments / Math.max(...monthlyTrends.map((t: any) => t.enrollments || 1))) * 100))}%`,
+                    }}
+                  />
+                  <div className="text-[10px] text-muted-foreground font-semibold mt-1">
+                    {trend.month}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
-

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useBootcamps } from "@/hooks/queries/useBootcamps";
+import {
+  useCreateEvent,
+  useUpdateEvent,
+  useDeleteEvent,
+} from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -15,6 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Bootcamp {
   id: string;
@@ -32,58 +45,10 @@ interface Bootcamp {
   created_at: string;
 }
 
-const INITIAL_BOOTCAMPS: Bootcamp[] = [
-  {
-    id: "1",
-    title: "Full-Stack Web Development Bootcamp",
-    description: "Go from beginner to ready-to-hire full-stack web developer in 12 weeks. Master React, Node, and SQL.",
-    duration: "12 Weeks",
-    format: "Online Live",
-    batch_size: 30,
-    price: 49999,
-    discount_price: 39999,
-    next_batch_date: new Date(Date.now() + 3600000 * 24 * 15).toISOString().split('T')[0],
-    category: "Web Development",
-    is_published: true,
-    is_featured: true,
-    created_at: new Date(Date.now() - 3600000 * 24 * 20).toISOString(),
-  },
-  {
-    id: "2",
-    title: "Data Science & Artificial Intelligence",
-    description: "Learn Python, Pandas, Machine Learning models, and Deep Learning tools to build neural networks.",
-    duration: "16 Weeks",
-    format: "Online Live",
-    batch_size: 25,
-    price: 59999,
-    discount_price: 49999,
-    next_batch_date: new Date(Date.now() + 3600000 * 24 * 30).toISOString().split('T')[0],
-    category: "Data Science & AI",
-    is_published: true,
-    is_featured: false,
-    created_at: new Date(Date.now() - 3600000 * 24 * 10).toISOString(),
-  },
-  {
-    id: "3",
-    title: "Cloud Computing & DevOps Bootcamp",
-    description: "Master AWS, Docker, Kubernetes, CI/CD pipelines, and Terraform to automate modern infrastructure.",
-    duration: "10 Weeks",
-    format: "Hybrid",
-    batch_size: 20,
-    price: 39999,
-    discount_price: null,
-    next_batch_date: null,
-    category: "Cloud & DevOps",
-    is_published: false,
-    is_featured: false,
-    created_at: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
-  },
-];
+const formats = ["Online", "Offline", "Hybrid"];
 
 export default function AdminBootcamps() {
-  const [bootcamps, setBootcamps] = useState<Bootcamp[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBootcamp, setEditingBootcamp] = useState<Bootcamp | null>(null);
   const [formData, setFormData] = useState({
@@ -100,22 +65,28 @@ export default function AdminBootcamps() {
     is_featured: false,
   });
 
-  const fetchBootcamps = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API fetch delay
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setBootcamps(INITIAL_BOOTCAMPS);
-    } catch (error) {
-      console.error("Error fetching bootcamps:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Queries & Mutations
+  const { data: bootcampsData, isLoading } = useBootcamps({ limit: 100 });
+  const createMutation = useCreateEvent();
+  const updateMutation = useUpdateEvent();
+  const deleteMutation = useDeleteEvent();
 
-  useEffect(() => {
-    fetchBootcamps();
-  }, []);
+  const rawBootcamps = bootcampsData?.items || [];
+  const bootcamps: Bootcamp[] = rawBootcamps.map((b: any) => ({
+    id: b._id || b.id,
+    title: b.title,
+    description: b.description || null,
+    duration: b.durationDays?.toString() || b.duration?.toString() || null,
+    format: b.mode || "Online",
+    batch_size: b.maxSeats || null,
+    price: b.price || null,
+    discount_price: b.discountedPrice || null,
+    next_batch_date: b.startDate ? new Date(b.startDate).toISOString().split('T')[0] : null,
+    category: b.domain || b.category || null,
+    is_published: b.isPublished,
+    is_featured: b.isFeatured,
+    created_at: b.createdAt || new Date().toISOString(),
+  }));
 
   const handleAdd = () => {
     setEditingBootcamp(null);
@@ -154,75 +125,73 @@ export default function AdminBootcamps() {
   };
 
   const handleDelete = async (bootcamp: Bootcamp) => {
-    if (!confirm("Are you sure you want to delete this bootcamp?")) return;
+    if (!confirm(`Are you sure you want to delete "${bootcamp.title}"?`)) return;
 
-    try {
-      setBootcamps((prev) => prev.filter((b) => b.id !== bootcamp.id));
-      toast.success("Bootcamp deleted successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Error deleting bootcamp");
-    }
+    deleteMutation.mutate(bootcamp.id);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const bootcampData = {
-        title: formData.title,
-        description: formData.description || null,
-        duration: formData.duration || null,
-        format: formData.format || null,
-        batch_size: formData.batch_size ? parseInt(formData.batch_size) : null,
-        price: formData.price ? parseFloat(formData.price) : null,
-        discount_price: formData.discount_price ? parseFloat(formData.discount_price) : null,
-        next_batch_date: formData.next_batch_date || null,
-        category: formData.category || null,
-        is_published: formData.is_published,
-        is_featured: formData.is_featured,
-      };
+    const durationNum = formData.duration ? parseInt(formData.duration) : 30;
+    const startDateStr = formData.next_batch_date
+      ? new Date(formData.next_batch_date).toISOString()
+      : new Date().toISOString();
+    const endDateStr = new Date(
+      new Date(startDateStr).getTime() + durationNum * 24 * 60 * 60 * 1000
+    ).toISOString();
 
-      if (editingBootcamp) {
-        setBootcamps((prev) =>
-          prev.map((b) => (b.id === editingBootcamp.id ? { ...b, ...bootcampData } : b))
-        );
-        toast.success("Bootcamp updated successfully");
-      } else {
-        const newBootcamp: Bootcamp = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...bootcampData,
-          created_at: new Date().toISOString(),
-        };
-        setBootcamps((prev) => [newBootcamp, ...prev]);
-        toast.success("Bootcamp created successfully");
-      }
+    const bootcampData = {
+      title: formData.title,
+      type: "Bootcamp",
+      domain: formData.category || "Technology",
+      durationDays: durationNum,
+      price: formData.price ? parseFloat(formData.price) : 0,
+      discountedPrice: formData.discount_price ? parseFloat(formData.discount_price) : 0,
+      startDate: startDateStr,
+      endDate: endDateStr,
+      maxSeats: formData.batch_size ? parseInt(formData.batch_size) : 30,
+      description: formData.description || null,
+      mode: formData.format || "Online",
+      isPublished: formData.is_published,
+      isFeatured: formData.is_featured,
+    };
 
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Error saving bootcamp");
+    if (editingBootcamp) {
+      updateMutation.mutate(
+        { id: editingBootcamp.id, data: bootcampData },
+        {
+          onSuccess: () => {
+            setIsDialogOpen(false);
+          },
+        }
+      );
+    } else {
+      createMutation.mutate(bootcampData, {
+        onSuccess: () => {
+          setIsDialogOpen(false);
+        },
+      });
     }
   };
 
   const filteredBootcamps = bootcamps.filter((bootcamp) =>
-    bootcamp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (bootcamp.category && bootcamp.category.toLowerCase().includes(searchQuery.toLowerCase()))
+    bootcamp.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const columns = [
     { key: "title", label: "Title" },
     { key: "category", label: "Category" },
-    { key: "duration", label: "Duration" },
-    { key: "batch_size", label: "Batch Size" },
+    { key: "format", label: "Format" },
+    {
+      key: "duration",
+      label: "Duration",
+      render: (val: any) => (val ? `${val} Days` : "N/A"),
+    },
     {
       key: "price",
       label: "Price",
-      render: (value: number) => (value ? `₹${value}` : "Contact"),
-    },
-    {
-      key: "next_batch_date",
-      label: "Next Batch",
-      render: (value: string) =>
-        value ? new Date(value).toLocaleDateString() : "-",
+      render: (value: number) => (value ? `₹${value}` : "Free"),
     },
     {
       key: "is_published",
@@ -233,13 +202,19 @@ export default function AdminBootcamps() {
         </Badge>
       ),
     },
+    {
+      key: "is_featured",
+      label: "Featured",
+      render: (value: boolean) =>
+        value ? <Badge variant="outline">Featured</Badge> : null,
+    },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-2xl sm:text-3xl font-bold text-foreground">Bootcamps</h1>
-        <p className="text-muted-foreground mt-1">Manage all bootcamp programs</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Bootcamps</h1>
+        <p className="text-muted-foreground mt-1">Manage bootcamps and workshop events</p>
       </div>
 
       <DataTable
@@ -263,7 +238,7 @@ export default function AdminBootcamps() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
                 <Input
                   id="title"
@@ -275,48 +250,70 @@ export default function AdminBootcamps() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">Category / Domain *</Label>
                 <Input
                   id="category"
                   value={formData.category}
+                  placeholder="e.g. Web Development, Cloud"
                   onChange={(e) =>
                     setFormData({ ...formData, category: e.target.value })
                   }
-                  placeholder="e.g., Web Development"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
-                <Input
-                  id="duration"
-                  value={formData.duration}
-                  onChange={(e) =>
-                    setFormData({ ...formData, duration: e.target.value })
-                  }
-                  placeholder="e.g., 12 Weeks"
+                  required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="format">Format</Label>
-                <Input
-                  id="format"
+                <Select
                   value={formData.format}
-                  onChange={(e) =>
-                    setFormData({ ...formData, format: e.target.value })
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, format: value })
                   }
-                  placeholder="e.g., Online Live"
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formats.map((fmt) => (
+                      <SelectItem key={fmt} value={fmt}>
+                        {fmt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duration (Days)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  value={formData.duration}
+                  placeholder="e.g. 90"
+                  onChange={(e) =>
+                    setFormData({ ...formData, duration: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="batch_size">Batch Size</Label>
+                <Label htmlFor="batch_size">Max Seats</Label>
                 <Input
                   id="batch_size"
                   type="number"
                   value={formData.batch_size}
+                  placeholder="e.g. 30"
                   onChange={(e) =>
                     setFormData({ ...formData, batch_size: e.target.value })
                   }
-                  placeholder="e.g., 30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="next_batch_date">Start Date</Label>
+                <Input
+                  id="next_batch_date"
+                  type="date"
+                  value={formData.next_batch_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, next_batch_date: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -328,27 +325,17 @@ export default function AdminBootcamps() {
                   onChange={(e) =>
                     setFormData({ ...formData, price: e.target.value })
                   }
+                  placeholder="Leave empty for free"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="discount_price">Discount Price (₹)</Label>
+                <Label htmlFor="discount_price">Discounted Price (₹)</Label>
                 <Input
                   id="discount_price"
                   type="number"
                   value={formData.discount_price}
                   onChange={(e) =>
                     setFormData({ ...formData, discount_price: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="next_batch_date">Next Batch Date</Label>
-                <Input
-                  id="next_batch_date"
-                  type="date"
-                  value={formData.next_batch_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, next_batch_date: e.target.value })
                   }
                 />
               </div>
@@ -394,7 +381,7 @@ export default function AdminBootcamps() {
               >
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
                 {editingBootcamp ? "Update" : "Create"} Bootcamp
               </Button>
             </div>

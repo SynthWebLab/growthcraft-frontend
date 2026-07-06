@@ -22,28 +22,42 @@ const roleConfig = {
     title: "Student Portal",
     subtitle: "Access your learning dashboard",
     redirectPath: "/student",
-    RegisterForm: StudentRegisterForm,
+    RegisterForm: StudentRegisterForm as React.ComponentType | null,
   },
   college: {
     icon: Building2,
     title: "College Portal",
     subtitle: "Manage your campus partnership",
     redirectPath: "/college",
-    RegisterForm: CollegeRegisterForm,
+    RegisterForm: CollegeRegisterForm as React.ComponentType | null,
   },
   mentor: {
     icon: UserCheck,
     title: "Mentor Portal",
     subtitle: "Share your expertise & mentor students",
     redirectPath: "/mentor",
-    RegisterForm: MentorRegisterForm,
+    RegisterForm: MentorRegisterForm as React.ComponentType | null,
   },
   employer: {
     icon: Briefcase,
     title: "Employer Portal",
     subtitle: "Hire job-ready tech talent",
     redirectPath: "/employer",
-    RegisterForm: EmployerRegisterForm,
+    RegisterForm: EmployerRegisterForm as React.ComponentType | null,
+  },
+  ops: {
+    icon: UserCheck,
+    title: "Operations Portal",
+    subtitle: "Manage platform operations",
+    redirectPath: "/admin",
+    RegisterForm: null as React.ComponentType | null,
+  },
+  super_admin: {
+    icon: UserCheck,
+    title: "Super Admin Portal",
+    subtitle: "Full administrative access",
+    redirectPath: "/admin",
+    RegisterForm: null as React.ComponentType | null,
   },
 } as const;
 
@@ -52,6 +66,8 @@ const otherRoles = {
   college: ["student", "mentor", "employer"],
   mentor: ["student", "college", "employer"],
   employer: ["student", "college", "mentor"],
+  ops: ["super_admin"],
+  super_admin: ["ops"],
 } as const;
 
 const roleLabels = {
@@ -59,6 +75,8 @@ const roleLabels = {
   college: "College",
   mentor: "Mentor",
   employer: "Employer",
+  ops: "Operations",
+  super_admin: "Super Admin",
 } as const;
 
 function LoginPageContent({ role }: { role: keyof typeof roleConfig }) {
@@ -103,26 +121,32 @@ function LoginPageContent({ role }: { role: keyof typeof roleConfig }) {
       )}
 
       <Card className="border-border/50 shadow-lg">
-        <Tabs defaultValue="login">
-          <CardHeader className="pb-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">
-                {role === "mentor" ? "Apply" : "Register"}
-              </TabsTrigger>
-            </TabsList>
-          </CardHeader>
+        {RegisterForm ? (
+          <Tabs defaultValue="login">
+            <CardHeader className="pb-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">
+                  {role === "mentor" ? "Apply" : "Register"}
+                </TabsTrigger>
+              </TabsList>
+            </CardHeader>
 
-          <CardContent>
-            <TabsContent value="login" className="mt-0">
-              <LoginForm role={role} redirectPath={redirectPath} callbackUrl={callbackUrl || undefined} />
-            </TabsContent>
+            <CardContent>
+              <TabsContent value="login" className="mt-0">
+                <LoginForm role={role} redirectPath={redirectPath} callbackUrl={callbackUrl || undefined} />
+              </TabsContent>
 
-            <TabsContent value="register" className="mt-0">
-              <RegisterForm />
-            </TabsContent>
+              <TabsContent value="register" className="mt-0">
+                <RegisterForm />
+              </TabsContent>
+            </CardContent>
+          </Tabs>
+        ) : (
+          <CardContent className="pt-6">
+            <LoginForm role={role} redirectPath={redirectPath} callbackUrl={callbackUrl || undefined} />
           </CardContent>
-        </Tabs>
+        )}
       </Card>
 
       <p className="text-center text-xs text-muted-foreground mt-6">
