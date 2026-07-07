@@ -243,6 +243,21 @@ export function useAdminUserById(id: string) {
   });
 }
 
+export function useUpdateUserStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      adminService.updateUserStatus(id, isActive),
+    onSuccess: (_, variables) => {
+      toast.success(variables.isActive ? "User account activated" : "User account suspended");
+      queryClient.invalidateQueries({ queryKey: adminKeys.users() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to update user status"));
+    },
+  });
+}
+
 // --- Course Admin CRUD Hooks ---
 
 export function useCreateCourse() {

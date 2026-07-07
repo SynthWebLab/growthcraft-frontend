@@ -166,6 +166,10 @@ export const adminService = {
     return apiClient.get<any>(API_ENDPOINTS.admin.userDetail(id));
   },
 
+  updateUserStatus: async (id: string, isActive: boolean): Promise<any> => {
+    return apiClient.patch<any>(`${API_ENDPOINTS.admin.users}/${id}/status`, { isActive });
+  },
+
   // --- Course Admin CRUD ---
   createCourse: async (data: any): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.admin.courses, data);

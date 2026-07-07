@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAdminUsers } from "@/hooks/queries/useAdmin";
+import { useAdminUsers, useUpdateUserStatus } from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -47,6 +47,8 @@ export default function AdminUsers() {
     search: searchQuery || undefined,
     limit: 100, // Fetch up to 100 for display
   });
+
+  const statusMutation = useUpdateUserStatus();
 
   const rawUsers = (usersRes as any)?.data || (usersRes as any)?.items || [];
 
@@ -171,6 +173,7 @@ export default function AdminUsers() {
         data={users}
         searchPlaceholder="Search users by name or email..."
         onSearch={setSearchQuery}
+        onView={handleView}
         isLoading={isLoading}
       />
 
@@ -198,7 +201,7 @@ export default function AdminUsers() {
                     <Badge variant={getRoleBadgeVariant(viewUser.role)}>
                       {roles.find((r) => r.value === viewUser.role)?.label || viewUser.role}
                     </Badge>
-                    <Badge variant={viewUser.isActive ? "default" : "secondary"}>
+                    <Badge variant={viewUser.isActive ? "default" : "destructive"}>
                       {viewUser.isActive ? "Active" : "Inactive"}
                     </Badge>
                     <Badge variant={viewUser.isEmailVerified ? "outline" : "secondary"}>
@@ -227,7 +230,18 @@ export default function AdminUsers() {
                   <p className="font-mono text-xs text-foreground truncate">{viewUser.id}</p>
                 </div>
               </div>
-              <div className="flex justify-end pt-2 border-t border-border">
+              <div className="flex justify-between items-center pt-4 border-t border-border mt-4">
+                <Button
+                  size="sm"
+                  variant={viewUser.isActive ? "destructive" : "default"}
+                  onClick={() => {
+                    statusMutation.mutate({ id: viewUser.id, isActive: !viewUser.isActive });
+                    setViewUser(null);
+                  }}
+                  disabled={statusMutation.isPending}
+                >
+                  {viewUser.isActive ? "Suspend Account" : "Activate Account"}
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => setViewUser(null)}>
                   Close
                 </Button>
