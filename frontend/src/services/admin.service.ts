@@ -170,6 +170,32 @@ export const adminService = {
     return apiClient.patch<any>(`${API_ENDPOINTS.admin.users}/${id}/status`, { isActive });
   },
 
+  // --- Colleges ---
+  getColleges: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.admin.colleges);
+  },
+
+  updateCollege: async (id: string, data: any): Promise<any> => {
+    return apiClient.put<any>(API_ENDPOINTS.admin.collegeDetail(id), data);
+  },
+
+  deleteCollege: async (id: string): Promise<any> => {
+    return apiClient.delete<any>(API_ENDPOINTS.admin.collegeDetail(id));
+  },
+
+  // --- Employers ---
+  getEmployers: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.admin.employers);
+  },
+
+  updateEmployer: async (id: string, data: any): Promise<any> => {
+    return apiClient.put<any>(API_ENDPOINTS.admin.employerDetail(id), data);
+  },
+
+  deleteEmployer: async (id: string): Promise<any> => {
+    return apiClient.delete<any>(API_ENDPOINTS.admin.employerDetail(id));
+  },
+
   // --- Course Admin CRUD ---
   createCourse: async (data: any): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.admin.courses, data);

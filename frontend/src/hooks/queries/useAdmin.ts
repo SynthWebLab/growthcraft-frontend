@@ -35,6 +35,8 @@ export const adminKeys = {
   batches: (filters?: any) => [...adminKeys.all, "batches", filters] as const,
   users: (filters?: any) => [...adminKeys.all, "users", filters] as const,
   userById: (id: string) => [...adminKeys.all, "user", id] as const,
+  colleges: () => [...adminKeys.all, "colleges"] as const,
+  employers: () => [...adminKeys.all, "employers"] as const,
 };
 
 const STALE = 2 * 60 * 1000; // 2 minutes
@@ -254,6 +256,84 @@ export function useUpdateUserStatus() {
     },
     onError: (err) => {
       toast.error(extractApiError(err, "Failed to update user status"));
+    },
+  });
+}
+
+// --- Colleges Admin CRUD Hooks ---
+
+export function useAdminColleges() {
+  return useQuery({
+    queryKey: adminKeys.colleges(),
+    queryFn: () => adminService.getColleges(),
+    staleTime: STALE,
+  });
+}
+
+export function useUpdateAdminCollege() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      adminService.updateCollege(id, data),
+    onSuccess: () => {
+      toast.success("College updated successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.colleges() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to update college"));
+    },
+  });
+}
+
+export function useDeleteAdminCollege() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminService.deleteCollege(id),
+    onSuccess: () => {
+      toast.success("College deleted successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.colleges() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to delete college"));
+    },
+  });
+}
+
+// --- Employers Admin CRUD Hooks ---
+
+export function useAdminEmployers() {
+  return useQuery({
+    queryKey: adminKeys.employers(),
+    queryFn: () => adminService.getEmployers(),
+    staleTime: STALE,
+  });
+}
+
+export function useUpdateAdminEmployer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      adminService.updateEmployer(id, data),
+    onSuccess: () => {
+      toast.success("Employer updated successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.employers() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to update employer"));
+    },
+  });
+}
+
+export function useDeleteAdminEmployer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminService.deleteEmployer(id),
+    onSuccess: () => {
+      toast.success("Employer deleted successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.employers() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to delete employer"));
     },
   });
 }
