@@ -19,8 +19,22 @@ import {
   History,
   Award,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+
+const enrollmentChartConfig = {
+  enrollments: {
+    label: "Enrollments",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
 
 export default function AdminDashboard() {
   // Real API Queries
@@ -204,34 +218,79 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Monthly trends chart visualizer */}
+      {/* Monthly trends chart — shadcn BarChart */}
       {monthlyTrends.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Enrollment Trends</CardTitle>
-            <CardDescription>Monthly student admissions ledger (Last 6 Months).</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end justify-between gap-2 h-36 pt-4 border-b border-border">
-              {monthlyTrends.map((trend: any, index: number) => (
-                <div key={index} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                  <div className="text-xs font-bold text-primary mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {trend.enrollments}
-                  </div>
-                  <div
-                    className="w-full bg-primary/80 rounded-t group-hover:bg-primary transition-all duration-300 min-h-[4px]"
-                    style={{
-                      height: `${Math.max(4, Math.min(100, (trend.enrollments / Math.max(...monthlyTrends.map((t: any) => t.enrollments || 1))) * 100))}%`,
-                    }}
-                  />
-                  <div className="text-[10px] text-muted-foreground font-semibold mt-1">
-                    {trend.month}
-                  </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Card className="md:col-span-2">
+            <CardHeader className="px-4 pt-3 pb-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-semibold">Enrollment Trends</CardTitle>
+                  <CardDescription className="text-xs mt-0">
+                    Last {monthlyTrends.length} month{monthlyTrends.length !== 1 ? "s" : ""}
+                  </CardDescription>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="flex items-center gap-1 text-xs font-semibold text-primary">
+                  <TrendingUp className="h-3 w-3" />
+                  {monthlyTrends.reduce((sum: number, t: any) => sum + (t.enrollments || 0), 0)}
+                  <span className="font-normal text-muted-foreground">total</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="px-4 pb-3">
+              <ChartContainer config={enrollmentChartConfig} className="h-[120px] w-full">
+                <BarChart accessibilityLayer data={monthlyTrends} margin={{ top: 2, right: 2, left: -24, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    tickMargin={6}
+                    axisLine={false}
+                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    tickFormatter={(value: string) => value.slice(0, 3)}
+                  />
+                  <YAxis
+                    hide
+                    domain={[0, (dataMax: number) => Math.max(dataMax + Math.ceil(dataMax * 0.2), 5)]}
+                  />
+                  <ChartTooltip
+                    cursor={{ fill: "hsl(var(--muted))", radius: 4 }}
+                    content={<ChartTooltipContent hideLabel={false} />}
+                  />
+                  <Bar dataKey="enrollments" fill="var(--color-enrollments)" radius={[3, 3, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-col gap-3">
+            <Card className="flex-1">
+              <CardContent className="p-3 flex flex-col justify-center h-full gap-0.5">
+                <p className="text-[11px] text-muted-foreground">Peak Month</p>
+                <p className="text-lg font-bold text-foreground leading-tight">
+                  {monthlyTrends.reduce((best: any, t: any) =>
+                    (t.enrollments || 0) > (best.enrollments || 0) ? t : best, monthlyTrends[0]
+                  ).month ?? "—"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {Math.max(...monthlyTrends.map((t: any) => t.enrollments || 0))} enrollments
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="flex-1">
+              <CardContent className="p-3 flex flex-col justify-center h-full gap-0.5">
+                <p className="text-[11px] text-muted-foreground">Monthly Avg</p>
+                <p className="text-lg font-bold text-foreground leading-tight">
+                  {Math.round(
+                    monthlyTrends.reduce((sum: number, t: any) => sum + (t.enrollments || 0), 0) /
+                    Math.max(monthlyTrends.length, 1)
+                  )}
+                </p>
+                <p className="text-[11px] text-muted-foreground">per month</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );
