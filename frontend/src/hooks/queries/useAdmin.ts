@@ -33,6 +33,8 @@ export const adminKeys = {
   trainingPrograms: () => [...adminKeys.all, "training-programs"] as const,
   events: () => [...adminKeys.all, "events"] as const,
   batches: (filters?: any) => [...adminKeys.all, "batches", filters] as const,
+  users: (filters?: any) => [...adminKeys.all, "users", filters] as const,
+  userById: (id: string) => [...adminKeys.all, "user", id] as const,
 };
 
 const STALE = 2 * 60 * 1000; // 2 minutes
@@ -214,6 +216,30 @@ export function useAdminAuditLogs(params?: {
   return useQuery({
     queryKey: adminKeys.auditLogs(params),
     queryFn: () => adminService.getAuditLogs(params),
+  });
+}
+
+// --- Users List Hook ---
+
+export function useAdminUsers(params?: {
+  role?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: adminKeys.users(params),
+    queryFn: () => adminService.getUsers(params),
+    staleTime: STALE,
+  });
+}
+
+export function useAdminUserById(id: string) {
+  return useQuery({
+    queryKey: adminKeys.userById(id),
+    queryFn: () => adminService.getUserById(id),
+    enabled: !!id,
+    staleTime: STALE,
   });
 }
 

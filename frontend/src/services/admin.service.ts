@@ -144,6 +144,28 @@ export const adminService = {
     return apiClient.get<any>(url);
   },
 
+  // --- Users ---
+  getUsers: async (params?: {
+    role?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<any> => {
+    const q = new URLSearchParams();
+    if (params?.role) q.append("role", params.role);
+    if (params?.search) q.append("search", params.search);
+    if (params?.page) q.append("page", params.page.toString());
+    if (params?.limit) q.append("limit", params.limit.toString());
+    const url = q.toString()
+      ? `${API_ENDPOINTS.admin.users}?${q.toString()}`
+      : API_ENDPOINTS.admin.users;
+    return apiClient.get<any>(url);
+  },
+
+  getUserById: async (id: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.admin.userDetail(id));
+  },
+
   // --- Course Admin CRUD ---
   createCourse: async (data: any): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.admin.courses, data);
