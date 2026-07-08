@@ -182,5 +182,11 @@ export const API_ENDPOINTS = {
   publicJobs: {
     list: "/public/jobs",
   },
+  notifications: {
+    list: "/notifications",
+    unreadCount: "/notifications/unread-count",
+    read: (id: string) => `/notifications/${id}/read`,
+    readAll: "/notifications/read-all",
+  },
 } as const;
 
