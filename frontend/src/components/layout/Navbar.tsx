@@ -106,12 +106,12 @@ export const Navbar = () => {
           <div className="hidden xl:flex items-center gap-2">
             {user && user.isEmailVerified ? (
               // Logged in and verified - Show Dashboard button
-              <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'}>
-                <Button size="sm">
+              <Button asChild size="sm">
+                <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
                   Dashboard
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             ) : (
               // Not logged in or not verified - Show Login/Register
               <>
@@ -181,12 +181,12 @@ export const Navbar = () => {
               <div className="pt-4 px-4 space-y-2 border-t border-border mt-2">
                 {user && user.isEmailVerified ? (
                   // Logged in and verified - Show Dashboard button
-                  <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'} onClick={() => setIsOpen(false)}>
-                    <Button size="default" className="w-full">
+                  <Button asChild size="default" className="w-full">
+                    <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'} onClick={() => setIsOpen(false)}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Go to Dashboard
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 ) : (
                   // Not logged in or not verified - Show Login/Register options
                   <>
@@ -195,15 +195,11 @@ export const Navbar = () => {
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {LOGIN_ROUTES.map((opt) => (
-                        <Link
-                          key={opt.path}
-                          href={opt.path}
-                          onClick={() => setIsOpen(false)}
-                        >
-                          <Button variant="outline" size="sm" className="w-full text-xs">
+                        <Button key={opt.path} asChild variant="outline" size="sm" className="w-full text-xs">
+                          <Link href={opt.path} onClick={() => setIsOpen(false)}>
                             {opt.label}
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                       ))}
                     </div>
 
@@ -212,15 +208,11 @@ export const Navbar = () => {
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {REGISTER_ROUTES.map((opt) => (
-                        <Link
-                          key={opt.path}
-                          href={opt.path}
-                          onClick={() => setIsOpen(false)}
-                        >
-                          <Button size="sm" className="w-full text-xs">
+                        <Button key={opt.path} asChild size="sm" className="w-full text-xs">
+                          <Link href={opt.path} onClick={() => setIsOpen(false)}>
                             {opt.label}
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                       ))}
                     </div>
                   </>

@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useTrainingPrograms } from "@/hooks/queries/useTrainingPrograms";
+import {
+  useCreateTrainingProgram,
+  useUpdateTrainingProgram,
+  useDeleteTrainingProgram,
+} from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -15,111 +20,77 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TrainingProgram {
   id: string;
   title: string;
+  domain: string | null;
   description: string | null;
-  duration: string | null;
-  batch_size: number | null;
+  duration: number | null;
   price: number | null;
-  start_date: string | null;
-  end_date: string | null;
   is_published: boolean;
   is_featured: boolean;
   created_at: string;
 }
 
-const INITIAL_PROGRAMS: TrainingProgram[] = [
-  {
-    id: "1",
-    title: "AWS Cloud Practitioner Training",
-    description: "Prepare for the AWS Cloud Practitioner certification with hands-on labs and expert-led training.",
-    duration: "6 Weeks",
-    batch_size: 40,
-    price: 1999,
-    start_date: new Date(Date.now() + 3600000 * 24 * 10).toISOString().split('T')[0],
-    end_date: new Date(Date.now() + 3600000 * 24 * 52).toISOString().split('T')[0],
-    is_published: true,
-    is_featured: true,
-    created_at: new Date(Date.now() - 3600000 * 24 * 15).toISOString(),
-  },
-  {
-    id: "2",
-    title: "Certified Ethical Hacker (CEH) Course",
-    description: "Learn how to perform penetration testing, analyze traffic, and patch vulnerabilities in systems.",
-    duration: "8 Weeks",
-    batch_size: 25,
-    price: 3499,
-    start_date: new Date(Date.now() + 3600000 * 24 * 20).toISOString().split('T')[0],
-    end_date: new Date(Date.now() + 3600000 * 24 * 76).toISOString().split('T')[0],
-    is_published: true,
-    is_featured: false,
-    created_at: new Date(Date.now() - 3600000 * 24 * 8).toISOString(),
-  },
-  {
-    id: "3",
-    title: "Agile & Scrum Master Training",
-    description: "Understand sprint planning, backlog management, and daily scrums. Prepare for the PSM-I exam.",
-    duration: "4 Weeks",
-    batch_size: 15,
-    price: 1500,
-    start_date: null,
-    end_date: null,
-    is_published: false,
-    is_featured: false,
-    created_at: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-  },
+const DOMAINS = [
+  "Full Stack Development",
+  "Data Science & AI",
+  "UI/UX Design",
+  "Cloud & DevOps",
+  "Cybersecurity",
+  "Digital Marketing",
+  "Business Analytics",
+  "Other",
 ];
 
+const EMPTY_FORM = {
+  title: "",
+  description: "",
+  domain: "Full Stack Development",
+  durationDays: "",
+  price: "",
+  originalPrice: "",
+  tools: "",
+  batchSize: "",
+  is_published: false,
+  is_featured: false,
+};
+
 export default function AdminTrainingPrograms() {
-  const [programs, setPrograms] = useState<TrainingProgram[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState<TrainingProgram | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    duration: "",
-    batch_size: "",
-    price: "",
-    start_date: "",
-    end_date: "",
-    is_published: false,
-    is_featured: false,
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
-  const fetchPrograms = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API fetch delay
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setPrograms(INITIAL_PROGRAMS);
-    } catch (error) {
-      console.error("Error fetching programs:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: programsData, isLoading } = useTrainingPrograms();
+  const createMutation = useCreateTrainingProgram();
+  const updateMutation = useUpdateTrainingProgram();
+  const deleteMutation = useDeleteTrainingProgram();
 
-  useEffect(() => {
-    fetchPrograms();
-  }, []);
+  const rawPrograms = programsData?.data || [];
+  const programs: TrainingProgram[] = rawPrograms.map((p: any) => ({
+    id: p._id || p.id,
+    title: p.title,
+    domain: p.domain || null,
+    description: p.description || null,
+    duration: p.durationDays || p.duration || null,
+    price: p.price ?? null,
+    is_published: !!p.isPublished,
+    is_featured: !!p.isFeatured,
+    created_at: p.createdAt || new Date().toISOString(),
+  }));
 
   const handleAdd = () => {
     setEditingProgram(null);
-    setFormData({
-      title: "",
-      description: "",
-      duration: "",
-      batch_size: "",
-      price: "",
-      start_date: "",
-      end_date: "",
-      is_published: false,
-      is_featured: false,
-    });
+    setFormData(EMPTY_FORM);
     setIsDialogOpen(true);
   };
 
@@ -128,111 +99,112 @@ export default function AdminTrainingPrograms() {
     setFormData({
       title: program.title,
       description: program.description || "",
-      duration: program.duration || "",
-      batch_size: program.batch_size?.toString() || "",
+      domain: program.domain || "Full Stack Development",
+      durationDays: program.duration?.toString() || "",
       price: program.price?.toString() || "",
-      start_date: program.start_date || "",
-      end_date: program.end_date || "",
+      originalPrice: "",
+      tools: "",
+      batchSize: "",
       is_published: program.is_published,
       is_featured: program.is_featured,
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (program: TrainingProgram) => {
-    if (!confirm("Are you sure you want to delete this program?")) return;
-
-    try {
-      setPrograms((prev) => prev.filter((p) => p.id !== program.id));
-      toast.success("Program deleted successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Error deleting program");
-    }
+  const handleDelete = (program: TrainingProgram) => {
+    if (!confirm(`Delete "${program.title}"? This cannot be undone.`)) return;
+    deleteMutation.mutate(program.id);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const programData = {
-        title: formData.title,
-        description: formData.description || null,
-        duration: formData.duration || null,
-        batch_size: formData.batch_size ? parseInt(formData.batch_size) : null,
-        price: formData.price ? parseFloat(formData.price) : null,
-        start_date: formData.start_date || null,
-        end_date: formData.end_date || null,
-        is_published: formData.is_published,
-        is_featured: formData.is_featured,
-      };
+    const toolsArray = formData.tools
+      ? formData.tools.split(",").map((t) => t.trim()).filter(Boolean)
+      : ["General"];
 
-      if (editingProgram) {
-        setPrograms((prev) =>
-          prev.map((p) => (p.id === editingProgram.id ? { ...p, ...programData } : p))
-        );
-        toast.success("Program updated successfully");
-      } else {
-        const newProgram: TrainingProgram = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...programData,
-          created_at: new Date().toISOString(),
-        };
-        setPrograms((prev) => [newProgram, ...prev]);
-        toast.success("Program created successfully");
-      }
+    const payload = {
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      domain: formData.domain,
+      durationDays: formData.durationDays ? parseInt(formData.durationDays) : 30,
+      tools: toolsArray,
+      price: formData.price ? parseFloat(formData.price) : 0,
+      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+      batchSize: formData.batchSize ? parseInt(formData.batchSize) : undefined,
+      isPublished: formData.is_published,
+      isFeatured: formData.is_featured,
+    };
 
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Error saving program");
+    if (editingProgram) {
+      updateMutation.mutate(
+        { id: editingProgram.id, data: payload },
+        { onSuccess: () => setIsDialogOpen(false) }
+      );
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: () => setIsDialogOpen(false),
+      });
     }
   };
 
-  const filteredPrograms = programs.filter((program) =>
-    program.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPrograms = programs.filter((p) =>
+    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.domain && p.domain.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const columns = [
     { key: "title", label: "Title" },
-    { key: "duration", label: "Duration" },
-    { key: "batch_size", label: "Batch Size" },
+    { key: "domain", label: "Domain" },
+    {
+      key: "duration",
+      label: "Duration",
+      render: (v: number) => (v ? `${v} days` : "—"),
+    },
     {
       key: "price",
       label: "Price",
-      render: (value: number) => (value ? `₹${value}` : "Free"),
-    },
-    {
-      key: "start_date",
-      label: "Start Date",
-      render: (value: string) =>
-        value ? new Date(value).toLocaleDateString() : "-",
+      render: (v: number) => (v ? `₹${v.toLocaleString()}` : "Free"),
     },
     {
       key: "is_published",
       label: "Status",
-      render: (value: boolean) => (
-        <Badge variant={value ? "default" : "secondary"}>
-          {value ? "Published" : "Draft"}
+      render: (v: boolean) => (
+        <Badge variant={v ? "default" : "secondary"}>
+          {v ? "Published" : "Draft"}
         </Badge>
       ),
     },
+    {
+      key: "is_featured",
+      label: "Featured",
+      render: (v: boolean) =>
+        v ? <Badge variant="outline">⭐ Featured</Badge> : null,
+    },
   ];
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Training Programs</h1>
-        <p className="text-muted-foreground mt-1">Manage all training programs</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+          Training Programs
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Manage campus training programs — create, edit, publish, and delete
+        </p>
       </div>
 
       <DataTable
         columns={columns}
         data={filteredPrograms}
-        searchPlaceholder="Search programs..."
+        searchPlaceholder="Search programs by title or domain..."
         onSearch={setSearchQuery}
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        addButtonLabel="Add Program"
+        addButtonLabel="+ Add Program"
         isLoading={isLoading}
       />
 
@@ -240,113 +212,155 @@ export default function AdminTrainingPrograms() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingProgram ? "Edit Program" : "Add New Program"}
+              {editingProgram ? "Edit Training Program" : "Add New Training Program"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="tp-title">
+                Title <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="tp-title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g. Full-Stack Web Development Bootcamp"
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="tp-description">
+                Description <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="tp-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="What this training program covers, outcomes, and target audience..."
+                rows={3}
+                required
+              />
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="title">Title *</Label>
+              {/* Domain */}
+              <div className="space-y-2">
+                <Label>
+                  Domain <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.domain}
+                  onValueChange={(v) => setFormData({ ...formData, domain: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select domain" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOMAINS.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Duration */}
+              <div className="space-y-2">
+                <Label htmlFor="tp-duration">
+                  Duration (Days) <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
+                  id="tp-duration"
+                  type="number"
+                  min={1}
+                  value={formData.durationDays}
+                  onChange={(e) => setFormData({ ...formData, durationDays: e.target.value })}
+                  placeholder="e.g. 90"
                   required
                 />
               </div>
+
+              {/* Price */}
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
+                <Label htmlFor="tp-price">
+                  Price (₹) <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  id="duration"
-                  value={formData.duration}
-                  onChange={(e) =>
-                    setFormData({ ...formData, duration: e.target.value })
-                  }
-                  placeholder="e.g., 12 Weeks"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="batch_size">Batch Size</Label>
-                <Input
-                  id="batch_size"
+                  id="tp-price"
                   type="number"
-                  value={formData.batch_size}
-                  onChange={(e) =>
-                    setFormData({ ...formData, batch_size: e.target.value })
-                  }
-                  placeholder="e.g., 30"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Price (₹)</Label>
-                <Input
-                  id="price"
-                  type="number"
+                  min={0}
                   value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="e.g. 29999"
+                  required
                 />
               </div>
+
+              {/* Original Price */}
               <div className="space-y-2">
-                <Label htmlFor="start_date">Start Date</Label>
+                <Label htmlFor="tp-originalPrice">Original Price (₹)</Label>
                 <Input
-                  id="start_date"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, start_date: e.target.value })
-                  }
+                  id="tp-originalPrice"
+                  type="number"
+                  min={0}
+                  value={formData.originalPrice}
+                  onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
+                  placeholder="e.g. 49999 (for strikethrough)"
                 />
               </div>
+
+              {/* Batch Size */}
               <div className="space-y-2">
-                <Label htmlFor="end_date">End Date</Label>
+                <Label htmlFor="tp-batchSize">Batch Size</Label>
                 <Input
-                  id="end_date"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, end_date: e.target.value })
-                  }
+                  id="tp-batchSize"
+                  type="number"
+                  min={1}
+                  value={formData.batchSize}
+                  onChange={(e) => setFormData({ ...formData, batchSize: e.target.value })}
+                  placeholder="e.g. 30"
                 />
               </div>
             </div>
+
+            {/* Tools */}
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                rows={4}
+              <Label htmlFor="tp-tools">
+                Tools / Technologies (comma-separated) <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="tp-tools"
+                value={formData.tools}
+                onChange={(e) => setFormData({ ...formData, tools: e.target.value })}
+                placeholder="e.g. React, Node.js, MongoDB, Docker"
+                required
               />
             </div>
-            <div className="flex gap-6">
+
+            {/* Toggles */}
+            <div className="flex flex-wrap gap-6 pt-2">
               <div className="flex items-center space-x-2">
                 <Switch
-                  id="is_published"
+                  id="tp-is_published"
                   checked={formData.is_published}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_published: checked })
-                  }
+                  onCheckedChange={(v) => setFormData({ ...formData, is_published: v })}
                 />
-                <Label htmlFor="is_published">Published</Label>
+                <Label htmlFor="tp-is_published">Published</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
-                  id="is_featured"
+                  id="tp-is_featured"
                   checked={formData.is_featured}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_featured: checked })
-                  }
+                  onCheckedChange={(v) => setFormData({ ...formData, is_featured: v })}
                 />
-                <Label htmlFor="is_featured">Featured</Label>
+                <Label htmlFor="tp-is_featured">Featured on homepage</Label>
               </div>
             </div>
-            <div className="flex justify-end gap-3">
+
+            <div className="flex justify-end gap-3 pt-2 border-t">
               <Button
                 type="button"
                 variant="outline"
@@ -354,8 +368,12 @@ export default function AdminTrainingPrograms() {
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {editingProgram ? "Update" : "Create"} Program
+              <Button type="submit" disabled={isPending}>
+                {isPending
+                  ? "Saving..."
+                  : editingProgram
+                  ? "Update Program"
+                  : "Create Program"}
               </Button>
             </div>
           </form>

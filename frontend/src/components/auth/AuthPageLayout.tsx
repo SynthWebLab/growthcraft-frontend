@@ -15,7 +15,7 @@ interface AuthPageLayoutProps {
   icon: LucideIcon;
   title: string;
   subtitle: string;
-  expectedRole?: "student" | "mentor" | "college" | "employer";
+  expectedRole?: "student" | "mentor" | "college" | "employer" | "ops" | "super_admin";
   children: ReactNode;
 }
 
@@ -24,6 +24,8 @@ const loginRoutes: Record<string, string> = {
   mentor: "/login/mentor",
   college: "/login/college",
   employer: "/login/employer",
+  ops: "/login/super_admin",
+  super_admin: "/login/super_admin",
 };
 
 const dashboardRoutes = {
@@ -31,6 +33,8 @@ const dashboardRoutes = {
   mentor: "/mentor",
   college: "/college",
   employer: "/employer",
+  ops: "/admin",
+  super_admin: "/admin",
 } as const;
 
 export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, children }: AuthPageLayoutProps) {

@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import {
+  useAdminColleges,
+  useUpdateAdminCollege,
+  useDeleteAdminCollege,
+} from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -37,63 +41,10 @@ interface College {
   created_at: string;
 }
 
-const partnershipTypes = [
-  "Curriculum Partner",
-  "Training Partner",
-  "Placement Partner",
-  "Academic Alliance",
-  "Corporate Tie-up",
-];
-
-const INITIAL_COLLEGES: College[] = [
-  {
-    id: "1",
-    name: "Vellore Institute of Technology",
-    email: "contact@vit.ac.in",
-    phone: "+91 416 224 3091",
-    address: "Katpadi, Vellore",
-    city: "Vellore",
-    state: "Tamil Nadu",
-    website: "https://vit.ac.in",
-    contact_person: "Dr. Sandeep Nair",
-    partnership_type: "Curriculum Partner",
-    is_active: true,
-    created_at: new Date(Date.now() - 3600000 * 24 * 60).toISOString(),
-  },
-  {
-    id: "2",
-    name: "RV College of Engineering",
-    email: "principal@rvce.edu.in",
-    phone: "+91 80 6717 8000",
-    address: "Mysore Road, Bengaluru",
-    city: "Bengaluru",
-    state: "Karnataka",
-    website: "https://rvce.edu.in",
-    contact_person: "Prof. K. N. Subramanya",
-    partnership_type: "Academic Alliance",
-    is_active: true,
-    created_at: new Date(Date.now() - 3600000 * 24 * 45).toISOString(),
-  },
-  {
-    id: "3",
-    name: "SRM Institute of Science and Technology",
-    email: "admissions@srmist.edu.in",
-    phone: "+91 44 2741 7000",
-    address: "Kattankulathur, Chennai",
-    city: "Chennai",
-    state: "Tamil Nadu",
-    website: "https://srmist.edu.in",
-    contact_person: "Dr. Ananya Ray",
-    partnership_type: "Placement Partner",
-    is_active: false,
-    created_at: new Date(Date.now() - 3600000 * 24 * 15).toISOString(),
-  },
-];
+const partnershipTypes = ["Silver", "Gold", "Platinum"];
 
 export default function AdminColleges() {
-  const [colleges, setColleges] = useState<College[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCollege, setEditingCollege] = useState<College | null>(null);
   const [formData, setFormData] = useState({
@@ -105,43 +56,32 @@ export default function AdminColleges() {
     state: "",
     website: "",
     contact_person: "",
-    partnership_type: "",
+    partnership_type: "Silver",
     is_active: true,
   });
 
-  const fetchColleges = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API fetch delay
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setColleges(INITIAL_COLLEGES);
-    } catch (error) {
-      console.error("Error fetching colleges:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Query & Mutations
+  const { data: collegesRes, isLoading } = useAdminColleges();
+  const updateMutation = useUpdateAdminCollege();
+  const deleteMutation = useDeleteAdminCollege();
 
-  useEffect(() => {
-    fetchColleges();
-  }, []);
+  const rawColleges = (collegesRes as any)?.data || (collegesRes as any)?.items || [];
 
-  const handleAdd = () => {
-    setEditingCollege(null);
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      state: "",
-      website: "",
-      contact_person: "",
-      partnership_type: "",
-      is_active: true,
-    });
-    setIsDialogOpen(true);
-  };
+  // Map backend nested response fields to clean local College interface fields
+  const colleges: College[] = rawColleges.map((c: any) => ({
+    id: c.id || c._id,
+    name: c.name || c.collegeName || "",
+    email: c.email || null,
+    phone: c.phone || null,
+    address: c.address || null,
+    city: c.city || null,
+    state: c.state || null,
+    website: c.website || null,
+    contact_person: c.contact_person || null,
+    partnership_type: c.partnership_type || c.partnershipTier || "Silver",
+    is_active: c.is_active !== undefined ? !!c.is_active : !!c.partnershipActive,
+    created_at: c.created_at || c.createdAt || new Date().toISOString(),
+  }));
 
   const handleEdit = (college: College) => {
     setEditingCollege(college);
@@ -154,65 +94,50 @@ export default function AdminColleges() {
       state: college.state || "",
       website: college.website || "",
       contact_person: college.contact_person || "",
-      partnership_type: college.partnership_type || "",
+      partnership_type: college.partnership_type || "Silver",
       is_active: college.is_active,
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = async (college: College) => {
-    if (!confirm("Are you sure you want to delete this college?")) return;
-
-    try {
-      setColleges((prev) => prev.filter((c) => c.id !== college.id));
-      toast.success("College deleted successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Error deleting college");
-    }
+    if (!confirm(`Are you sure you want to delete "${college.name}"? This cannot be undone.`)) return;
+    deleteMutation.mutate(college.id);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const collegeData = {
-        name: formData.name,
-        email: formData.email || null,
-        phone: formData.phone || null,
-        address: formData.address || null,
-        city: formData.city || null,
-        state: formData.state || null,
-        website: formData.website || null,
-        contact_person: formData.contact_person || null,
-        partnership_type: formData.partnership_type || null,
-        is_active: formData.is_active,
-      };
+    if (!editingCollege) return; // Note: Creating new College profiles is handled via Registration flow (Multi-role registration setup).
 
-      if (editingCollege) {
-        setColleges((prev) =>
-          prev.map((c) => (c.id === editingCollege.id ? { ...c, ...collegeData } : c))
-        );
-        toast.success("College updated successfully");
-      } else {
-        const newCollege: College = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...collegeData,
-          created_at: new Date().toISOString(),
-        };
-        setColleges((prev) => [newCollege, ...prev]);
-        toast.success("College created successfully");
+    const payload = {
+      name: formData.name.trim(),
+      email: formData.email.trim() || null,
+      phone: formData.phone.trim() || null,
+      address: formData.address.trim() || null,
+      city: formData.city.trim() || null,
+      state: formData.state.trim() || null,
+      website: formData.website.trim() || null,
+      contact_person: formData.contact_person.trim() || null,
+      partnership_type: formData.partnership_type,
+      is_active: formData.is_active,
+    };
+
+    updateMutation.mutate(
+      { id: editingCollege.id, data: payload },
+      {
+        onSuccess: () => {
+          setIsDialogOpen(false);
+        },
       }
-
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Error saving college");
-    }
+    );
   };
 
-  const filteredColleges = colleges.filter((college) =>
-    college.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (college.city && college.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (college.contact_person && college.contact_person.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredColleges = colleges.filter(
+    (c) =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.city && c.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (c.contact_person && c.contact_person.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const columns = [
@@ -226,12 +151,12 @@ export default function AdminColleges() {
     },
     {
       key: "partnership_type",
-      label: "Partnership",
+      label: "Partnership Tier",
       render: (value: string) => (value ? <Badge variant="outline">{value}</Badge> : "-"),
     },
     {
       key: "is_active",
-      label: "Status",
+      label: "Partnership Active",
       render: (value: boolean) => (
         <Badge variant={value ? "default" : "secondary"}>
           {value ? "Active" : "Inactive"}
@@ -244,7 +169,7 @@ export default function AdminColleges() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Colleges</h1>
-        <p className="text-muted-foreground mt-1">Manage partner colleges</p>
+        <p className="text-muted-foreground mt-1">Manage partner colleges and partnership tiers</p>
       </div>
 
       <DataTable
@@ -252,17 +177,15 @@ export default function AdminColleges() {
         data={filteredColleges}
         searchPlaceholder="Search colleges..."
         onSearch={setSearchQuery}
-        onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        addButtonLabel="Add College"
         isLoading={isLoading}
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingCollege ? "Edit College" : "Add New College"}</DialogTitle>
+            <DialogTitle>Edit College Details</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -333,13 +256,13 @@ export default function AdminColleges() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="partnership_type">Partnership Type</Label>
+                <Label htmlFor="partnership_type">Partnership Tier</Label>
                 <Select
                   value={formData.partnership_type}
                   onValueChange={(value) => setFormData({ ...formData, partnership_type: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder="Select tier" />
                   </SelectTrigger>
                   <SelectContent>
                     {partnershipTypes.map((type) => (
@@ -351,19 +274,21 @@ export default function AdminColleges() {
                 </Select>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 pt-2">
               <Switch
                 id="is_active"
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
               />
-              <Label htmlFor="is_active">Active</Label>
+              <Label htmlFor="is_active">Partnership Active</Label>
             </div>
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">{editingCollege ? "Update" : "Create"} College</Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Updating..." : "Update College"}
+              </Button>
             </div>
           </form>
         </DialogContent>

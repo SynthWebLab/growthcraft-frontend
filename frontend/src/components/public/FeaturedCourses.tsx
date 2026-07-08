@@ -5,10 +5,9 @@ import { DataCard } from "@/components/ui/data-card";
 import { useCourses } from "@/hooks/queries/useCourses";
 import { Clock, BookOpen, Star, User, Loader2 } from "lucide-react";
 import Link from "next/link";
-
 export const FeaturedCourses = () => {
   const { data: coursesData, isLoading } = useCourses({ limit: 6 });
-  const featured = coursesData?.data || [];
+  const featured = (coursesData as any)?.items || coursesData?.data || [];
 
   return (
     <Section variant="graphite" className="relative overflow-hidden !py-8 sm:!py-12 md:!py-16 lg:!py-20">
@@ -41,7 +40,7 @@ export const FeaturedCourses = () => {
         {/* Course Grid */}
         {!isLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {featured.map((course) => (
+            {featured.map((course: any) => (
               <DataCard
                 key={course._id}
                 variant="dark"

@@ -26,7 +26,26 @@ export const bootcampService = {
     if (params?.status) queryParams.append("status", params.status);
 
     const url = `${API_ENDPOINTS.bootcamps.list}${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-    return apiClient.get<BootcampListResponse>(url);
+    const response = await apiClient.get<any>(url);
+
+    const items = response?.items || response?.data || [];
+    const pagination = response?.pagination || response?.meta?.pagination || {
+      page: params?.page || 1,
+      limit: params?.limit || 10,
+      total: items.length,
+      totalPages: 1,
+    };
+
+    return {
+      items,
+      nextCursor: response?.nextCursor || null,
+      pagination: {
+        page: pagination.page || 1,
+        limit: pagination.limit || 10,
+        total: pagination.total || items.length,
+        totalPages: pagination.totalPages || 1,
+      },
+    };
   },
 
   /**

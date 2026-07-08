@@ -30,6 +30,8 @@ const roleRoutes = {
   mentor: ['/mentor'],
   college: ['/college'],
   employer: ['/employer'],
+  ops: ['/admin'],
+  super_admin: ['/admin'],
 } as const;
 
 /**
@@ -162,6 +164,7 @@ export async function middleware(request: NextRequest) {
       else if (pathname.startsWith('/mentor')) loginRoute = '/login/mentor';
       else if (pathname.startsWith('/college')) loginRoute = '/login/college';
       else if (pathname.startsWith('/employer')) loginRoute = '/login/employer';
+      else if (pathname.startsWith('/admin')) loginRoute = '/login/super_admin';
 
       const loginUrl = new URL(loginRoute, request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);

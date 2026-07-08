@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useCourses } from "@/hooks/queries/useCourses";
+import {
+  useCreateCourse,
+  useUpdateCourse,
+  useDeleteCourse,
+  usePublishCourse,
+} from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -27,119 +33,67 @@ interface Course {
   id: string;
   title: string;
   category: string;
-  subcategory: string | null;
   description: string | null;
-  duration: string | null;
+  duration: number | null;
   level: string | null;
   price: number | null;
+  originalPrice: number | null;
+  instructorName: string | null;
+  tags: string;
   is_published: boolean;
   is_featured: boolean;
   created_at: string;
 }
 
-const categories = [
-  "Programming Languages",
-  "Web Development",
-  "Data Science & AI",
-  "Cloud & DevOps",
-  "Database Management",
-  "Cybersecurity",
-  "Soft Skills",
-  "Design",
-];
+const CATEGORIES = ["MERN", "UI/UX", "DataScience", "DevOps", "Other"];
+const LEVELS = ["Beginner", "Intermediate", "Advanced"];
 
-const levels = ["Beginner", "Intermediate", "Advanced"];
-
-const INITIAL_COURSES: Course[] = [
-  {
-    id: "1",
-    title: "Introduction to Python Programming",
-    category: "Programming Languages",
-    subcategory: "Python",
-    description: "Learn the fundamentals of Python programming from scratch.",
-    duration: "40 Hours",
-    level: "Beginner",
-    price: 4999,
-    is_published: true,
-    is_featured: true,
-    created_at: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
-  },
-  {
-    id: "2",
-    title: "Next.js 14 Full-Stack Development",
-    category: "Web Development",
-    subcategory: "Next.js",
-    description: "Build premium modern web applications using App Router and React Server Components.",
-    duration: "60 Hours",
-    level: "Advanced",
-    price: 9999,
-    is_published: true,
-    is_featured: true,
-    created_at: new Date(Date.now() - 3600000 * 24 * 3).toISOString(),
-  },
-  {
-    id: "3",
-    title: "Machine Learning Boot Camp",
-    category: "Data Science & AI",
-    subcategory: "Machine Learning",
-    description: "Dive deep into regression, classification, clustering, and neural networks.",
-    duration: "80 Hours",
-    level: "Intermediate",
-    price: 14999,
-    is_published: false,
-    is_featured: false,
-    created_at: new Date(Date.now() - 3600000 * 24 * 10).toISOString(),
-  },
-];
+const EMPTY_FORM = {
+  title: "",
+  description: "",
+  category: "MERN",
+  difficultyLevel: "Beginner",
+  duration: "",
+  price: "",
+  originalPrice: "",
+  instructorName: "",
+  tags: "",
+  is_published: false,
+  is_featured: false,
+};
 
 export default function AdminCourses() {
-  const [courses, setCourses] = useState<Course[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    category: "",
-    subcategory: "",
-    description: "",
-    duration: "",
-    level: "Beginner",
-    price: "",
-    is_published: false,
-    is_featured: false,
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
-  const fetchCourses = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API fetch delay
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setCourses(INITIAL_COURSES);
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: coursesData, isLoading } = useCourses();
+  const createMutation = useCreateCourse();
+  const updateMutation = useUpdateCourse();
+  const deleteMutation = useDeleteCourse();
+  const publishMutation = usePublishCourse();
 
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+  const rawCourses = coursesData?.data || [];
+  const courses: Course[] = rawCourses.map((c: any) => ({
+    id: c._id || c.id,
+    title: c.title,
+    category: c.category,
+    description: c.description || null,
+    duration: c.duration || c.durationHours || null,
+    level: c.difficultyLevel || c.level || null,
+    price: c.price ?? null,
+    originalPrice: c.originalPrice ?? null,
+    instructorName: c.instructorName || c.instructor?.name || null,
+    tags: Array.isArray(c.tags) ? c.tags.join(", ") : (c.tags || ""),
+    is_published: !!c.isPublished,
+    is_featured: !!c.isFeatured,
+    created_at: c.createdAt || new Date().toISOString(),
+  }));
 
   const handleAdd = () => {
     setEditingCourse(null);
-    setFormData({
-      title: "",
-      category: "",
-      subcategory: "",
-      description: "",
-      duration: "",
-      level: "Beginner",
-      price: "",
-      is_published: false,
-      is_featured: false,
-    });
+    setFormData(EMPTY_FORM);
     setIsDialogOpen(true);
   };
 
@@ -147,115 +101,117 @@ export default function AdminCourses() {
     setEditingCourse(course);
     setFormData({
       title: course.title,
-      category: course.category,
-      subcategory: course.subcategory || "",
       description: course.description || "",
-      duration: course.duration || "",
-      level: course.level || "Beginner",
+      category: course.category || "MERN",
+      difficultyLevel: course.level || "Beginner",
+      duration: course.duration?.toString() || "",
       price: course.price?.toString() || "",
+      originalPrice: course.originalPrice?.toString() || "",
+      instructorName: course.instructorName || "",
+      tags: course.tags || "",
       is_published: course.is_published,
       is_featured: course.is_featured,
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (course: Course) => {
-    if (!confirm("Are you sure you want to delete this course?")) return;
+  const handleDelete = (course: Course) => {
+    if (!confirm(`Delete "${course.title}"? This cannot be undone.`)) return;
+    deleteMutation.mutate(course.id);
+  };
 
-    try {
-      setCourses((prev) => prev.filter((c) => c.id !== course.id));
-      toast.success("Course deleted successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Error deleting course");
-    }
+  const handlePublish = (course: Course) => {
+    publishMutation.mutate(course.id);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const courseData = {
-        title: formData.title,
-        category: formData.category,
-        subcategory: formData.subcategory || null,
-        description: formData.description || null,
-        duration: formData.duration || null,
-        level: formData.level,
-        price: formData.price ? parseFloat(formData.price) : null,
-        is_published: formData.is_published,
-        is_featured: formData.is_featured,
-      };
+    const payload = {
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      category: formData.category,
+      difficultyLevel: formData.difficultyLevel,
+      duration: formData.duration ? parseInt(formData.duration) : undefined,
+      price: formData.price ? parseFloat(formData.price) : 0,
+      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+      instructorName: formData.instructorName.trim() || undefined,
+      tags: formData.tags
+        ? formData.tags.split(",").map((t) => t.trim()).filter(Boolean)
+        : [],
+      isPublished: formData.is_published,
+      isFeatured: formData.is_featured,
+    };
 
-      if (editingCourse) {
-        setCourses((prev) =>
-          prev.map((c) => (c.id === editingCourse.id ? { ...c, ...courseData } : c))
-        );
-        toast.success("Course updated successfully");
-      } else {
-        const newCourse: Course = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...courseData,
-          created_at: new Date().toISOString(),
-        };
-        setCourses((prev) => [newCourse, ...prev]);
-        toast.success("Course created successfully");
-      }
-
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Error saving course");
+    if (editingCourse) {
+      updateMutation.mutate(
+        { id: editingCourse.id, data: payload },
+        { onSuccess: () => setIsDialogOpen(false) }
+      );
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: () => setIsDialogOpen(false),
+      });
     }
   };
 
-  const filteredCourses = courses.filter((course) =>
-    course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (course.subcategory && course.subcategory.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredCourses = courses.filter(
+    (c) =>
+      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const columns = [
     { key: "title", label: "Title" },
     { key: "category", label: "Category" },
     { key: "level", label: "Level" },
-    { key: "duration", label: "Duration" },
+    {
+      key: "duration",
+      label: "Duration",
+      render: (v: number) => (v ? `${v} hrs` : "—"),
+    },
     {
       key: "price",
       label: "Price",
-      render: (value: number) => (value ? `₹${value}` : "Free"),
+      render: (v: number) => (v ? `₹${v.toLocaleString()}` : "Free"),
     },
     {
       key: "is_published",
       label: "Status",
-      render: (value: boolean) => (
-        <Badge variant={value ? "default" : "secondary"}>
-          {value ? "Published" : "Draft"}
+      render: (v: boolean) => (
+        <Badge variant={v ? "default" : "secondary"}>
+          {v ? "Published" : "Draft"}
         </Badge>
       ),
     },
     {
       key: "is_featured",
       label: "Featured",
-      render: (value: boolean) =>
-        value ? <Badge variant="outline">Featured</Badge> : null,
+      render: (v: boolean) =>
+        v ? <Badge variant="outline">⭐ Featured</Badge> : null,
     },
   ];
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Courses</h1>
-        <p className="text-muted-foreground mt-1">Manage all courses</p>
+        <p className="text-muted-foreground mt-1">
+          Manage all courses — create, edit, publish, and delete
+        </p>
       </div>
 
       <DataTable
         columns={columns}
         data={filteredCourses}
-        searchPlaceholder="Search courses..."
+        searchPlaceholder="Search courses by title or category..."
         onSearch={setSearchQuery}
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        addButtonLabel="Add Course"
+        addButtonLabel="+ Add Course"
         isLoading={isLoading}
       />
 
@@ -266,112 +222,148 @@ export default function AdminCourses() {
               {editingCourse ? "Edit Course" : "Add New Course"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="title">
+                Title <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g. Full-Stack MERN Development"
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">
+                Description <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Detailed description of the course content and outcomes..."
+                rows={3}
+                required
+              />
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
+              {/* Category */}
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
+                <Label>
+                  Category <span className="text-red-500">*</span>
+                </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
+                  onValueChange={(v) => setFormData({ ...formData, category: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Level */}
               <div className="space-y-2">
-                <Label htmlFor="subcategory">Subcategory</Label>
-                <Input
-                  id="subcategory"
-                  value={formData.subcategory}
-                  onChange={(e) =>
-                    setFormData({ ...formData, subcategory: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="level">Level</Label>
+                <Label>Difficulty Level</Label>
                 <Select
-                  value={formData.level}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, level: value })
-                  }
+                  value={formData.difficultyLevel}
+                  onValueChange={(v) => setFormData({ ...formData, difficultyLevel: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {levels.map((level) => (
-                      <SelectItem key={level} value={level}>
-                        {level}
-                      </SelectItem>
+                    {LEVELS.map((l) => (
+                      <SelectItem key={l} value={l}>{l}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Duration */}
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
+                <Label htmlFor="duration">Duration (Hours)</Label>
                 <Input
                   id="duration"
+                  type="number"
+                  min={1}
                   value={formData.duration}
-                  onChange={(e) =>
-                    setFormData({ ...formData, duration: e.target.value })
-                  }
-                  placeholder="e.g., 40 Hours"
+                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                  placeholder="e.g. 60"
                 />
               </div>
+
+              {/* Price */}
               <div className="space-y-2">
-                <Label htmlFor="price">Price (₹)</Label>
+                <Label htmlFor="price">
+                  Price (₹) <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="price"
                   type="number"
+                  min={0}
                   value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
-                  placeholder="Leave empty for free"
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="e.g. 4999"
+                  required
+                />
+              </div>
+
+              {/* Original Price */}
+              <div className="space-y-2">
+                <Label htmlFor="originalPrice">Original Price (₹)</Label>
+                <Input
+                  id="originalPrice"
+                  type="number"
+                  min={0}
+                  value={formData.originalPrice}
+                  onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
+                  placeholder="e.g. 8999 (for strikethrough)"
+                />
+              </div>
+
+              {/* Instructor Name */}
+              <div className="space-y-2">
+                <Label htmlFor="instructorName">Instructor Name</Label>
+                <Input
+                  id="instructorName"
+                  value={formData.instructorName}
+                  onChange={(e) => setFormData({ ...formData, instructorName: e.target.value })}
+                  placeholder="e.g. Arjun Mehta"
                 />
               </div>
             </div>
+
+            {/* Tags */}
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                rows={4}
+              <Label htmlFor="tags">Tags (comma-separated)</Label>
+              <Input
+                id="tags"
+                value={formData.tags}
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                placeholder="e.g. React, Node.js, MongoDB"
               />
             </div>
-            <div className="flex gap-6">
+
+            {/* Toggles */}
+            <div className="flex flex-wrap gap-6 pt-2">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="is_published"
                   checked={formData.is_published}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_published: checked })
-                  }
+                  onCheckedChange={(v) => setFormData({ ...formData, is_published: v })}
                 />
                 <Label htmlFor="is_published">Published</Label>
               </div>
@@ -379,14 +371,13 @@ export default function AdminCourses() {
                 <Switch
                   id="is_featured"
                   checked={formData.is_featured}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_featured: checked })
-                  }
+                  onCheckedChange={(v) => setFormData({ ...formData, is_featured: v })}
                 />
-                <Label htmlFor="is_featured">Featured</Label>
+                <Label htmlFor="is_featured">Featured on homepage</Label>
               </div>
             </div>
-            <div className="flex justify-end gap-3">
+
+            <div className="flex justify-end gap-3 pt-2 border-t">
               <Button
                 type="button"
                 variant="outline"
@@ -394,8 +385,8 @@ export default function AdminCourses() {
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {editingCourse ? "Update" : "Create"} Course
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving..." : editingCourse ? "Update Course" : "Create Course"}
               </Button>
             </div>
           </form>
