@@ -62,8 +62,26 @@ export function useSocket() {
 
     socket.on("notification", handleNotification);
 
-    socket.on("connect_error", (err) => {
+    let isRefreshing = false;
+
+    socket.on("connect_error", async (err) => {
       console.warn("Socket connection error:", err.message);
+      if (err.message.includes("Authentication error") && !isRefreshing) {
+        isRefreshing = true;
+        try {
+          // Try to refresh token if socket failed due to missing/expired token
+          const { authService } = await import("@/services/auth.service");
+          await authService.refreshToken();
+          // Reconnect after a short delay to ensure cookies are updated
+          setTimeout(() => {
+            if (!socket.connected) socket.connect();
+          }, 500);
+        } catch (error) {
+          console.error("Socket token refresh failed:", error);
+        } finally {
+          isRefreshing = false;
+        }
+      }
     });
 
     return () => {
