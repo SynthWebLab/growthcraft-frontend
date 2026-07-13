@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   Menu,
   Trophy,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -43,6 +44,7 @@ const menuItems = [
   },
   { name: "Users", path: "/admin/users", icon: Users },
   { name: "Mentors", path: "/admin/mentors", icon: Users },
+  { name: "Batches", path: "/admin/batches", icon: Layers },
   { name: "Attendance", path: "/admin/attendance", icon: ClipboardList },
   { name: "Colleges", path: "/admin/colleges", icon: Building2 },
   { name: "Employers", path: "/admin/employers", icon: Briefcase },

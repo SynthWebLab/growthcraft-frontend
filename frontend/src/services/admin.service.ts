@@ -44,6 +44,14 @@ export const adminService = {
     return apiClient.patch<any>(`${API_ENDPOINTS.admin.batchDetail(batchId)}/mentor`, { mentorId });
   },
 
+  createBatch: async (data: any): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.admin.batches, data);
+  },
+
+  updateBatch: async (id: string, data: any): Promise<any> => {
+    return apiClient.patch<any>(API_ENDPOINTS.admin.batchDetail(id), data);
+  },
+
   getAvailableMentors: async (params: { date: string; batchType?: string; specialization?: string }): Promise<any> => {
     const q = new URLSearchParams();
     q.append("date", params.date);

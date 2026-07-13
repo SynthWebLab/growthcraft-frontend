@@ -86,6 +86,35 @@ export function useAssignMentorToBatch() {
   });
 }
 
+export function useCreateBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => adminService.createBatch(data),
+    onSuccess: () => {
+      toast.success("Batch created successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.batches() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to create batch"));
+    },
+  });
+}
+
+export function useUpdateBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      adminService.updateBatch(id, data),
+    onSuccess: () => {
+      toast.success("Batch updated successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.batches() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to update batch"));
+    },
+  });
+}
+
 export function useAdminMentorDetails(mentorId: string) {
   return useQuery({
     queryKey: adminKeys.mentorDetails(mentorId),
