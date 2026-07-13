@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { useAdminAuditLogs } from "@/hooks/queries/useAdmin";
+import { useAdminRole } from "@/hooks/useAdminRole";
+import { AccessDenied } from "@/components/admin/AccessDenied";
 import { DataTable } from "@/components/admin/DataTable";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +20,7 @@ export default function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
   const [actionFilter, setActionFilter] = useState("");
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
+  const { isSuperAdmin } = useAdminRole();
 
   // Queries
   const { data: logsData, isLoading } = useAdminAuditLogs({
@@ -25,6 +28,15 @@ export default function AdminAuditLogsPage() {
     limit: 15,
     action: actionFilter,
   });
+
+  if (!isSuperAdmin) {
+    return (
+      <AccessDenied
+        title="Audit Logs — Restricted"
+        description="System audit logs contain sensitive operational data and are only accessible to Super Administrators."
+      />
+    );
+  }
 
   const logsList = logsData?.data || [];
   const pagination = logsData?.meta?.pagination || { page: 1, totalPages: 1 };

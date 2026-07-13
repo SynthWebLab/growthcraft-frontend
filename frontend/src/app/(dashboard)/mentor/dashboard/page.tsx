@@ -148,7 +148,7 @@ export default function MentorDashboard() {
               </h3>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {activeCheckIn
-                  ? `Currently conducting session for Batch: ${activeCheckIn.batchId?.batchName || "N/A"}`
+                  ? `Currently conducting session for Batch: ${activeCheckIn.batchId?.code || activeCheckIn.batchId?.batchName || "N/A"}`
                   : "Check in when you arrive at the campus batch session to track your mentoring hours."}
               </p>
               {activeCheckIn && (
@@ -191,7 +191,7 @@ export default function MentorDashboard() {
                   <option value="">-- Select Active Batch --</option>
                   {batches.map((b: any) => (
                     <option key={b._id} value={b._id}>
-                      {b.batchName} ({b.collegeId?.collegeName || b.collegeName || "Offline Partner"})
+                      {b.code} - {b.title || b.batchName || "Program"}
                     </option>
                   ))}
                 </select>
@@ -241,9 +241,9 @@ export default function MentorDashboard() {
                   className="flex items-center justify-between py-3 border-b border-border last:border-0 last:pb-0"
                 >
                   <div>
-                    <p className="font-semibold text-sm text-foreground">{batch.batchName}</p>
+                    <p className="font-semibold text-sm text-foreground">{batch.code} - {batch.title || batch.batchName || "Program"}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {batch.collegeId?.collegeName || batch.collegeName || "Offline Campus"} · {batch.studentsCount || 0} students
+                      {batch.studentCount || batch.studentsCount || 0} students
                     </p>
                   </div>
                   <Link href={`/mentor/sessions?batchId=${batch._id}`}>

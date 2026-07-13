@@ -182,9 +182,9 @@ export default function MentorCohortsPage() {
                     }`}
                   >
                     <div>
-                      <p className="truncate max-w-[180px]">{b.batchName}</p>
-                      <p className="text-xs text-muted-foreground font-normal mt-0.5">
-                        {b.collegeId?.collegeName || b.collegeName || "Offline Partner"}
+                      <p className="truncate max-w-[180px] font-semibold">{b.code}</p>
+                      <p className="text-xs text-muted-foreground font-normal mt-0.5 truncate max-w-[180px]">
+                        {b.title || b.batchName || "Program"}
                       </p>
                     </div>
                     <Badge variant={activeBatchId === b._id ? "default" : "outline"} className={activeBatchId === b._id ? "bg-magenta hover:bg-magenta" : ""}>
@@ -217,8 +217,8 @@ export default function MentorCohortsPage() {
               <DataCard>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4 mb-4">
                   <div>
-                    <h2 className="text-lg font-bold text-foreground font-display">{batchDetail.batchName}</h2>
-                    <p className="text-sm text-muted-foreground">{batchDetail.collegeId?.collegeName || batchDetail.collegeName || "Partner Campus"}</p>
+                    <h2 className="text-lg font-bold text-foreground font-display">{batchDetail.code}</h2>
+                    <p className="text-sm text-muted-foreground">{batchDetail.title || batchDetail.batchName || "Assigned Program"}</p>
                   </div>
                   <Badge className="bg-success text-white self-start sm:self-auto uppercase tracking-wider text-xs">
                     {batchDetail.status}

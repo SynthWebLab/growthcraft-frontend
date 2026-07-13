@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import logoMain from "@/assets/logo-main.png";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   LayoutDashboard,
   BookOpen,
@@ -48,8 +49,8 @@ const menuItems = [
   { name: "Enquiries", path: "/admin/enquiries", icon: MessageSquare },
   { name: "Registrations", path: "/admin/registrations", icon: ClipboardList },
   { name: "Content Pages", path: "/admin/content", icon: FileText },
-  { name: "Audit Logs", path: "/admin/audit-logs", icon: FileText },
-  { name: "Settings", path: "/admin/settings", icon: Settings },
+  { name: "Audit Logs", path: "/admin/audit-logs", icon: FileText, superAdminOnly: true },
+  { name: "Settings", path: "/admin/settings", icon: Settings, superAdminOnly: true },
 ];
 
 interface SidebarInnerProps {
@@ -63,10 +64,16 @@ interface SidebarInnerProps {
 const SidebarNavigation = ({
   collapsed,
   onNavigate,
+  userRole,
 }: {
   collapsed: boolean;
   onNavigate?: () => void;
+  userRole?: string;
 }) => {
+  const isSuperAdmin = userRole === "super_admin";
+  const visibleItems = menuItems.filter(
+    (item) => !(item as any).superAdminOnly || isSuperAdmin
+  );
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type");
@@ -74,7 +81,7 @@ const SidebarNavigation = ({
 
   return (
     <ul className="space-y-1 px-2">
-      {menuItems.map((item) => {
+      {visibleItems.map((item) => {
         const hasSubItems = !!item.subItems;
         const isActive = pathname === item.path || (hasSubItems && item.subItems.some(sub => pathname === sub.path.split('?')[0]));
 
@@ -156,6 +163,10 @@ const SidebarInner = ({
   isMobile = false,
   onNavigate,
 }: SidebarInnerProps) => {
+  const { data: user } = useCurrentUser();
+  const userRole = (user as any)?.role as string | undefined;
+  const isSuperAdmin = userRole === "super_admin";
+
   return (
     <div className="flex h-full flex-col bg-card">
       {/* Logo */}
@@ -184,11 +195,26 @@ const SidebarInner = ({
             Loading navigation...
           </div>
         }>
-          <SidebarNavigation collapsed={collapsed} onNavigate={onNavigate} />
+          <SidebarNavigation collapsed={collapsed} onNavigate={onNavigate} userRole={userRole} />
         </Suspense>
       </nav>
 
-
+      {/* Role badge */}
+      {!collapsed && (
+        <div className="px-4 py-3 border-t border-border">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full",
+              isSuperAdmin
+                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+            )}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {isSuperAdmin ? "Super Admin" : "Operations"}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

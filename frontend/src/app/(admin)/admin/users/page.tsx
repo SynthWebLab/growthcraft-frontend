@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminUsers, useUpdateUserStatus } from "@/hooks/queries/useAdmin";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -49,6 +50,7 @@ export default function AdminUsers() {
   });
 
   const statusMutation = useUpdateUserStatus();
+  const { isSuperAdmin } = useAdminRole();
 
   const rawUsers = (usersRes as any)?.data || (usersRes as any)?.items || [];
 
@@ -231,17 +233,23 @@ export default function AdminUsers() {
                 </div>
               </div>
               <div className="flex justify-between items-center pt-4 border-t border-border mt-4">
-                <Button
-                  size="sm"
-                  variant={viewUser.isActive ? "destructive" : "default"}
-                  onClick={() => {
-                    statusMutation.mutate({ id: viewUser.id, isActive: !viewUser.isActive });
-                    setViewUser(null);
-                  }}
-                  disabled={statusMutation.isPending}
-                >
-                  {viewUser.isActive ? "Suspend Account" : "Activate Account"}
-                </Button>
+                {isSuperAdmin ? (
+                  <Button
+                    size="sm"
+                    variant={viewUser.isActive ? "destructive" : "default"}
+                    onClick={() => {
+                      statusMutation.mutate({ id: viewUser.id, isActive: !viewUser.isActive });
+                      setViewUser(null);
+                    }}
+                    disabled={statusMutation.isPending}
+                  >
+                    {viewUser.isActive ? "Suspend Account" : "Activate Account"}
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground italic">
+                    Only Super Admins can change account status.
+                  </span>
+                )}
                 <Button size="sm" variant="outline" onClick={() => setViewUser(null)}>
                   Close
                 </Button>

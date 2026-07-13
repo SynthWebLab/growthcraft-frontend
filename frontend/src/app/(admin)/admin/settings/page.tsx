@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useAdminRole } from "@/hooks/useAdminRole";
+import { AccessDenied } from "@/components/admin/AccessDenied";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +39,7 @@ export default function AdminSettings() {
   const [settings, setSettings] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { isSuperAdmin } = useAdminRole();
 
   const fetchSettings = async () => {
     setIsLoading(true);
@@ -93,6 +96,15 @@ export default function AdminSettings() {
       <div className="flex items-center justify-center h-64">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
+    );
+  }
+
+  if (!isSuperAdmin) {
+    return (
+      <AccessDenied
+        title="Settings — Restricted"
+        description="Platform settings control critical system behaviour and are only accessible to Super Administrators."
+      />
     );
   }
 
