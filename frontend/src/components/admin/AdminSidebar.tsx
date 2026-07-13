@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -166,6 +166,12 @@ const SidebarInner = ({
   onNavigate,
 }: SidebarInnerProps) => {
   const { data: user } = useCurrentUser();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const userRole = (user as any)?.role as string | undefined;
   const isSuperAdmin = userRole === "super_admin";
 
@@ -202,7 +208,7 @@ const SidebarInner = ({
       </nav>
 
       {/* Role badge */}
-      {!collapsed && (
+      {mounted && !collapsed && (
         <div className="px-4 py-3 border-t border-border">
           <span
             className={cn(
