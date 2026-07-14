@@ -190,7 +190,7 @@ export default function MentorDashboard() {
                 >
                   <option value="">-- Select Active Batch --</option>
                   {batches.map((b: any) => (
-                    <option key={b._id} value={b._id}>
+                    <option key={b.id} value={b.id}>
                       {b.code} - {b.title || b.batchName || "Program"}
                     </option>
                   ))}
@@ -237,7 +237,7 @@ export default function MentorDashboard() {
             <div className="space-y-3">
               {batches.slice(0, 5).map((batch: any, i: number) => (
                 <div
-                  key={batch._id || i}
+                  key={batch.id || i}
                   className="flex items-center justify-between py-3 border-b border-border last:border-0 last:pb-0"
                 >
                   <div>
@@ -246,7 +246,7 @@ export default function MentorDashboard() {
                       {batch.studentCount || batch.studentsCount || 0} students
                     </p>
                   </div>
-                  <Link href={`/mentor/sessions?batchId=${batch._id}`}>
+                  <Link href={`/mentor/sessions?batchId=${batch.id}`}>
                     <Button size="sm" variant="outline" className="text-xs hover:text-magenta hover:border-magenta">
                       Manage Cohort
                     </Button>
