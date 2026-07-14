@@ -27,6 +27,7 @@ interface AdminHeaderProps {
   user: {
     email: string;
     full_name?: string;
+    role?: string;
   } | null;
   onLogout: () => void;
   onMenuClick?: () => void;
@@ -171,6 +172,19 @@ export const AdminHeader = ({ user, onLogout, onMenuClick }: AdminHeaderProps) =
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">{displayName || "Admin"}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
+                {user?.role && (
+                  <span
+                    className={cn(
+                      "mt-0.5 inline-flex w-fit items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                      user.role === "super_admin"
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                        : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                    )}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {user.role === "super_admin" ? "Super Admin" : "Operations"}
+                  </span>
+                )}
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

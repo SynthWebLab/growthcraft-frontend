@@ -52,11 +52,66 @@ export function useAdminMentors(params?: { search?: string; page?: number; limit
   });
 }
 
-export function useAdminBatches(params?: { page?: number; limit?: number; status?: string; batchType?: string }) {
+export function useAdminBatches(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  batchType?: string;
+  courseId?: string;
+  trainingProgramId?: string;
+  bootcampId?: string;
+  mentorId?: string;
+}) {
   return useQuery({
     queryKey: adminKeys.batches(params),
     queryFn: () => adminService.getBatches(params),
     staleTime: STALE,
+  });
+}
+
+export function useAssignMentorToBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ batchId, mentorId }: { batchId: string; mentorId: string }) =>
+      adminService.assignMentorToBatch(batchId, mentorId),
+    onSuccess: (_, variables) => {
+      toast.success("Mentor assigned to batch successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.batches() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.mentors() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.mentorDetails(variables.mentorId) });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to assign mentor to batch"));
+    },
+  });
+}
+
+export function useCreateBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => adminService.createBatch(data),
+    onSuccess: () => {
+      toast.success("Batch created successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.batches() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to create batch"));
+    },
+  });
+}
+
+export function useUpdateBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      adminService.updateBatch(id, data),
+    onSuccess: () => {
+      toast.success("Batch updated successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.batches() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to update batch"));
+    },
   });
 }
 

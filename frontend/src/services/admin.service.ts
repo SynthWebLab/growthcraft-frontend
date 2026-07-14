@@ -18,14 +18,38 @@ export const adminService = {
     return apiClient.get<any>(url);
   },
 
-  getBatches: async (params?: { page?: number; limit?: number; status?: string; batchType?: string }): Promise<any> => {
+  getBatches: async (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    batchType?: string;
+    courseId?: string;
+    trainingProgramId?: string;
+    bootcampId?: string;
+    mentorId?: string;
+  }): Promise<any> => {
     const q = new URLSearchParams();
-    if (params?.page) q.append("page", params.page.toString());
-    if (params?.limit) q.append("limit", params.limit.toString());
-    if (params?.status) q.append("status", params.status);
-    if (params?.batchType) q.append("batchType", params.batchType);
+    if (params) {
+      Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== null) {
+          q.append(key, val.toString());
+        }
+      });
+    }
     const url = q.toString() ? `${API_ENDPOINTS.admin.batches}?${q.toString()}` : API_ENDPOINTS.admin.batches;
     return apiClient.get<any>(url);
+  },
+
+  assignMentorToBatch: async (batchId: string, mentorId: string): Promise<any> => {
+    return apiClient.patch<any>(`${API_ENDPOINTS.admin.batchDetail(batchId)}/mentor`, { mentorId });
+  },
+
+  createBatch: async (data: any): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.admin.batches, data);
+  },
+
+  updateBatch: async (id: string, data: any): Promise<any> => {
+    return apiClient.patch<any>(API_ENDPOINTS.admin.batchDetail(id), data);
   },
 
   getAvailableMentors: async (params: { date: string; batchType?: string; specialization?: string }): Promise<any> => {

@@ -6,7 +6,12 @@ import {
   useAdminMentorDetails,
   useVerifyCheckIn,
   useRecordPayout,
+  useAdminBatches,
+  useAssignMentorToBatch,
 } from "@/hooks/queries/useAdmin";
+import { useCourses } from "@/hooks/queries/useCourses";
+import { useTrainingPrograms } from "@/hooks/queries/useTrainingPrograms";
+import { useBootcamps } from "@/hooks/queries/useBootcamps";
 import { DataTable } from "@/components/admin/DataTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,8 +28,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, CreditCard, Clock, CheckCircle, ShieldAlert, Award, FileText, Users } from "lucide-react";
+import { Calendar, CreditCard, Clock, CheckCircle, ShieldAlert, Award, FileText, Users, Link as LinkIcon, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AdminMentorsPage() {
   const [search, setSearch] = useState("");
@@ -40,6 +52,41 @@ export default function AdminMentorsPage() {
   const { data: detailData, isLoading: detailLoading } = useAdminMentorDetails(selectedMentorId || "");
   const verifyCheckInMutation = useVerifyCheckIn(selectedMentorId || "");
   const recordPayoutMutation = useRecordPayout(selectedMentorId || "");
+
+  // Batch Assignment States
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [programType, setProgramType] = useState<"Course" | "TrainingProgram" | "Bootcamp">("Course");
+  const [programId, setProgramId] = useState("");
+  const [batchId, setBatchId] = useState("");
+
+  // Assign mutation
+  const assignMentorMutation = useAssignMentorToBatch();
+
+  // Load programs data
+  const { data: coursesData } = useCourses();
+  const { data: programsData } = useTrainingPrograms();
+  const { data: bootcampsData } = useBootcamps();
+
+  const coursesList = coursesData?.data || [];
+  const trainingProgramsList = programsData?.data || [];
+  const bootcampsList = bootcampsData?.items || [];
+
+  // Filter programs based on selected type
+  const activePrograms = programType === "Course" 
+    ? coursesList.map((c: any) => ({ id: c._id || c.id, title: c.title }))
+    : programType === "TrainingProgram"
+    ? trainingProgramsList.map((p: any) => ({ id: p._id || p.id, title: p.title }))
+    : bootcampsList.map((b: any) => ({ id: b._id || b.id, title: b.title }));
+
+  // Load batches of the selected program type & ID
+  const { data: programBatchesData, isLoading: batchesLoading } = useAdminBatches({
+    batchType: programType,
+    courseId: programType === "Course" ? programId : undefined,
+    trainingProgramId: programType === "TrainingProgram" ? programId : undefined,
+    bootcampId: programType === "Bootcamp" ? programId : undefined,
+  });
+
+  const availableBatchesList = programBatchesData?.data || [];
 
   const mentorsList = mentorsData?.data || [];
   const selectedMentor = mentorsList.find((m: any) => m._id === selectedMentorId);
@@ -77,6 +124,16 @@ export default function AdminMentorsPage() {
   const columns = [
     { key: "name", label: "Mentor Name" },
     { key: "email", label: "Email" },
+    {
+      key: "areaOfExpertise",
+      label: "Expertise",
+      render: (val: any) => val || "N/A",
+    },
+    {
+      key: "experienceYears",
+      label: "Exp (Yrs)",
+      render: (val: any) => `${val || 0} yrs`,
+    },
     {
       key: "hourlyRate",
       label: "Hourly Rate",
@@ -235,11 +292,12 @@ export default function AdminMentorsPage() {
                     </DialogContent>
                   </Dialog>
 
-                  {/* Tabs for check-ins and payouts */}
+                  {/* Tabs for check-ins, payouts and assignments */}
                   <Tabs defaultValue="checkins" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="checkins">Check-ins</TabsTrigger>
-                      <TabsTrigger value="payouts">Payout History</TabsTrigger>
+                      <TabsTrigger value="payouts">Payouts</TabsTrigger>
+                      <TabsTrigger value="assignments">Cohorts</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="checkins" className="space-y-3 pt-3">
@@ -311,6 +369,154 @@ export default function AdminMentorsPage() {
                         ) : (
                           <div className="text-center text-xs text-muted-foreground py-8">
                             No payouts recorded yet.
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="assignments" className="space-y-3 pt-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                          <BookOpen className="h-4 w-4 text-muted-foreground" />
+                          Assigned Cohorts
+                        </h4>
+                        
+                        {/* Assign to Cohort Dialog */}
+                        <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" className="h-7 text-xs px-2.5">
+                              + Assign
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Assign Mentor to Batch</DialogTitle>
+                              <DialogDescription>
+                                Assign {detailData?.data?.user?.fullName} to an existing cohort batch.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-3">
+                              {/* Program Type Selection */}
+                              <div className="space-y-2">
+                                <Label>Program Type</Label>
+                                <Select
+                                  value={programType}
+                                  onValueChange={(val: any) => {
+                                    setProgramType(val);
+                                    setProgramId("");
+                                    setBatchId("");
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Course">Course</SelectItem>
+                                    <SelectItem value="TrainingProgram">Training Program</SelectItem>
+                                    <SelectItem value="Bootcamp">Bootcamp / Event</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Program Selection */}
+                              <div className="space-y-2">
+                                <Label>Select {programType}</Label>
+                                <Select
+                                  value={programId}
+                                  onValueChange={(val) => {
+                                    setProgramId(val);
+                                    setBatchId("");
+                                  }}
+                                  disabled={activePrograms.length === 0}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={`Select ${programType}`} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {activePrograms.map((p: any) => (
+                                      <SelectItem key={p.id} value={p.id}>
+                                        {p.title}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Batch Selection */}
+                              <div className="space-y-2">
+                                <Label>Select Batch</Label>
+                                <Select
+                                  value={batchId}
+                                  onValueChange={setBatchId}
+                                  disabled={!programId || availableBatchesList.length === 0 || batchesLoading}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={batchesLoading ? "Loading..." : "Select batch"} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {availableBatchesList.map((b: any) => (
+                                      <SelectItem key={b._id} value={b._id}>
+                                        {b.code} ({b.mode})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {programId && availableBatchesList.length === 0 && !batchesLoading && (
+                                  <p className="text-xs text-muted-foreground italic text-red-500">
+                                    No active/draft batches found for this program.
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button variant="ghost" onClick={() => setAssignOpen(false)}>
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  if (!batchId) return;
+                                  assignMentorMutation.mutate(
+                                    { batchId, mentorId: selectedMentorId! },
+                                    {
+                                      onSuccess: () => {
+                                        setAssignOpen(false);
+                                        setProgramId("");
+                                        setBatchId("");
+                                      },
+                                    }
+                                  );
+                                }}
+                                disabled={!batchId || assignMentorMutation.isPending}
+                              >
+                                {assignMentorMutation.isPending ? "Assigning..." : "Assign Mentor"}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+
+                      <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+                        {detailData?.data?.batches?.length > 0 ? (
+                          detailData.data.batches.map((b: any) => (
+                            <div key={b._id} className="p-3 bg-muted/40 rounded-lg border border-border text-xs space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold">{b.code}</span>
+                                <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 uppercase">
+                                  {b.status}
+                                </Badge>
+                              </div>
+                              <p className="text-[11px] font-medium text-foreground">
+                                {b.courseId?.title || b.trainingProgramId?.title || b.bootcampId?.title || "Assigned Batch"}
+                              </p>
+                              <div className="text-muted-foreground text-[10px] flex justify-between">
+                                <span>Type: {b.batchType} ({b.mode})</span>
+                                <span>Date: {new Date(b.startDate).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center text-xs text-muted-foreground py-8">
+                            No cohorts/batches assigned to this mentor.
                           </div>
                         )}
                       </div>

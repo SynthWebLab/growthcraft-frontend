@@ -77,9 +77,11 @@ export default function MentorCohortsPage() {
       return;
     }
 
+    const studentUserId = selectedStudent.id || selectedStudent._id || selectedStudent.userId?._id || selectedStudent.userId;
+
     createProgressNoteMutation.mutate(
       {
-        studentUserId: selectedStudent.userId?._id || selectedStudent.userId,
+        studentUserId,
         batchId: activeBatchId,
         rubricScore,
         feedback: feedback.trim(),
@@ -122,10 +124,10 @@ export default function MentorCohortsPage() {
 
     // Build records list for all students
     const records = students.map((s: any) => {
-      const studentId = s._id;
+      const studentId = s.id || s._id || s.userId?._id || s.userId;
       const record = attendanceRecords[studentId] || { status: "Present", remarks: "" };
       return {
-        studentUserId: s.userId?._id || s.userId,
+        studentUserId: studentId,
         status: record.status as any,
         remarks: record.remarks || undefined,
       };
@@ -173,22 +175,22 @@ export default function MentorCohortsPage() {
               <div className="space-y-2">
                 {batches.map((b: any) => (
                   <button
-                    key={b._id}
-                    onClick={() => handleSelectBatch(b._id)}
+                    key={b.id || b._id || b.code}
+                    onClick={() => handleSelectBatch(b.id || b._id)}
                     className={`w-full text-left p-3 rounded-lg border text-sm transition-all flex justify-between items-center ${
-                      activeBatchId === b._id
+                      activeBatchId === b.id
                         ? "bg-magenta/5 border-magenta text-magenta font-semibold"
                         : "border-border bg-white hover:bg-marble text-foreground"
                     }`}
                   >
                     <div>
-                      <p className="truncate max-w-[180px]">{b.batchName}</p>
-                      <p className="text-xs text-muted-foreground font-normal mt-0.5">
-                        {b.collegeId?.collegeName || b.collegeName || "Offline Partner"}
+                      <p className="truncate max-w-[180px] font-semibold">{b.code}</p>
+                      <p className="text-xs text-muted-foreground font-normal mt-0.5 truncate max-w-[180px]">
+                        {b.title || b.batchName || "Program"}
                       </p>
                     </div>
-                    <Badge variant={activeBatchId === b._id ? "default" : "outline"} className={activeBatchId === b._id ? "bg-magenta hover:bg-magenta" : ""}>
-                      {b.studentsCount || 0} stds
+                    <Badge variant={activeBatchId === b.id ? "default" : "outline"} className={activeBatchId === b.id ? "bg-magenta hover:bg-magenta" : ""}>
+                      {b.studentCount || b.studentsCount || 0} stds
                     </Badge>
                   </button>
                 ))}
@@ -217,8 +219,8 @@ export default function MentorCohortsPage() {
               <DataCard>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4 mb-4">
                   <div>
-                    <h2 className="text-lg font-bold text-foreground font-display">{batchDetail.batchName}</h2>
-                    <p className="text-sm text-muted-foreground">{batchDetail.collegeId?.collegeName || batchDetail.collegeName || "Partner Campus"}</p>
+                    <h2 className="text-lg font-bold text-foreground font-display">{batchDetail.code}</h2>
+                    <p className="text-sm text-muted-foreground">{batchDetail.title || batchDetail.batchName || "Assigned Program"}</p>
                   </div>
                   <Badge className="bg-success text-white self-start sm:self-auto uppercase tracking-wider text-xs">
                     {batchDetail.status}
@@ -262,19 +264,25 @@ export default function MentorCohortsPage() {
                       {students.length === 0 ? (
                         <p className="text-sm text-muted-foreground p-8 text-center">No students registered in this batch.</p>
                       ) : (
-                        students.map((student: any) => (
-                          <div key={student._id} className="flex items-center justify-between p-4 hover:bg-marble/40 transition-colors">
-                            <div>
-                              <p className="font-semibold text-sm text-foreground">
-                                {student.userId?.fullName || `${student.userId?.firstName} ${student.userId?.lastName}` || "Registered Student"}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{student.userId?.email} · Branch: {student.branch || "N/A"}</p>
+                        students.map((student: any, idx: number) => {
+                          const studentId = student.id || student._id || student.userId?._id || student.userId;
+                          const studentName = student.name || student.userId?.fullName || (student.userId ? `${student.userId.firstName} ${student.userId.lastName}` : "") || "Registered Student";
+                          const studentEmail = student.email || student.userId?.email || "";
+                          
+                          return (
+                            <div key={studentId || `student-${idx}`} className="flex items-center justify-between p-4 hover:bg-marble/40 transition-colors">
+                              <div>
+                                <p className="font-semibold text-sm text-foreground">
+                                  {studentName}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{studentEmail} · Branch: {student.branch || "N/A"}</p>
+                              </div>
+                              <Button size="sm" variant="outline" className="text-xs text-magenta hover:bg-magenta/5 border-magenta/30 hover:border-magenta" onClick={() => handleOpenNoteDialog(student)}>
+                                <Star className="h-3.5 w-3.5 mr-1" /> Log Rubric
+                              </Button>
                             </div>
-                            <Button size="sm" variant="outline" className="text-xs text-magenta hover:bg-magenta/5 border-magenta/30 hover:border-magenta" onClick={() => handleOpenNoteDialog(student)}>
-                              <Star className="h-3.5 w-3.5 mr-1" /> Log Rubric
-                            </Button>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </DataCard>
@@ -304,17 +312,19 @@ export default function MentorCohortsPage() {
                       {students.length === 0 ? (
                         <p className="text-sm text-muted-foreground py-6 text-center">No students to mark.</p>
                       ) : (
-                        students.map((student: any) => {
-                          const studentId = student._id;
+                        students.map((student: any, idx: number) => {
+                          const studentId = student.id || student._id || student.userId?._id || student.userId;
+                          const studentName = student.name || student.userId?.fullName || "Student";
+                          const studentEmail = student.email || student.userId?.email || "";
                           const currentRecord = attendanceRecords[studentId] || { status: "Present", remarks: "" };
 
                           return (
-                            <div key={studentId} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2">
+                            <div key={studentId || `att-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2">
                               <div className="min-w-[180px]">
                                 <p className="text-sm font-medium text-foreground">
-                                  {student.userId?.fullName || "Student"}
+                                  {studentName}
                                 </p>
-                                <p className="text-[10px] text-muted-foreground">{student.userId?.email}</p>
+                                <p className="text-[10px] text-muted-foreground">{studentEmail}</p>
                               </div>
 
                               <div className="flex items-center gap-3">
@@ -375,7 +385,7 @@ export default function MentorCohortsPage() {
                           </thead>
                           <tbody className="divide-y divide-border">
                             {checkIns.map((log: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-marble/25">
+                              <tr key={log._id || log.id || `checkin-${idx}`} className="hover:bg-marble/25">
                                 <td className="p-3 whitespace-nowrap text-xs text-foreground">
                                   {new Date(log.checkedInAt).toLocaleString()}
                                 </td>
@@ -416,7 +426,7 @@ export default function MentorCohortsPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Student Name</p>
                 <p className="text-sm font-bold text-foreground">
-                  {selectedStudent.userId?.fullName || "Student"}
+                  {selectedStudent.name || selectedStudent.userId?.fullName || "Student"}
                 </p>
               </div>
 

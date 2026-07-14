@@ -12,7 +12,7 @@ import {
   LayoutDashboard, BookOpen, Award, User, HelpCircle, Settings,
   GraduationCap, Users, Calendar, BarChart3, Building2,
   Briefcase, Search, FileText, Megaphone, DollarSign, Wrench, Trophy, Target,
-  Loader2
+  Loader2, Layers
 } from "lucide-react";
 
 type Role = "Student" | "College" | "Ambassador" | "Mentor" | "HiringPartner";
@@ -26,6 +26,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         label: "Main",
         items: [
           { icon: LayoutDashboard, label: "Dashboard", href: "dashboard" },
+          { icon: Layers, label: "My Batches", href: "batches" },
           { icon: BookOpen, label: "My Courses", href: "courses" },
           { icon: GraduationCap, label: "Bootcamps", href: "bootcamps" },
           { icon: Wrench, label: "Workshops", href: "workshops" },
@@ -81,6 +82,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         label: "Main",
         items: [
           { icon: LayoutDashboard, label: "Dashboard", href: "dashboard" },
+          { icon: Layers, label: "Batches", href: "batches" },
           { icon: Calendar, label: "Sessions", href: "sessions" },
           { icon: Calendar, label: "Availability", href: "availability" },
           { icon: Users, label: "Students", href: "students" },

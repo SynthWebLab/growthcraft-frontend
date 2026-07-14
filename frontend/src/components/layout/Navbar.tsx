@@ -23,6 +23,7 @@ export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -43,6 +44,7 @@ export const Navbar = () => {
 
   // Close search results when clicking outside
   useEffect(() => {
+    setMounted(true);
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSearchResults(false);
@@ -102,9 +104,15 @@ export const Navbar = () => {
             ))}
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons — rendered only after mount to avoid SSR/client hydration mismatch */}
           <div className="hidden xl:flex items-center gap-2">
-            {user && user.isEmailVerified ? (
+            {!mounted ? (
+              // Skeleton placeholder matching the size of the buttons — avoids layout shift
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-16 rounded-md bg-muted animate-pulse" />
+                <div className="h-8 w-20 rounded-md bg-muted animate-pulse" />
+              </div>
+            ) : user && user.isEmailVerified ? (
               // Logged in and verified - Show Dashboard button
               <Button asChild size="sm">
                 <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'}>
@@ -179,7 +187,7 @@ export const Navbar = () => {
               ))}
 
               <div className="pt-4 px-4 space-y-2 border-t border-border mt-2">
-                {user && user.isEmailVerified ? (
+                {mounted && user && user.isEmailVerified ? (
                   // Logged in and verified - Show Dashboard button
                   <Button asChild size="default" className="w-full">
                     <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'} onClick={() => setIsOpen(false)}>

@@ -60,7 +60,7 @@ const DashboardSkeleton = () => (
 export default function MentorDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<string>("Weekly");
   const { data: dashboardResponse, isLoading: isDbLoading } = useMentorDashboard(selectedPeriod.toLowerCase());
-  const { data: batchesResponse, isLoading: isBatchesLoading } = useMentorBatches({ status: "Active" });
+  const { data: batchesResponse, isLoading: isBatchesLoading } = useMentorBatches();
   const { data: statusResponse, isLoading: isStatusLoading } = useMentorCheckInStatus();
   
   const checkInMutation = useMentorCheckIn();
@@ -78,9 +78,11 @@ export default function MentorDashboard() {
     todaySessionsCount: 0,
   };
   const earningsTrend = summary?.earningsTrend || [];
-  const activeCheckIn = statusResponse?.data?.activeCheckIn;
+  const activeCheckIn = statusResponse?.data?.status;
   const batches = batchesResponse?.data?.batches ?? [];
   const recentReviews = summary?.recentReviews || [];
+
+  const activeCheckInBatchId = activeCheckIn?.batchId?._id || activeCheckIn?.batchId?.id;
 
   // Live Timer for Check-In duration
   useEffect(() => {
@@ -110,10 +112,10 @@ export default function MentorDashboard() {
   };
 
   const handleCheckOut = () => {
-    if (!activeCheckIn?.batchId?._id) return;
+    if (!activeCheckInBatchId) return;
     checkOutMutation.mutate(
       {
-        batchId: activeCheckIn.batchId._id,
+        batchId: activeCheckInBatchId,
         notes: checkOutNotes.trim() || undefined,
       },
       {
@@ -148,7 +150,7 @@ export default function MentorDashboard() {
               </h3>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {activeCheckIn
-                  ? `Currently conducting session for Batch: ${activeCheckIn.batchId?.batchName || "N/A"}`
+                  ? `Currently conducting session for Batch: ${activeCheckIn.batchId?.code || activeCheckIn.batchId?.batchName || "N/A"}`
                   : "Check in when you arrive at the campus batch session to track your mentoring hours."}
               </p>
               {activeCheckIn && (
@@ -190,8 +192,8 @@ export default function MentorDashboard() {
                 >
                   <option value="">-- Select Active Batch --</option>
                   {batches.map((b: any) => (
-                    <option key={b._id} value={b._id}>
-                      {b.batchName} ({b.collegeId?.collegeName || b.collegeName || "Offline Partner"})
+                    <option key={b.id} value={b.id}>
+                      {b.code} - {b.title || b.batchName || "Program"}
                     </option>
                   ))}
                 </select>
@@ -237,16 +239,16 @@ export default function MentorDashboard() {
             <div className="space-y-3">
               {batches.slice(0, 5).map((batch: any, i: number) => (
                 <div
-                  key={batch._id || i}
+                  key={batch.id || i}
                   className="flex items-center justify-between py-3 border-b border-border last:border-0 last:pb-0"
                 >
                   <div>
-                    <p className="font-semibold text-sm text-foreground">{batch.batchName}</p>
+                    <p className="font-semibold text-sm text-foreground">{batch.code} - {batch.title || batch.batchName || "Program"}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {batch.collegeId?.collegeName || batch.collegeName || "Offline Campus"} · {batch.studentsCount || 0} students
+                      {batch.studentCount || batch.studentsCount || 0} students
                     </p>
                   </div>
-                  <Link href={`/mentor/sessions?batchId=${batch._id}`}>
+                  <Link href={`/mentor/sessions?batchId=${batch.id}`}>
                     <Button size="sm" variant="outline" className="text-xs hover:text-magenta hover:border-magenta">
                       Manage Cohort
                     </Button>

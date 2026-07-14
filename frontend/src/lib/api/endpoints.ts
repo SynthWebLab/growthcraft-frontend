@@ -84,6 +84,7 @@ export const API_ENDPOINTS = {
     applyJob: (id: string) => `/students/jobs/${id}/apply`,
     applications: "/students/applications",
     uploadResume: "/students/resume/upload",
+    batches: "/students/batches",
   },
   colleges: {
     dashboard: "/colleges/dashboard",

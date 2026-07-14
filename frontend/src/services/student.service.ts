@@ -112,5 +112,8 @@ export const studentService = {
     formData.append("resume", file);
     return apiClient.post<any>(API_ENDPOINTS.students.uploadResume, formData);
   },
+  getBatches: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.batches);
+  },
 };
 

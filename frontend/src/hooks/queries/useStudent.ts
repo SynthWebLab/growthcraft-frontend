@@ -244,3 +244,13 @@ export function useUpdateAccount(userId?: string) {
   });
 }
 
+/** Fetch the student's enrolled cohort batches. */
+export function useStudentBatches() {
+  return useQuery({
+    queryKey: ["student", "batches"],
+    queryFn: () => studentService.getBatches(),
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
