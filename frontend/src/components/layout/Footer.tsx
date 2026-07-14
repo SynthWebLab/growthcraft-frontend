@@ -24,7 +24,6 @@ const footerLinks = {
   company: [
     { name: "About Us", path: "/about" },
     { name: "Contact", path: "/contact" },
-    { name: "Admin Panel", path: "/admin" },
   ],
 };
 
