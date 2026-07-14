@@ -77,9 +77,11 @@ export default function MentorCohortsPage() {
       return;
     }
 
+    const studentUserId = selectedStudent.id || selectedStudent._id || selectedStudent.userId?._id || selectedStudent.userId;
+
     createProgressNoteMutation.mutate(
       {
-        studentUserId: selectedStudent.userId?._id || selectedStudent.userId,
+        studentUserId,
         batchId: activeBatchId,
         rubricScore,
         feedback: feedback.trim(),
@@ -122,10 +124,10 @@ export default function MentorCohortsPage() {
 
     // Build records list for all students
     const records = students.map((s: any) => {
-      const studentId = s._id;
+      const studentId = s.id || s._id || s.userId?._id || s.userId;
       const record = attendanceRecords[studentId] || { status: "Present", remarks: "" };
       return {
-        studentUserId: s.userId?._id || s.userId,
+        studentUserId: studentId,
         status: record.status as any,
         remarks: record.remarks || undefined,
       };
@@ -262,19 +264,25 @@ export default function MentorCohortsPage() {
                       {students.length === 0 ? (
                         <p className="text-sm text-muted-foreground p-8 text-center">No students registered in this batch.</p>
                       ) : (
-                        students.map((student: any) => (
-                          <div key={student._id || student.id || student.userId?._id || student.userId} className="flex items-center justify-between p-4 hover:bg-marble/40 transition-colors">
-                            <div>
-                              <p className="font-semibold text-sm text-foreground">
-                                {student.userId?.fullName || `${student.userId?.firstName} ${student.userId?.lastName}` || "Registered Student"}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{student.userId?.email} · Branch: {student.branch || "N/A"}</p>
+                        students.map((student: any, idx: number) => {
+                          const studentId = student.id || student._id || student.userId?._id || student.userId;
+                          const studentName = student.name || student.userId?.fullName || (student.userId ? `${student.userId.firstName} ${student.userId.lastName}` : "") || "Registered Student";
+                          const studentEmail = student.email || student.userId?.email || "";
+                          
+                          return (
+                            <div key={studentId || `student-${idx}`} className="flex items-center justify-between p-4 hover:bg-marble/40 transition-colors">
+                              <div>
+                                <p className="font-semibold text-sm text-foreground">
+                                  {studentName}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{studentEmail} · Branch: {student.branch || "N/A"}</p>
+                              </div>
+                              <Button size="sm" variant="outline" className="text-xs text-magenta hover:bg-magenta/5 border-magenta/30 hover:border-magenta" onClick={() => handleOpenNoteDialog(student)}>
+                                <Star className="h-3.5 w-3.5 mr-1" /> Log Rubric
+                              </Button>
                             </div>
-                            <Button size="sm" variant="outline" className="text-xs text-magenta hover:bg-magenta/5 border-magenta/30 hover:border-magenta" onClick={() => handleOpenNoteDialog(student)}>
-                              <Star className="h-3.5 w-3.5 mr-1" /> Log Rubric
-                            </Button>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </DataCard>
@@ -304,17 +312,19 @@ export default function MentorCohortsPage() {
                       {students.length === 0 ? (
                         <p className="text-sm text-muted-foreground py-6 text-center">No students to mark.</p>
                       ) : (
-                        students.map((student: any) => {
-                          const studentId = student._id;
-                          const currentRecord = attendanceRecords[studentId || student._id] || { status: "Present", remarks: "" };
+                        students.map((student: any, idx: number) => {
+                          const studentId = student.id || student._id || student.userId?._id || student.userId;
+                          const studentName = student.name || student.userId?.fullName || "Student";
+                          const studentEmail = student.email || student.userId?.email || "";
+                          const currentRecord = attendanceRecords[studentId] || { status: "Present", remarks: "" };
 
                           return (
-                            <div key={studentId || student._id || student.id || student.userId?._id || student.userId} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2">
+                            <div key={studentId || `att-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2">
                               <div className="min-w-[180px]">
                                 <p className="text-sm font-medium text-foreground">
-                                  {student.userId?.fullName || "Student"}
+                                  {studentName}
                                 </p>
-                                <p className="text-[10px] text-muted-foreground">{student.userId?.email}</p>
+                                <p className="text-[10px] text-muted-foreground">{studentEmail}</p>
                               </div>
 
                               <div className="flex items-center gap-3">
@@ -416,7 +426,7 @@ export default function MentorCohortsPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Student Name</p>
                 <p className="text-sm font-bold text-foreground">
-                  {selectedStudent.userId?.fullName || "Student"}
+                  {selectedStudent.name || selectedStudent.userId?.fullName || "Student"}
                 </p>
               </div>
 
