@@ -26,6 +26,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         label: "Main",
         items: [
           { icon: LayoutDashboard, label: "Dashboard", href: "dashboard" },
+          { icon: Layers, label: "My Batches", href: "batches" },
           { icon: BookOpen, label: "My Courses", href: "courses" },
           { icon: GraduationCap, label: "Bootcamps", href: "bootcamps" },
           { icon: Wrench, label: "Workshops", href: "workshops" },
