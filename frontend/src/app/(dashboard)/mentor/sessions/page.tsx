@@ -173,10 +173,10 @@ export default function MentorCohortsPage() {
               <div className="space-y-2">
                 {batches.map((b: any) => (
                   <button
-                    key={b._id}
-                    onClick={() => handleSelectBatch(b._id)}
+                    key={b.id}
+                    onClick={() => handleSelectBatch(b.id)}
                     className={`w-full text-left p-3 rounded-lg border text-sm transition-all flex justify-between items-center ${
-                      activeBatchId === b._id
+                      activeBatchId === b.id
                         ? "bg-magenta/5 border-magenta text-magenta font-semibold"
                         : "border-border bg-white hover:bg-marble text-foreground"
                     }`}
@@ -187,8 +187,8 @@ export default function MentorCohortsPage() {
                         {b.title || b.batchName || "Program"}
                       </p>
                     </div>
-                    <Badge variant={activeBatchId === b._id ? "default" : "outline"} className={activeBatchId === b._id ? "bg-magenta hover:bg-magenta" : ""}>
-                      {b.studentsCount || 0} stds
+                    <Badge variant={activeBatchId === b.id ? "default" : "outline"} className={activeBatchId === b.id ? "bg-magenta hover:bg-magenta" : ""}>
+                      {b.studentCount || b.studentsCount || 0} stds
                     </Badge>
                   </button>
                 ))}
