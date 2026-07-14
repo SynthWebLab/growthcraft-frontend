@@ -40,8 +40,9 @@ export default function MentorBatchesPage() {
   const [checkoutNotes, setCheckoutNotes] = useState("");
 
   const batches: BatchItem[] = batchesResponse?.data?.batches ?? [];
-  const activeCheckIn = statusResponse?.data?.activeCheckIn;
+  const activeCheckIn = statusResponse?.data?.status;
   const isCurrentlyCheckedIn = !!activeCheckIn;
+  const activeCheckInBatchId = activeCheckIn?.batchId?._id || activeCheckIn?.batchId?.id;
 
   const handleCheckIn = (batchId: string) => {
     checkInMutation.mutate(batchId);
@@ -146,7 +147,7 @@ export default function MentorBatchesPage() {
       key: "actions",
       label: "Check-In Action",
       render: (row) => {
-        const isSelfCheckedIn = activeCheckIn?.batchId?._id === row.id;
+        const isSelfCheckedIn = activeCheckInBatchId === row.id;
 
         if (isSelfCheckedIn) {
           return (
@@ -208,7 +209,7 @@ export default function MentorBatchesPage() {
           </div>
           <Button
             size="sm"
-            onClick={() => handleOpenCheckout(activeCheckIn?.batchId?._id)}
+            onClick={() => handleOpenCheckout(activeCheckInBatchId)}
             className="bg-magenta text-white hover:bg-magenta/90"
           >
             Finish & Check Out

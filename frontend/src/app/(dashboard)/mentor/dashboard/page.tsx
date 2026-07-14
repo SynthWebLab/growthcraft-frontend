@@ -78,9 +78,11 @@ export default function MentorDashboard() {
     todaySessionsCount: 0,
   };
   const earningsTrend = summary?.earningsTrend || [];
-  const activeCheckIn = statusResponse?.data?.activeCheckIn;
+  const activeCheckIn = statusResponse?.data?.status;
   const batches = batchesResponse?.data?.batches ?? [];
   const recentReviews = summary?.recentReviews || [];
+
+  const activeCheckInBatchId = activeCheckIn?.batchId?._id || activeCheckIn?.batchId?.id;
 
   // Live Timer for Check-In duration
   useEffect(() => {
@@ -110,10 +112,10 @@ export default function MentorDashboard() {
   };
 
   const handleCheckOut = () => {
-    if (!activeCheckIn?.batchId?._id) return;
+    if (!activeCheckInBatchId) return;
     checkOutMutation.mutate(
       {
-        batchId: activeCheckIn.batchId._id,
+        batchId: activeCheckInBatchId,
         notes: checkOutNotes.trim() || undefined,
       },
       {
