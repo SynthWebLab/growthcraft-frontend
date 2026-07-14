@@ -60,7 +60,7 @@ const DashboardSkeleton = () => (
 export default function MentorDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<string>("Weekly");
   const { data: dashboardResponse, isLoading: isDbLoading } = useMentorDashboard(selectedPeriod.toLowerCase());
-  const { data: batchesResponse, isLoading: isBatchesLoading } = useMentorBatches({ status: "Active" });
+  const { data: batchesResponse, isLoading: isBatchesLoading } = useMentorBatches();
   const { data: statusResponse, isLoading: isStatusLoading } = useMentorCheckInStatus();
   
   const checkInMutation = useMentorCheckIn();

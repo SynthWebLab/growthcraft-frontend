@@ -146,12 +146,7 @@ export default function MentorBatchesPage() {
       key: "actions",
       label: "Check-In Action",
       render: (row) => {
-        const isActiveBatch = ["Open", "Filling", "Full", "InProgress"].includes(row.status);
         const isSelfCheckedIn = activeCheckIn?.batchId?._id === row.id;
-
-        if (!isActiveBatch) {
-          return <span className="text-xs text-muted-foreground">Unavailable</span>;
-        }
 
         if (isSelfCheckedIn) {
           return (
