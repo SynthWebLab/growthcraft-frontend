@@ -173,8 +173,8 @@ export default function MentorCohortsPage() {
               <div className="space-y-2">
                 {batches.map((b: any) => (
                   <button
-                    key={b.id}
-                    onClick={() => handleSelectBatch(b.id)}
+                    key={b.id || b._id || b.code}
+                    onClick={() => handleSelectBatch(b.id || b._id)}
                     className={`w-full text-left p-3 rounded-lg border text-sm transition-all flex justify-between items-center ${
                       activeBatchId === b.id
                         ? "bg-magenta/5 border-magenta text-magenta font-semibold"
@@ -263,7 +263,7 @@ export default function MentorCohortsPage() {
                         <p className="text-sm text-muted-foreground p-8 text-center">No students registered in this batch.</p>
                       ) : (
                         students.map((student: any) => (
-                          <div key={student._id} className="flex items-center justify-between p-4 hover:bg-marble/40 transition-colors">
+                          <div key={student._id || student.id || student.userId?._id || student.userId} className="flex items-center justify-between p-4 hover:bg-marble/40 transition-colors">
                             <div>
                               <p className="font-semibold text-sm text-foreground">
                                 {student.userId?.fullName || `${student.userId?.firstName} ${student.userId?.lastName}` || "Registered Student"}
@@ -306,10 +306,10 @@ export default function MentorCohortsPage() {
                       ) : (
                         students.map((student: any) => {
                           const studentId = student._id;
-                          const currentRecord = attendanceRecords[studentId] || { status: "Present", remarks: "" };
+                          const currentRecord = attendanceRecords[studentId || student._id] || { status: "Present", remarks: "" };
 
                           return (
-                            <div key={studentId} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2">
+                            <div key={studentId || student._id || student.id || student.userId?._id || student.userId} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2">
                               <div className="min-w-[180px]">
                                 <p className="text-sm font-medium text-foreground">
                                   {student.userId?.fullName || "Student"}
@@ -375,7 +375,7 @@ export default function MentorCohortsPage() {
                           </thead>
                           <tbody className="divide-y divide-border">
                             {checkIns.map((log: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-marble/25">
+                              <tr key={log._id || log.id || `checkin-${idx}`} className="hover:bg-marble/25">
                                 <td className="p-3 whitespace-nowrap text-xs text-foreground">
                                   {new Date(log.checkedInAt).toLocaleString()}
                                 </td>
