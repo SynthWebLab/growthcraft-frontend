@@ -109,6 +109,7 @@ export interface Course {
   enrollmentCount: number;
   isActive: boolean;
   isDraft: boolean;
+  isFeatured?: boolean;
   publishedAt?: string;
   type: "Course" | "Bootcamp";
   createdAt: string;
@@ -146,6 +147,7 @@ export interface CourseFilters {
   category?: string;
   difficultyLevel?: string;
   type?: "Course" | "Bootcamp";
+  isFeatured?: boolean;
   page?: number;
   limit?: number;
   q?: string; // Search query (alternative)

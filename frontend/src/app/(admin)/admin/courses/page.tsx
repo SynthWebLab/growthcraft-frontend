@@ -233,8 +233,27 @@ export default function AdminCourses() {
     {
       key: "is_featured",
       label: "Featured",
-      render: (v: boolean) =>
-        v ? <Badge variant="outline">⭐ Featured</Badge> : null,
+      render: (v: boolean, row: Course) => (
+        <Button
+          variant={v ? "secondary" : "outline"}
+          size="sm"
+          className={`h-7 text-xs gap-1 font-semibold ${
+            v
+              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
+              : "text-muted-foreground"
+          }`}
+          onClick={() =>
+            updateMutation.mutate({
+              id: row.id,
+              data: { isFeatured: !v },
+            })
+          }
+          disabled={updateMutation.isPending}
+          title={v ? "Click to un-feature" : "Click to feature as Trending"}
+        >
+          {v ? "🔥 Trending" : "+ Feature"}
+        </Button>
+      ),
     },
   ];
 

@@ -257,7 +257,7 @@ export default function CoursesPage() {
             className="group"
           >
             <DataCard className="h-full flex flex-col">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-magenta/10 text-magenta">
                   {course.category}
                 </span>
@@ -268,6 +268,11 @@ export default function CoursesPage() {
                 >
                   {course.difficultyLevel}
                 </span>
+                {(course.isFeatured || (course as any).is_featured) && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    🔥 Trending Now
+                  </span>
+                )}
               </div>
 
               <h3 className="text-base font-bold text-foreground group-hover:text-magenta transition-colors mb-2 line-clamp-2">

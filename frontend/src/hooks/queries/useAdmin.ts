@@ -448,12 +448,13 @@ export function usePublishCourse() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => adminService.publishCourse(id),
-    onSuccess: () => {
-      toast.success("Course published successfully");
+    onSuccess: (res: any) => {
+      const message = res?.message || "Course status updated successfully";
+      toast.success(message);
       queryClient.invalidateQueries({ queryKey: adminKeys.courses() });
     },
     onError: (err) => {
-      toast.error(extractApiError(err, "Failed to publish course"));
+      toast.error(extractApiError(err, "Failed to update course publish status"));
     },
   });
 }

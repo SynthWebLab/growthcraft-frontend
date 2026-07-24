@@ -6,8 +6,10 @@ import { useCourses } from "@/hooks/queries/useCourses";
 import { Clock, BookOpen, Star, User, Loader2 } from "lucide-react";
 import Link from "next/link";
 export const FeaturedCourses = () => {
-  const { data: coursesData, isLoading } = useCourses({ limit: 6 });
-  const featured = (coursesData as any)?.items || coursesData?.data || [];
+  const { data: coursesData, isLoading } = useCourses({ limit: 6, isFeatured: true });
+  const rawCourses = (coursesData as any)?.items || coursesData?.data || [];
+  // Prioritize courses explicitly marked as featured/trending
+  const featured = [...rawCourses].sort((a, b) => (b.isFeatured || b.is_featured ? 1 : 0) - (a.isFeatured || a.is_featured ? 1 : 0));
 
   return (
     <Section variant="graphite" className="relative overflow-hidden !py-8 sm:!py-12 md:!py-16 lg:!py-20">
@@ -42,18 +44,23 @@ export const FeaturedCourses = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {featured.map((course: any) => (
               <DataCard
-                key={course._id}
+                key={course._id || course.id}
                 variant="dark"
                 className="h-full flex flex-col"
               >
                 {/* Tags */}
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
                   <span className="px-2.5 py-0.5 rounded-full bg-primary text-white text-xs font-semibold">
                     {course.category}
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full border border-white/20 text-white/70 text-xs">
-                    {course.difficultyLevel}
+                    {course.difficultyLevel || course.level}
                   </span>
+                  {(course.isFeatured || course.is_featured) && (
+                    <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold shadow-xs">
+                      🔥 Trending Now
+                    </span>
+                  )}
                   {course.status === "Coming Soon" && (
                     <span className="px-2.5 py-0.5 rounded-full bg-secondary text-white text-xs font-semibold">
                       Coming Soon
