@@ -48,10 +48,10 @@ export const authService = {
   },
 
   /**
-   * Reset password with token
+   * Reset password with OTP code
    */
-  resetPassword: async (token: string, newPassword: string): Promise<ApiResponse> => {
-    return apiClient.post<ApiResponse>(API_ENDPOINTS.auth.resetPassword, { token, newPassword });
+  resetPassword: async (email: string, otp: string, newPassword: string): Promise<ApiResponse> => {
+    return apiClient.post<ApiResponse>(API_ENDPOINTS.auth.resetPassword, { email, otp, newPassword });
   },
 
   /**

@@ -133,7 +133,7 @@ export default function MentorDashboard() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Welcome back, Mentor! 🧑‍🏫"
+        title="Welcome back, Mentor!"
         description="Your mentoring overview, session tracking, and offline class check-in dashboard."
       />
 

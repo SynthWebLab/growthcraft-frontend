@@ -306,8 +306,8 @@ export function useResetPassword() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: ({ token, newPassword }: { token: string; newPassword: string }) =>
-      authService.resetPassword(token, newPassword),
+    mutationFn: ({ email, otp, newPassword }: { email: string; otp: string; newPassword: string }) =>
+      authService.resetPassword(email, otp, newPassword),
     onSuccess: (response) => {
       if (response.success) {
         toast.success("Password reset successful!", {

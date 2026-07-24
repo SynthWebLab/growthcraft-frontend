@@ -54,7 +54,8 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     }
 
     resetPasswordMutation.mutate({
-      token,
+      email: "",
+      otp: token,
       newPassword,
     });
   };
