@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, ArrowRight, Trophy } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowRight, Trophy, Flame } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
@@ -49,6 +49,11 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: Ha
         }
         badgeRow={
           <>
+            {Boolean((hackathon as any).isFeatured || (hackathon as any).is_featured || (hackathon as any).isFeatured === "true" || (hackathon as any).is_featured === "true") && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                <Flame className="h-3 w-3" /> Trending
+              </span>
+            )}
             <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${toneStyles.badge}`}>
               Hackathon
             </span>

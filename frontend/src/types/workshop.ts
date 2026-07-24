@@ -22,6 +22,8 @@ export interface Workshop {
   skillsCovered: string[];
   mentorNames: string[];
   status: WorkshopStatus;
+  isFeatured?: boolean;
+  mentors?: any[];
   canRegister: boolean;
   primaryCTA: string;
   secondaryCTA: string | null;

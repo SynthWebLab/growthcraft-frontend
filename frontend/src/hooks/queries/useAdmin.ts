@@ -526,6 +526,31 @@ export function useDeleteTrainingProgram() {
 
 // --- Event Admin CRUD Hooks ---
 
+export function useAdminEvents(params?: { page?: number; limit?: number; search?: string }) {
+  return useQuery({
+    queryKey: [...adminKeys.events(), params],
+    queryFn: () => adminService.getAdminEvents(params),
+  });
+}
+
+export function usePublishEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminService.publishEvent(id),
+    onSuccess: (res: any) => {
+      toast.success(res?.message || "Event status updated");
+      queryClient.invalidateQueries({ queryKey: adminKeys.events() });
+      queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to update event status"));
+    },
+  });
+}
+
 export function useCreateEvent() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -533,6 +558,10 @@ export function useCreateEvent() {
     onSuccess: () => {
       toast.success("Event created successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.events() });
+      queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      queryClient.invalidateQueries({ queryKey: ["hackathons"] });
     },
     onError: (err) => {
       toast.error(extractApiError(err, "Failed to create event"));
@@ -547,6 +576,10 @@ export function useUpdateEvent() {
     onSuccess: () => {
       toast.success("Event updated successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.events() });
+      queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      queryClient.invalidateQueries({ queryKey: ["hackathons"] });
     },
     onError: (err) => {
       toast.error(extractApiError(err, "Failed to update event"));
@@ -561,6 +594,10 @@ export function useDeleteEvent() {
     onSuccess: () => {
       toast.success("Event deleted successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.events() });
+      queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      queryClient.invalidateQueries({ queryKey: ["hackathons"] });
     },
     onError: (err) => {
       toast.error(extractApiError(err, "Failed to delete event"));

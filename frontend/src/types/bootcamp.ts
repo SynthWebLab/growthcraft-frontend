@@ -33,6 +33,8 @@ export interface Bootcamp {
   skillsCovered: string[];
   mentorNames: string[];
   status: (typeof BOOTCAMP_STATUSES)[number];
+  isFeatured?: boolean;
+  mentors?: any[];
   canRegister: boolean;
   primaryCTA: string;
   secondaryCTA: string | null;

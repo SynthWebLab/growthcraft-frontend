@@ -44,7 +44,17 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
     status: workshopStatus as WorkshopStatus | undefined,
   });
 
-  const pageItems = data?.items || [];
+  const rawItems = data?.items || [];
+  const pageItems = [...rawItems].sort((a: any, b: any) => {
+    const aFeatured = a.isFeatured || a.is_featured ? 1 : 0;
+    const bFeatured = b.isFeatured || b.is_featured ? 1 : 0;
+    if (bFeatured !== aFeatured) {
+      return bFeatured - aFeatured;
+    }
+    const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
   const totalItems = data?.pagination.total || 0;
   const totalPages = data?.pagination.totalPages || 1;
   const hasNextPage = currentPage < totalPages;

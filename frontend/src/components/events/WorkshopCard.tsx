@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, ArrowRight } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowRight, Flame } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
@@ -53,6 +53,11 @@ export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick }: Work
         }
         badgeRow={
           <>
+            {Boolean((workshop as any).isFeatured || (workshop as any).is_featured || (workshop as any).isFeatured === "true" || (workshop as any).is_featured === "true") && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                <Flame className="h-3 w-3" /> Trending
+              </span>
+            )}
             <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${toneStyles.badge}`}>
               Workshop
             </span>

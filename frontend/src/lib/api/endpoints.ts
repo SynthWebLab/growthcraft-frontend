@@ -138,6 +138,7 @@ export const API_ENDPOINTS = {
     trainingProgramPublish: (id: string) => `/admin/training-programs/${id}/publish`,
     trainingProgramDetail: (id: string) => `/admin/training-programs/${id}`,
     events: "/admin/events",
+    eventPublish: (id: string) => `/admin/events/${id}/publish`,
     eventDetail: (id: string) => `/admin/events/${id}`,
     colleges: "/admin/colleges",
     collegeDetail: (id: string) => `/admin/colleges/${id}`,

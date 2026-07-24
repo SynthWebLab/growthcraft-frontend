@@ -1,6 +1,7 @@
-import { Calendar, ArrowRight, MapPin } from "lucide-react";
+import { Calendar, ArrowRight, MapPin, Flame } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Bootcamp } from "@/types/bootcamp";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
@@ -54,6 +55,11 @@ export function BootcampEventCard({
       <div className="lg:w-[60%] p-4 sm:p-6 flex flex-col justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-3">
+            {Boolean((bootcamp as any).isFeatured || (bootcamp as any).is_featured || (bootcamp as any).isFeatured === "true" || (bootcamp as any).is_featured === "true") && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                <Flame className="h-3 w-3" /> Trending
+              </span>
+            )}
             <span
               className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getStatusColor(
                 bootcamp.status
@@ -85,21 +91,30 @@ export function BootcampEventCard({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 mb-4">
-            {bootcamp.mentorNames.map((name) => (
-              <img
-                key={name}
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`}
-                alt={name}
-                className="h-7 w-7 rounded-full border-2 border-background -ml-1 first:ml-0"
-                title={name}
-              />
-            ))}
-            <span className="text-xs text-muted-foreground ml-1">
-              {bootcamp.mentorNames.length} mentor
-              {bootcamp.mentorNames.length !== 1 ? "s" : ""}
-            </span>
-          </div>
+          {/* Mentors */}
+          {(bootcamp as any).mentors && (bootcamp as any).mentors.length > 0 ? (
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex -space-x-1.5 overflow-hidden">
+                {(bootcamp as any).mentors.map((m: any, idx: number) => (
+                  <Avatar key={idx} className="inline-block h-6 w-6 rounded-full ring-1 ring-background">
+                    <AvatarImage src={m.avatar || undefined} />
+                    <AvatarFallback className="text-[8px] bg-primary/10 text-primary font-bold">
+                      {(m.name || m.fullName || "M").charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
+              </div>
+              <span className="text-xs font-medium text-foreground/80 truncate">
+                {(bootcamp as any).mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ")}
+              </span>
+            </div>
+          ) : bootcamp.mentorNames && bootcamp.mentorNames.length > 0 ? (
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xs text-muted-foreground">
+                {bootcamp.mentorNames.join(", ")}
+              </span>
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap gap-1.5 mb-4">
             {bootcamp.tags.map((tag) => (

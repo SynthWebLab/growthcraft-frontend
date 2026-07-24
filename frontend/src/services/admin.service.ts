@@ -268,12 +268,25 @@ export const adminService = {
   },
 
   // --- Event Admin CRUD ---
+  getAdminEvents: async (params?: { page?: number; limit?: number; search?: string }): Promise<any> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.search) query.set("search", params.search);
+    const qs = query.toString();
+    return apiClient.get<any>(`${API_ENDPOINTS.admin.events}${qs ? `?${qs}` : ""}`);
+  },
+
   createEvent: async (data: any): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.admin.events, data);
   },
 
   updateEvent: async (id: string, data: any): Promise<any> => {
     return apiClient.put<any>(API_ENDPOINTS.admin.eventDetail(id), data);
+  },
+
+  publishEvent: async (id: string): Promise<any> => {
+    return apiClient.patch<any>(API_ENDPOINTS.admin.eventPublish(id), {});
   },
 
   deleteEvent: async (id: string): Promise<any> => {

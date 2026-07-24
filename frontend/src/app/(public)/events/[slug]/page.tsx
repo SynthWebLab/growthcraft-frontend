@@ -25,7 +25,9 @@ import {
   Calendar,
   Clock,
   MapPin,
+  Flame,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useWorkshopDetails } from "@/hooks/queries/useWorkshops";
@@ -98,6 +100,12 @@ function mapEventDetailToEventData(response: EventDetailResponse) {
         thumbnail: event.banner,
         primaryCTA,
         secondaryCTA,
+        isFeatured: (event as any).isFeatured || (event as any).is_featured || false,
+        mentors: (event as any).mentors && (event as any).mentors.length > 0
+          ? (event as any).mentors
+          : (details as any).mentors && (details as any).mentors.length > 0
+          ? (details as any).mentors
+          : [],
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
       },
@@ -430,7 +438,12 @@ export default function EventDetailPage({
 
             {/* Title area */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {((event as any).isFeatured || (event as any).is_featured) && (
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                    <Flame className="h-3.5 w-3.5" /> Trending Now
+                  </span>
+                )}
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-magenta/10 text-magenta">
                   {event.type}
                 </span>
@@ -457,13 +470,30 @@ export default function EventDetailPage({
                 {event.title}
               </h1>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Star className="h-4 w-4 text-warning" />
-                  {displayRating}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                {(event as any).mentors && (event as any).mentors.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2 overflow-hidden">
+                      {(event as any).mentors.map((mentor: any, index: number) => (
+                        <Avatar key={index} className="h-8 w-8 border-2 border-background">
+                          <AvatarImage src={mentor.avatar} alt={mentor.name} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                            {(mentor.name || mentor.fullName || "M").charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                    </div>
+                    <span className="font-medium text-foreground">
+                      {(event as any).mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                )}
+                <span className="flex items-center gap-1 font-medium">
+                  <Star className="h-4 w-4 text-warning fill-warning" />
+                  {event.rating && event.rating > 0 ? event.rating.toFixed(1) : "New"}
                 </span>
-                <span>
-                  {event.enrolledCount} / {event.maxSeats} registered
+                <span className="font-medium">
+                  {(event.enrolledCount || 0).toLocaleString()} / {(event.maxSeats || 50).toLocaleString()} registered
                 </span>
               </div>
             </div>
@@ -642,117 +672,71 @@ export default function EventDetailPage({
                   <h2 className="text-xl font-bold mb-4">Meet Your Mentors</h2>
                   <div className="space-y-4">
                     {mentorDetails && Array.isArray(mentorDetails) && mentorDetails.length > 0 ? (
-                      mentorDetails.map((mentor, index) => (
-                        <DataCard key={index}>
-                          <div className="flex items-start gap-4">
-                            {mentor.avatar && (
-                              <img
-                                src={mentor.avatar}
-                                alt={mentor.name}
-                                className="h-16 w-16 rounded-full object-cover flex-shrink-0"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-lg font-bold">
-                                {mentor.name}
-                              </h3>
-                              {mentor.designation && (
-                                <p className="text-sm text-magenta mb-2">
-                                  {mentor.designation}
+                      mentorDetails.map((mentor: any, index: number) => {
+                        const mentorName = mentor.name || mentor.fullName || "Event Mentor";
+                        const designation = mentor.designation || mentor.areaOfExpertise || "Industry Mentor";
+                        const company = mentor.company || mentor.currentOrganization;
+                        const expertiseList = Array.isArray(mentor.expertise)
+                          ? mentor.expertise
+                          : typeof mentor.areaOfExpertise === "string"
+                          ? [mentor.areaOfExpertise]
+                          : [];
+
+                        return (
+                          <DataCard key={index}>
+                            <div className="flex items-start gap-4">
+                              <Avatar className="h-16 w-16 border flex-shrink-0">
+                                <AvatarImage src={mentor.avatar} alt={mentorName} />
+                                <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">
+                                  {mentorName.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-lg font-bold">{mentorName}</h3>
+                                <p className="text-sm font-medium text-magenta mb-1">
+                                  {designation} {company ? `at ${company}` : ""}
                                 </p>
-                              )}
-                              <p className="text-sm text-muted-foreground mb-3">
-                                {mentor.bio}
-                              </p>
-                              <div className="flex gap-4 text-xs text-muted-foreground mb-3">
-                                <span className="flex items-center gap-1">
-                                  <Star className="h-3 w-3 text-warning" />
-                                  {mentor.rating?.toFixed(1) || displayRating} rating
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {mentor.studentsCount || event.enrolledCount} students
-                                </span>
-                              </div>
-                              {mentor.expertise && mentor.expertise.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                  {mentor.expertise.map((exp, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="px-2 py-1 rounded text-xs bg-muted"
-                                    >
-                                      {exp}
+                                {mentor.bio && (
+                                  <p className="text-sm text-muted-foreground mb-3">
+                                    {mentor.bio}
+                                  </p>
+                                )}
+                                <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mb-3">
+                                  {mentor.rating != null && (
+                                    <span className="flex items-center gap-1">
+                                      <Star className="h-3 w-3 text-warning fill-warning" />
+                                      {Number(mentor.rating).toFixed(1)} rating
                                     </span>
-                                  ))}
+                                  )}
+                                  {mentor.studentsCount != null && (
+                                    <span className="flex items-center gap-1">
+                                      <Users className="h-3 w-3" />
+                                      {Number(mentor.studentsCount).toLocaleString()} students mentored
+                                    </span>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                        </DataCard>
-                      ))
-                    ) : mentorDetails && !Array.isArray(mentorDetails) ? (
-                      <DataCard>
-                        <div className="flex items-start gap-4">
-                          {mentorDetails.avatar && (
-                            <img
-                              src={mentorDetails.avatar}
-                              alt={mentorDetails.name}
-                              className="h-16 w-16 rounded-full object-cover flex-shrink-0"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold">
-                              {mentorDetails.name}
-                            </h3>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              {mentorDetails.bio}
-                            </p>
-                            <div className="flex gap-4 text-xs text-muted-foreground mb-3">
-                              <span className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-warning" />
-                                {mentorDetails.rating?.toFixed(1) || displayRating} rating
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                {mentorDetails.studentsCount || event.enrolledCount} students
-                              </span>
-                            </div>
-                            {mentorDetails.expertise && mentorDetails.expertise.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {mentorDetails.expertise.map((exp, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="px-2 py-1 rounded text-xs bg-muted"
-                                  >
-                                    {exp}
-                                  </span>
-                                ))}
+                                {expertiseList.length > 0 && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {expertiseList.map((exp: string, idx: number) => (
+                                      <span
+                                        key={idx}
+                                        className="px-2 py-1 rounded text-xs bg-muted font-medium text-muted-foreground"
+                                      >
+                                        {exp}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </DataCard>
+                            </div>
+                          </DataCard>
+                        );
+                      })
                     ) : (
                       <DataCard>
-                        <div className="flex items-start gap-4">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold">
-                              {event.mentorName}
-                            </h3>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              Industry expert with extensive experience in training and mentorship.
-                            </p>
-                            <div className="flex gap-4 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-warning" />
-                                {displayRating} rating
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                {event.enrolledCount} students
-                              </span>
-                            </div>
-                          </div>
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No mentors assigned yet for this event.</p>
                         </div>
                       </DataCard>
                     )}

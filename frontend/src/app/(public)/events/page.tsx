@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { Section } from "@/components/ui/section";
@@ -12,9 +13,19 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type EventTab = "workshops" | "bootcamps" | "hackathons";
 
-export default function EventsPage() {
+function EventsContent() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as EventTab | null;
+
   const { isOpen, formType, formTitle, courseId, courseTitle, itemType, openForm, closeForm } = usePopupForm();
-  const [activeTab, setActiveTab] = useState<EventTab>("workshops");
+  const [activeTab, setActiveTab] = useState<EventTab>(tabParam || "bootcamps");
+
+  useEffect(() => {
+    if (tabParam && (tabParam === "workshops" || tabParam === "bootcamps" || tabParam === "hackathons")) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   const { data: user } = useCurrentUser();
   const isMentor = user?.role === "mentor";
   const isEmployer = user?.role === "employer";
@@ -34,27 +45,27 @@ export default function EventsPage() {
 
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <Tabs
-          defaultValue="workshops"
+          defaultValue="bootcamps"
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as EventTab)}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-3 gap-1 rounded-md bg-muted p-1 sm:inline-flex sm:w-auto sm:gap-2 sm:p-2">
             <TabsTrigger
-              value="workshops"
-              className="flex h-full items-center justify-center px-2 py-2 text-center text-xs leading-none sm:min-w-[9.375rem] sm:px-4 sm:text-sm"
-            >
-              Workshops
-            </TabsTrigger>
-            <TabsTrigger
               value="bootcamps"
-              className="flex h-full items-center justify-center px-2 py-2 text-center text-xs leading-none sm:min-w-[9.375rem] sm:px-4 sm:text-sm"
+              className="flex h-full items-center justify-center px-2 py-2 text-center text-xs leading-none sm:min-w-[9.375rem] sm:px-4 sm:text-sm font-medium"
             >
               Bootcamps
             </TabsTrigger>
             <TabsTrigger
+              value="workshops"
+              className="flex h-full items-center justify-center px-2 py-2 text-center text-xs leading-none sm:min-w-[9.375rem] sm:px-4 sm:text-sm font-medium"
+            >
+              Workshops
+            </TabsTrigger>
+            <TabsTrigger
               value="hackathons"
-              className="flex h-full items-center justify-center px-2 py-2 text-center text-xs leading-none sm:min-w-[9.375rem] sm:px-4 sm:text-sm"
+              className="flex h-full items-center justify-center px-2 py-2 text-center text-xs leading-none sm:min-w-[9.375rem] sm:px-4 sm:text-sm font-medium"
             >
               Hackathons
             </TabsTrigger>
@@ -62,8 +73,8 @@ export default function EventsPage() {
         </Tabs>
       </div>
 
-      {activeTab === "workshops" && <WorkshopEvents onOpenForm={openForm} />}
       {activeTab === "bootcamps" && <BootcampEvents onOpenForm={openForm} enabled={activeTab === "bootcamps"} />}
+      {activeTab === "workshops" && <WorkshopEvents onOpenForm={openForm} />}
       {activeTab === "hackathons" && <HackathonEvents onOpenForm={openForm} />}
 
       <Section variant="graphite">
@@ -89,5 +100,13 @@ export default function EventsPage() {
         </div>
       </Section>
     </>
+  );
+}
+
+export default function EventsPage() {
+  return (
+    <Suspense fallback={<div>Loading events...</div>}>
+      <EventsContent />
+    </Suspense>
   );
 }
