@@ -25,7 +25,9 @@ import {
   Loader2,
   Calendar,
   Clock,
+  Flame,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
@@ -53,7 +55,12 @@ export default function TrainingProgramDetailPage({
   const program = programData?.data?.program;
   const overview = programData?.data?.overview;
   const syllabus = programData?.data?.syllabus || [];
-  const mentors = programData?.data?.mentors || [];
+  const mentors =
+    (programData?.data?.mentors && programData.data.mentors.length > 0)
+      ? programData.data.mentors
+      : (program?.mentors && program.mentors.length > 0)
+      ? program.mentors
+      : [];
   const faqs = programData?.data?.faqs || [];
 
   // Check enrollment status (only if user is authenticated)
@@ -99,7 +106,7 @@ export default function TrainingProgramDetailPage({
   // Use backend-provided CTAs
   const primaryCTA = program.primaryCTA || "Enroll Now";
   const secondaryCTA = program.secondaryCTA;
-  const displayRating = (value: number) => value.toFixed(1);
+  const displayRating = (value?: number) => (value && value > 0 ? value.toFixed(1) : "New");
 
   // Determine CTA behavior
   const isPrimaryCallback = primaryCTA.toLowerCase().includes("callback");
@@ -333,7 +340,12 @@ export default function TrainingProgramDetailPage({
 
             {/* Title area */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {(program.isFeatured || program.is_featured) && (
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                    <Flame className="h-3.5 w-3.5" /> Trending Now
+                  </span>
+                )}
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-magenta/10 text-magenta">
                   {program.domain}
                 </span>
@@ -349,12 +361,29 @@ export default function TrainingProgramDetailPage({
                 {program.title}
               </h1>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Star className="h-4 w-4 text-warning" />
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                {mentors.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2 overflow-hidden">
+                      {mentors.map((mentor: any, index: number) => (
+                        <Avatar key={index} className="h-8 w-8 border-2 border-background">
+                          <AvatarImage src={mentor.avatar} alt={mentor.name} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                            {(mentor.name || mentor.fullName || "M").charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                    </div>
+                    <span className="font-medium text-foreground">
+                      {mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                )}
+                <span className="flex items-center gap-1 font-medium">
+                  <Star className="h-4 w-4 text-warning fill-warning" />
                   {displayRating(program.rating)}
                 </span>
-                <span>{program.enrollmentCount.toLocaleString()} enrolled</span>
+                <span className="font-medium">{(program.enrollmentCount || 0).toLocaleString()} enrolled</span>
               </div>
             </div>
 
@@ -500,56 +529,71 @@ export default function TrainingProgramDetailPage({
 
               <TabsContent value="mentor" className="pt-6 space-y-4">
                 {mentors.length > 0 ? (
-                  mentors.map((mentor, index) => (
-                    <DataCard key={index}>
-                      <div className="flex items-start gap-4">
-                        <img
-                          src={mentor.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(mentor.name || 'Mentor')}`}
-                          alt={mentor.name}
-                          className="h-16 w-16 rounded-full object-cover"
-                        />
-                        <div>
-                          <h3 className="text-lg font-bold">
-                            {mentor.name}
-                          </h3>
-                          {mentor.designation && (
+                  mentors.map((mentor: any, index: number) => {
+                    const mentorName = mentor.name || mentor.fullName || "Mentor";
+                    const designation = mentor.designation || mentor.areaOfExpertise || "Industry Mentor";
+                    const company = mentor.company || mentor.currentOrganization;
+                    const expertiseList = Array.isArray(mentor.expertise)
+                      ? mentor.expertise
+                      : typeof mentor.areaOfExpertise === "string"
+                      ? [mentor.areaOfExpertise]
+                      : [];
+
+                    return (
+                      <DataCard key={index}>
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-16 w-16 border">
+                            <AvatarImage src={mentor.avatar} alt={mentorName} />
+                            <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">
+                              {mentorName.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold">{mentorName}</h3>
                             <p className="text-sm font-medium text-magenta mb-1">
-                              {mentor.designation} {mentor.company ? `at ${mentor.company}` : ""}
+                              {designation} {company ? `at ${company}` : ""}
                             </p>
-                          )}
-                          <p className="text-sm text-muted-foreground mb-3">
-                            {mentor.bio}
-                          </p>
-                          <div className="flex gap-4 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Star className="h-3 w-3 text-warning" />
-                              {mentor.rating.toFixed(1)} rating
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {mentor.studentsCount.toLocaleString()} students
-                            </span>
-                          </div>
-                          {mentor.expertise && mentor.expertise.length > 0 && (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {mentor.expertise.map((exp, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-2 py-1 rounded text-xs bg-muted"
-                                >
-                                  {exp}
+                            {mentor.bio && (
+                              <p className="text-sm text-muted-foreground mb-3">
+                                {mentor.bio}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                              {mentor.rating != null && (
+                                <span className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 text-warning fill-warning" />
+                                  {Number(mentor.rating).toFixed(1)} rating
                                 </span>
-                              ))}
+                              )}
+                              {mentor.studentsCount != null && (
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {Number(mentor.studentsCount).toLocaleString()} students mentored
+                                </span>
+                              )}
                             </div>
-                          )}
+                            {expertiseList.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {expertiseList.map((exp: string, idx: number) => (
+                                  <span
+                                    key={idx}
+                                    className="px-2 py-1 rounded text-xs bg-muted font-medium text-muted-foreground"
+                                  >
+                                    {exp}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </DataCard>
-                  ))
+                      </DataCard>
+                    );
+                  })
                 ) : (
                   <DataCard>
                     <div className="text-center py-8 text-muted-foreground">
-                      No mentor details available.
+                      <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No mentors assigned yet for this training program.</p>
                     </div>
                   </DataCard>
                 )}

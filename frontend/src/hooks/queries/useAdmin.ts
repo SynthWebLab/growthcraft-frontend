@@ -461,6 +461,27 @@ export function usePublishCourse() {
 
 // --- Training Program Admin CRUD Hooks ---
 
+export function useAdminTrainingPrograms(params?: { page?: number; limit?: number; search?: string }) {
+  return useQuery({
+    queryKey: [...adminKeys.trainingPrograms(), params],
+    queryFn: () => adminService.getAdminTrainingPrograms(params),
+  });
+}
+
+export function usePublishTrainingProgram() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminService.publishTrainingProgram(id),
+    onSuccess: (res: any) => {
+      toast.success(res?.message || "Training program status updated");
+      queryClient.invalidateQueries({ queryKey: adminKeys.trainingPrograms() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to update training program status"));
+    },
+  });
+}
+
 export function useCreateTrainingProgram() {
   const queryClient = useQueryClient();
   return useMutation({

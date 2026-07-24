@@ -135,6 +135,7 @@ export const API_ENDPOINTS = {
     coursePublish: (id: string) => `/admin/courses/${id}/publish`,
     courseDetail: (id: string) => `/admin/courses/${id}`,
     trainingPrograms: "/admin/training-programs",
+    trainingProgramPublish: (id: string) => `/admin/training-programs/${id}/publish`,
     trainingProgramDetail: (id: string) => `/admin/training-programs/${id}`,
     events: "/admin/events",
     eventDetail: (id: string) => `/admin/events/${id}`,

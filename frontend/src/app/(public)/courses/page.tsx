@@ -81,7 +81,12 @@ export default function CoursesPage() {
   const courses = [...rawCourses].sort((a: any, b: any) => {
     const aFeatured = a.isFeatured || a.is_featured ? 1 : 0;
     const bFeatured = b.isFeatured || b.is_featured ? 1 : 0;
-    return bFeatured - aFeatured;
+    if (bFeatured !== aFeatured) {
+      return bFeatured - aFeatured;
+    }
+    const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return bTime - aTime;
   });
   const totalPages = coursesData?.meta?.pagination?.totalPages || 1;
   const totalCourses = coursesData?.meta?.pagination?.total || 0;

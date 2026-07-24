@@ -31,6 +31,23 @@ export interface TrainingProgram {
   mentorName: string;
   primaryCTA: string;
   secondaryCTA: string | null;
+  isFeatured?: boolean;
+  is_featured?: boolean;
+  mentors?: Array<{
+    userId?: string;
+    mentorProfileId?: string;
+    name?: string;
+    fullName?: string;
+    avatar?: string;
+    designation?: string;
+    areaOfExpertise?: string;
+    company?: string;
+    currentOrganization?: string;
+    bio?: string;
+    rating?: number;
+    studentsCount?: number;
+    expertise?: string[];
+  }>;
   createdAt: string;
   updatedAt: string;
 }
