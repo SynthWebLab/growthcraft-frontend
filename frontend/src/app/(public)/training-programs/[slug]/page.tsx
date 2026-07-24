@@ -504,7 +504,7 @@ export default function TrainingProgramDetailPage({
                     <DataCard key={index}>
                       <div className="flex items-start gap-4">
                         <img
-                          src={mentor.avatar}
+                          src={mentor.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(mentor.name || 'Mentor')}`}
                           alt={mentor.name}
                           className="h-16 w-16 rounded-full object-cover"
                         />

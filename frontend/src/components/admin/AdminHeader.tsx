@@ -28,6 +28,7 @@ interface AdminHeaderProps {
     email: string;
     full_name?: string;
     role?: string;
+    avatar?: string;
   } | null;
   onLogout: () => void;
   onMenuClick?: () => void;
@@ -160,7 +161,7 @@ export const AdminHeader = ({ user, onLogout, onMenuClick }: AdminHeaderProps) =
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                <AvatarImage src="" alt={displayName || "Admin"} />
+                <AvatarImage src={user?.avatar || undefined} alt={displayName || "Admin"} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {initials}
                 </AvatarFallback>

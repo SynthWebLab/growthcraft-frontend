@@ -410,8 +410,8 @@ export default function CourseDetailPage({
                 <DataCard>
                   <div className="flex items-start gap-4">
                     <img
-                      src={instructorDetails?.avatar || course.instructor?.avatar}
-                      alt={instructorDetails?.name}
+                      src={instructorDetails?.avatar || course.instructor?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(instructorDetails?.name || course.instructorName || 'Instructor')}`}
+                      alt={instructorDetails?.name || course.instructorName || ''}
                       className="h-16 w-16 rounded-full"
                     />
                     <div>

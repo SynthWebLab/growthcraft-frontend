@@ -395,6 +395,13 @@ export function useDeleteAdminEmployer() {
 
 // --- Course Admin CRUD Hooks ---
 
+export function useAdminCourses() {
+  return useQuery({
+    queryKey: adminKeys.courses(),
+    queryFn: () => adminService.getCourses(),
+  });
+}
+
 export function useCreateCourse() {
   const queryClient = useQueryClient();
   return useMutation({

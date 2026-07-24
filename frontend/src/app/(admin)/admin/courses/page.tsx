@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useCourses } from "@/hooks/queries/useCourses";
 import {
+  useAdminCourses,
   useCreateCourse,
   useUpdateCourse,
   useDeleteCourse,
@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Globe, EyeOff } from "lucide-react";
 
 interface Course {
   id: string;
@@ -35,6 +36,7 @@ interface Course {
   category: string;
   description: string | null;
   duration: number | null;
+  lessonsCount: number | null;
   level: string | null;
   price: number | null;
   originalPrice: number | null;
@@ -45,18 +47,32 @@ interface Course {
   created_at: string;
 }
 
-const CATEGORIES = ["MERN", "UI/UX", "DataScience", "DevOps", "Other"];
-const LEVELS = ["Beginner", "Intermediate", "Advanced"];
+const CATEGORIES = [
+  "Web Development",
+  "Data Science",
+  "Programming",
+  "Mobile Development",
+  "Cloud Computing",
+  "Cybersecurity",
+  "AI/ML",
+  "DevOps",
+  "Design",
+  "Business",
+  "Other",
+];
+
+const LEVELS = ["Beginner", "Intermediate", "Advanced", "Expert"];
 
 const EMPTY_FORM = {
   title: "",
   description: "",
-  category: "MERN",
+  category: "Web Development",
   difficultyLevel: "Beginner",
-  duration: "",
+  duration: "20",
+  lessonsCount: "10",
   price: "",
   originalPrice: "",
-  instructorName: "",
+  instructorName: "GrowthCraft Team",
   tags: "",
   is_published: false,
   is_featured: false,
@@ -68,24 +84,31 @@ export default function AdminCourses() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
 
-  const { data: coursesData, isLoading } = useCourses();
+  const { data: coursesData, isLoading } = useAdminCourses();
   const createMutation = useCreateCourse();
   const updateMutation = useUpdateCourse();
   const deleteMutation = useDeleteCourse();
   const publishMutation = usePublishCourse();
 
-  const rawCourses = coursesData?.data || [];
+  // Extract raw courses from API response (supports array or wrapper object)
+  const rawCourses = Array.isArray(coursesData?.data)
+    ? coursesData.data
+    : Array.isArray(coursesData)
+    ? coursesData
+    : [];
+
   const courses: Course[] = rawCourses.map((c: any) => ({
     id: c._id || c.id,
-    title: c.title,
-    category: c.category,
+    title: c.title || "",
+    category: c.category || "Other",
     description: c.description || null,
-    duration: c.duration || c.durationHours || null,
+    duration: c.duration || c.totalHours || null,
+    lessonsCount: c.lessonsCount || null,
     level: c.difficultyLevel || c.level || null,
     price: c.price ?? null,
     originalPrice: c.originalPrice ?? null,
-    instructorName: c.instructorName || c.instructor?.name || null,
-    tags: Array.isArray(c.tags) ? c.tags.join(", ") : (c.tags || ""),
+    instructorName: c.instructor?.name || c.instructorName || null,
+    tags: Array.isArray(c.tags) ? c.tags.join(", ") : c.tags || "",
     is_published: !!c.isPublished,
     is_featured: !!c.isFeatured,
     created_at: c.createdAt || new Date().toISOString(),
@@ -102,12 +125,13 @@ export default function AdminCourses() {
     setFormData({
       title: course.title,
       description: course.description || "",
-      category: course.category || "MERN",
+      category: course.category || "Web Development",
       difficultyLevel: course.level || "Beginner",
-      duration: course.duration?.toString() || "",
+      duration: course.duration?.toString() || "20",
+      lessonsCount: course.lessonsCount?.toString() || "10",
       price: course.price?.toString() || "",
       originalPrice: course.originalPrice?.toString() || "",
-      instructorName: course.instructorName || "",
+      instructorName: course.instructorName || "GrowthCraft Team",
       tags: course.tags || "",
       is_published: course.is_published,
       is_featured: course.is_featured,
@@ -116,7 +140,7 @@ export default function AdminCourses() {
   };
 
   const handleDelete = (course: Course) => {
-    if (!confirm(`Delete "${course.title}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete course "${course.title}"? This action soft-deletes the course.`)) return;
     deleteMutation.mutate(course.id);
   };
 
@@ -132,10 +156,11 @@ export default function AdminCourses() {
       description: formData.description.trim(),
       category: formData.category,
       difficultyLevel: formData.difficultyLevel,
-      duration: formData.duration ? parseInt(formData.duration) : undefined,
+      duration: formData.duration ? parseInt(formData.duration) : 20,
+      lessonsCount: formData.lessonsCount ? parseInt(formData.lessonsCount) : 10,
       price: formData.price ? parseFloat(formData.price) : 0,
       originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
-      instructorName: formData.instructorName.trim() || undefined,
+      instructorName: formData.instructorName.trim() || "GrowthCraft Team",
       tags: formData.tags
         ? formData.tags.split(",").map((t) => t.trim()).filter(Boolean)
         : [],
@@ -158,7 +183,8 @@ export default function AdminCourses() {
   const filteredCourses = courses.filter(
     (c) =>
       c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.category.toLowerCase().includes(searchQuery.toLowerCase())
+      c.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.instructorName && c.instructorName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const columns = [
@@ -171,6 +197,11 @@ export default function AdminCourses() {
       render: (v: number) => (v ? `${v} hrs` : "—"),
     },
     {
+      key: "lessonsCount",
+      label: "Lessons",
+      render: (v: number) => (v ? `${v} lessons` : "—"),
+    },
+    {
       key: "price",
       label: "Price",
       render: (v: number) => (v ? `₹${v.toLocaleString()}` : "Free"),
@@ -178,10 +209,25 @@ export default function AdminCourses() {
     {
       key: "is_published",
       label: "Status",
-      render: (v: boolean) => (
-        <Badge variant={v ? "default" : "secondary"}>
-          {v ? "Published" : "Draft"}
-        </Badge>
+      render: (v: boolean, row: Course) => (
+        <Button
+          variant={v ? "default" : "outline"}
+          size="sm"
+          className="h-7 text-xs gap-1"
+          onClick={() => handlePublish(row)}
+          disabled={publishMutation.isPending}
+          title={v ? "Click to unpublish" : "Click to publish"}
+        >
+          {v ? (
+            <>
+              <Globe className="h-3 w-3" /> Published
+            </>
+          ) : (
+            <>
+              <EyeOff className="h-3 w-3 text-muted-foreground" /> Draft
+            </>
+          )}
+        </Button>
       ),
     },
     {
@@ -206,7 +252,7 @@ export default function AdminCourses() {
       <DataTable
         columns={columns}
         data={filteredCourses}
-        searchPlaceholder="Search courses by title or category..."
+        searchPlaceholder="Search courses by title, category, or instructor..."
         onSearch={setSearchQuery}
         onAdd={handleAdd}
         onEdit={handleEdit}
@@ -301,7 +347,20 @@ export default function AdminCourses() {
                   min={1}
                   value={formData.duration}
                   onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  placeholder="e.g. 60"
+                  placeholder="e.g. 40"
+                />
+              </div>
+
+              {/* Lessons Count */}
+              <div className="space-y-2">
+                <Label htmlFor="lessonsCount">Total Lessons</Label>
+                <Input
+                  id="lessonsCount"
+                  type="number"
+                  min={1}
+                  value={formData.lessonsCount}
+                  onChange={(e) => setFormData({ ...formData, lessonsCount: e.target.value })}
+                  placeholder="e.g. 20"
                 />
               </div>
 
@@ -335,7 +394,7 @@ export default function AdminCourses() {
               </div>
 
               {/* Instructor Name */}
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="instructorName">Instructor Name</Label>
                 <Input
                   id="instructorName"

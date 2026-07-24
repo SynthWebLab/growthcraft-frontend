@@ -221,6 +221,10 @@ export const adminService = {
   },
 
   // --- Course Admin CRUD ---
+  getCourses: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.admin.courses);
+  },
+
   createCourse: async (data: any): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.admin.courses, data);
   },

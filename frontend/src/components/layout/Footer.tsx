@@ -39,8 +39,10 @@ export const Footer = () => {
               <Image
                 src={logoMain}
                 alt="GrowthCraft"
-                className="h-8 md:h-10 brightness-0 invert"
+                className="h-8 md:h-10 w-auto brightness-0 invert"
                 height={40}
+                width={120}
+                style={{ width: "auto" }}
               />
             </Link>
             <p className="text-background/70 mb-4 md:mb-6 max-w-sm text-sm md:text-base">

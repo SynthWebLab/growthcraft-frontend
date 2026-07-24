@@ -295,7 +295,7 @@ export default function CoursesPage() {
 
               <div className="flex items-center gap-3 mb-3">
                 <img
-                  src={course.instructor.avatar}
+                  src={course.instructor?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(course.instructorName || 'Instructor')}`}
                   alt={course.instructorName}
                   className="h-6 w-6 rounded-full"
                 />
