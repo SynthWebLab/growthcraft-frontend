@@ -93,6 +93,16 @@ export interface EnrollmentStatusResponse {
   };
 }
 
+export interface CourseMentor {
+  userId?: string;
+  mentorProfileId?: string;
+  name: string;
+  avatar?: string;
+  designation?: string;
+  areaOfExpertise?: string;
+  bio?: string;
+}
+
 export interface Course {
   _id: string;
   title: string;
@@ -125,6 +135,7 @@ export interface Course {
   discountedPrice: number;
   instructor: CourseInstructor;
   instructorName: string;
+  mentors?: CourseMentor[];
   bootcampDetails?: BootcampDetails;
 }
 

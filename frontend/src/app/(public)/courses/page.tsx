@@ -77,7 +77,12 @@ export default function CoursesPage() {
     limit: 6,
   });
 
-  const courses = coursesData?.data || [];
+  const rawCourses = coursesData?.data || [];
+  const courses = [...rawCourses].sort((a: any, b: any) => {
+    const aFeatured = a.isFeatured || a.is_featured ? 1 : 0;
+    const bFeatured = b.isFeatured || b.is_featured ? 1 : 0;
+    return bFeatured - aFeatured;
+  });
   const totalPages = coursesData?.meta?.pagination?.totalPages || 1;
   const totalCourses = coursesData?.meta?.pagination?.total || 0;
 

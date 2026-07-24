@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { DataCard } from "@/components/ui/data-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Accordion,
   AccordionContent,
@@ -286,31 +287,57 @@ export default function CourseDetailPage({
 
             {/* Title area */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-magenta/10 text-magenta">
                   {course.category}
                 </span>
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-lavender/10 text-lavender">
                   {course.difficultyLevel}
                 </span>
+                {(course.isFeatured || (course as any).is_featured) && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs flex items-center gap-1">
+                    🔥 Trending Now
+                  </span>
+                )}
               </div>
 
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
                 {course.title}
               </h1>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <img
-                  src={course.instructor?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
-                  alt=""
-                  className="h-8 w-8 rounded-full"
-                />
-                <span>{course.instructorName}</span>
-                <span className="flex items-center gap-1">
-                  <Star className="h-4 w-4 text-warning" />
-                  {course.rating}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8 border">
+                    <AvatarImage
+                      src={
+                        course.mentors && course.mentors[0]?.avatar
+                          ? course.mentors[0].avatar
+                          : course.instructor?.avatar || undefined
+                      }
+                    />
+                    <AvatarFallback className="text-xs font-bold">
+                      {(
+                        (course.mentors && course.mentors[0]?.name) ||
+                        course.instructorName ||
+                        "M"
+                      )
+                        .charAt(0)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-foreground">
+                    {course.mentors && course.mentors.length > 0
+                      ? course.mentors.map((m) => m.name).join(", ")
+                      : course.instructorName || "GrowthCraft Team"}
+                  </span>
+                </div>
+                <span className="flex items-center gap-1 font-medium">
+                  <Star className="h-4 w-4 text-warning fill-warning" />
+                  {course.rating ? course.rating.toFixed(1) : "New"}
                 </span>
-                <span>{course.enrollmentCount.toLocaleString()} enrolled</span>
+                <span className="font-medium">
+                  {(course.enrollmentCount || 0).toLocaleString()} enrolled
+                </span>
               </div>
             </div>
 
@@ -406,37 +433,68 @@ export default function CourseDetailPage({
                 </Accordion>
               </TabsContent>
 
-              <TabsContent value="instructor" className="pt-6">
-                <DataCard>
-                  <div className="flex items-start gap-4">
-                    <img
-                      src={instructorDetails?.avatar || course.instructor?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(instructorDetails?.name || course.instructorName || 'Instructor')}`}
-                      alt={instructorDetails?.name || course.instructorName || ''}
-                      className="h-16 w-16 rounded-full"
-                    />
-                    <div>
-                      <h3 className="text-lg font-bold">
-                        {instructorDetails?.name || course.instructorName}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {instructorDetails?.bio || "Senior Engineer with 8+ years of industry experience. Previously at top tech companies, now dedicated to training the next wave of developers."}
-                      </p>
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Star className="h-3 w-3 text-warning" />
-                          {instructorDetails?.rating || course.rating} rating
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {instructorDetails?.studentsCount || course.enrollmentCount} students
-                        </span>
-                        {instructorDetails?.coursesCount && (
-                          <span>{instructorDetails.coursesCount} courses</span>
-                        )}
+              <TabsContent value="instructor" className="pt-6 space-y-4">
+                {course.mentors && course.mentors.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {course.mentors.map((m, idx) => (
+                      <DataCard key={m.userId || idx}>
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-14 w-14 border border-primary/20">
+                            <AvatarImage src={m.avatar || undefined} />
+                            <AvatarFallback className="font-bold text-lg">
+                              {(m.name || "M").charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="text-base font-bold">{m.name}</h3>
+                            {m.designation && (
+                              <p className="text-xs font-semibold text-magenta mb-1">{m.designation}</p>
+                            )}
+                            {m.areaOfExpertise && (
+                              <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded bg-magenta/10 text-magenta mb-2">
+                                {m.areaOfExpertise}
+                              </span>
+                            )}
+                            <p className="text-xs text-muted-foreground line-clamp-3">
+                              {m.bio || "Industry mentor guiding GrowthCraft students through campus training sessions, code reviews, and career mentorship."}
+                            </p>
+                          </div>
+                        </div>
+                      </DataCard>
+                    ))}
+                  </div>
+                ) : (
+                  <DataCard>
+                    <div className="flex items-start gap-4">
+                      <img
+                        src={instructorDetails?.avatar || course.instructor?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(instructorDetails?.name || course.instructorName || 'Instructor')}`}
+                        alt={instructorDetails?.name || course.instructorName || ''}
+                        className="h-16 w-16 rounded-full"
+                      />
+                      <div>
+                        <h3 className="text-lg font-bold">
+                          {instructorDetails?.name || course.instructorName}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {instructorDetails?.bio || "Senior Engineer with 8+ years of industry experience. Previously at top tech companies, now dedicated to training the next wave of developers."}
+                        </p>
+                        <div className="flex gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Star className="h-3 w-3 text-warning" />
+                            {instructorDetails?.rating || course.rating} rating
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {instructorDetails?.studentsCount || course.enrollmentCount} students
+                          </span>
+                          {instructorDetails?.coursesCount && (
+                            <span>{instructorDetails.coursesCount} courses</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </DataCard>
+                  </DataCard>
+                )}
               </TabsContent>
 
               <TabsContent value="faq" className="pt-6">
