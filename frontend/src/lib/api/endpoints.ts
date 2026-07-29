@@ -191,5 +191,12 @@ export const API_ENDPOINTS = {
     read: (id: string) => `/notifications/${id}/read`,
     readAll: "/notifications/read-all",
   },
+  payments: {
+    createOrder: "/payments/create-order",
+    verify: "/payments/verify",
+    createLink: "/payments/create-link",
+    myPayments: "/payments/my-payments",
+  },
 } as const;
+
 

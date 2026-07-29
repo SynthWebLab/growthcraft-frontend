@@ -32,18 +32,22 @@ import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useTrainingProgramBySlug,
   useTrainingProgramEnrollmentStatus,
   useEnrollInTrainingProgram,
   useRequestTrainingProgramCallback,
 } from "@/hooks/queries/useTrainingPrograms";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+
 
 export default function TrainingProgramDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const queryClient = useQueryClient();
   const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
@@ -72,7 +76,9 @@ export default function TrainingProgramDetailPage({
 
   // Mutations for enrollment and callback
   const enrollMutation = useEnrollInTrainingProgram();
+  const { openCheckout, isLoading: checkoutLoading } = useRazorpayCheckout();
   const callbackMutation = useRequestTrainingProgramCallback();
+
 
   // Loading state
   if (isLoading) {
@@ -208,7 +214,7 @@ export default function TrainingProgramDetailPage({
     }
 
     try {
-      await enrollMutation.mutateAsync({
+      const response = await enrollMutation.mutateAsync({
         programId: program._id,
         data: {
           fullName: user.fullName,
@@ -216,6 +222,33 @@ export default function TrainingProgramDetailPage({
           phone: user.phone || "",
         },
       });
+
+      if (response?.data?.enrollment?._id) {
+        openCheckout({
+          amount: program.price || 9999,
+          itemType: "training-program",
+          itemId: response.data.enrollment._id,
+          title: program.title,
+          description: `Enrollment fee for ${program.title}`,
+          prefill: {
+            name: user.fullName,
+            email: user.email,
+            contact: user.phone,
+          },
+          onSuccess: (paymentId) => {
+            toast.success("Payment completed!", {
+              description: `Payment ID: ${paymentId}. You are now enrolled!`,
+            });
+            // Invalidate queries to immediately show active enrollment status
+            queryClient.invalidateQueries({ queryKey: ["training-program", program._id] });
+            queryClient.invalidateQueries({ queryKey: ["training-program-enrollment-status", program._id] });
+            queryClient.invalidateQueries({ queryKey: ["training-programs"] });
+          },
+          onError: (err) => {
+            toast.error(err || "Payment failed. Please try again from your dashboard.");
+          },
+        });
+      }
     } catch (err) {
       console.error("Enrollment error:", err);
     }
@@ -262,6 +295,7 @@ export default function TrainingProgramDetailPage({
   // Button states and labels
   const isPrimaryButtonDisabled =
     (isAuthenticated && isRestrictedRole) ||
+    checkoutLoading ||
     (isPrimaryEnrollment
       ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryCallback
@@ -269,6 +303,7 @@ export default function TrainingProgramDetailPage({
       : isPrimaryRegisterInterest
       ? hasCallbackRequest || callbackMutation.isPending
       : callbackMutation.isPending);
+
 
   const isSecondaryButtonDisabled = hasCallbackRequest || callbackMutation.isPending || (isAuthenticated && isRestrictedRole);
   const primaryButtonClasses = isPrimaryCallback

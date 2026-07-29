@@ -54,9 +54,12 @@ export function useEnrollCourse() {
       courseService.enrollInCourse(courseId, data),
     onSuccess: (response) => {
       if (response.success) {
-        toast.success("Enrollment successful!", {
-          description: response.message || "You have been enrolled in the course.",
-        });
+        // Only show success toast if enrollment is not pending payment
+        if (response.data?.enrollment?.status !== "pending") {
+          toast.success("Enrollment successful!", {
+            description: response.message || "You have been enrolled in the course.",
+          });
+        }
         
         // Invalidate courses cache to refetch updated data
         queryClient.invalidateQueries({ queryKey: courseKeys.all });

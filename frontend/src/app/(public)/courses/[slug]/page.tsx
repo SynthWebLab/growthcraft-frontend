@@ -30,13 +30,18 @@ import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
 import { toast } from "sonner";
-import { useCourseBySlug, useEnrollmentStatus, useEnrollCourse, useRequestCallback } from "@/hooks/queries/useCourses";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCourseBySlug, useEnrollmentStatus, useEnrollCourse, useRequestCallback, courseKeys } from "@/hooks/queries/useCourses";
+import { RazorpayPayButton } from "@/components/payment/RazorpayPayButton";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+
 
 export default function CourseDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const queryClient = useQueryClient();
   const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } = usePopupForm();
   const { data: user, isLoading: userLoading } = useCurrentUser();
 
@@ -59,7 +64,9 @@ export default function CourseDetailPage({
 
   // Enrollment and callback mutations - must be called unconditionally (Rules of Hooks)
   const enrollMutation = useEnrollCourse();
+  const { openCheckout, isLoading: checkoutLoading } = useRazorpayCheckout();
   const callbackMutation = useRequestCallback("callback"); // Default context
+
   const registerInterestMutation = useRequestCallback("register-interest");
   const notifyBatchMutation = useRequestCallback("notify-next-batch");
 
@@ -176,7 +183,7 @@ export default function CourseDetailPage({
     // Auto-enroll using user data (no form popup)
     if (user && course) {
       try {
-        await enrollMutation.mutateAsync({
+        const response = await enrollMutation.mutateAsync({
           courseId: course._id,
           data: {
             fullName: user.fullName,
@@ -184,6 +191,31 @@ export default function CourseDetailPage({
             phone: user.phone,
           },
         });
+
+        if (response?.data?.enrollment?._id) {
+          openCheckout({
+            amount: course.price || 4999,
+            itemType: "course",
+            itemId: response.data.enrollment._id,
+            title: course.title,
+            description: `Enrollment fee for ${course.title}`,
+            prefill: {
+              name: user.fullName,
+              email: user.email,
+              contact: user.phone,
+            },
+            onSuccess: (paymentId) => {
+              toast.success("Payment completed!", {
+                description: `Payment ID: ${paymentId}. You are now enrolled!`,
+              });
+              // Invalidate cache to immediately show active enrollment
+              queryClient.invalidateQueries({ queryKey: courseKeys.all });
+            },
+            onError: (err) => {
+              toast.error(err || "Payment failed. Please try again from your dashboard.");
+            },
+          });
+        }
       } catch (error) {
         // Error handling is done in the mutation hook
         console.error("Enrollment error:", error);
@@ -231,6 +263,7 @@ export default function CourseDetailPage({
   // Determine button states
   const isPrimaryButtonDisabled = 
     (isAuthenticated && isRestrictedRole) ||
+    checkoutLoading ||
     (isPrimaryEnrollment 
       ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryRegisterInterest
@@ -534,6 +567,7 @@ export default function CourseDetailPage({
                 </div>
 
                 {/* Primary CTA */}
+
                 <Button
                   className="w-full bg-magenta text-white hover:bg-magenta/90 mb-3"
                   size="lg"

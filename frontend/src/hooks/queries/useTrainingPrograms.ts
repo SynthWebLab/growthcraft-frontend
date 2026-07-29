@@ -75,7 +75,10 @@ export function useEnrollInTrainingProgram() {
       data: { fullName: string; email: string; phone: string; cohortId?: string };
     }) => enrollInTrainingProgram(programId, data),
     onSuccess: (data, variables) => {
-      toast.success(data.message || "Successfully enrolled in training program!");
+      // Only show success toast if enrollment is not pending payment
+      if (data.data?.enrollment?.status !== "pending") {
+        toast.success(data.message || "Successfully enrolled in training program!");
+      }
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["training-program", variables.programId] });
       queryClient.invalidateQueries({ queryKey: ["training-program-enrollment-status", variables.programId] });
