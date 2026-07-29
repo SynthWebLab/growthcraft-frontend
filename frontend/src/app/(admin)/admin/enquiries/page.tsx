@@ -54,12 +54,18 @@ export default function AdminEnquiries() {
   const enquiries: Enquiry[] = enquiriesRes?.data || [];
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
   const [formData, setFormData] = useState({
     status: "new",
     notes: "",
   });
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
 
   const handleView = (enquiry: Enquiry) => {
     setSelectedEnquiry(enquiry);
@@ -78,6 +84,10 @@ export default function AdminEnquiries() {
         id: enquiry.id,
         enquiryType: enquiry.enquiry_type,
       });
+      // Reset page if needed after deletion
+      if (paginatedEnquiries.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      }
     } catch (error) {
       console.error("Error deleting enquiry:", error);
     }
@@ -126,6 +136,13 @@ export default function AdminEnquiries() {
     (enquiry.message && enquiry.message.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const pageSize = 15;
+  const totalPages = Math.ceil(filteredEnquiries.length / pageSize);
+  const paginatedEnquiries = filteredEnquiries.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   const columns = [
     { key: "name", label: "Name" },
     { key: "email", label: "Email" },
@@ -164,13 +181,40 @@ export default function AdminEnquiries() {
 
       <DataTable
         columns={columns}
-        data={filteredEnquiries}
+        data={paginatedEnquiries}
         searchPlaceholder="Search enquiries..."
-        onSearch={setSearchQuery}
+        onSearch={handleSearch}
         onView={handleView}
         onDelete={handleDelete}
         isLoading={isLoading}
       />
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-border pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredEnquiries.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
+            {Math.min(currentPage * pageSize, filteredEnquiries.length)} of {filteredEnquiries.length} enquiries
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-lg">
