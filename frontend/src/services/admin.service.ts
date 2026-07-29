@@ -316,4 +316,22 @@ export const adminService = {
   deleteEnquiry: async (id: string, enquiryType: string): Promise<any> => {
     return apiClient.delete<any>(`${API_ENDPOINTS.admin.enquiryDetail(id)}?enquiry_type=${encodeURIComponent(enquiryType)}`);
   },
+
+  // --- Registrations ---
+  getRegistrations: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.admin.registrations);
+  },
+
+  updateRegistration: async (
+    id: string,
+    data: { status: string; payment_status: string; notes?: string; item_type: string }
+  ): Promise<any> => {
+    return apiClient.patch<any>(API_ENDPOINTS.admin.registrationDetail(id), data);
+  },
+
+  deleteRegistration: async (id: string, itemType: string): Promise<any> => {
+    return apiClient.delete<any>(
+      `${API_ENDPOINTS.admin.registrationDetail(id)}?item_type=${encodeURIComponent(itemType)}`
+    );
+  },
 };

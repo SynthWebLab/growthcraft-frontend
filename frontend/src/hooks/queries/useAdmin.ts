@@ -38,6 +38,7 @@ export const adminKeys = {
   colleges: () => [...adminKeys.all, "colleges"] as const,
   employers: () => [...adminKeys.all, "employers"] as const,
   enquiries: () => [...adminKeys.all, "enquiries"] as const,
+  registrations: () => [...adminKeys.all, "registrations"] as const,
 };
 
 const STALE = 2 * 60 * 1000; // 2 minutes
@@ -642,6 +643,51 @@ export function useDeleteAdminEnquiry() {
     },
     onError: (err) => {
       toast.error(extractApiError(err, "Failed to delete enquiry"));
+    },
+  });
+}
+
+// --- Registration Hooks ---
+
+export function useAdminRegistrations() {
+  return useQuery({
+    queryKey: adminKeys.registrations(),
+    queryFn: () => adminService.getRegistrations(),
+    staleTime: STALE,
+  });
+}
+
+export function useUpdateAdminRegistration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { status: string; payment_status: string; notes?: string; item_type: string };
+    }) => adminService.updateRegistration(id, data),
+    onSuccess: () => {
+      toast.success("Registration updated successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.registrations() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to update registration"));
+    },
+  });
+}
+
+export function useDeleteAdminRegistration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, itemType }: { id: string; itemType: string }) =>
+      adminService.deleteRegistration(id, itemType),
+    onSuccess: () => {
+      toast.success("Registration deleted successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.registrations() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to delete registration"));
     },
   });
 }

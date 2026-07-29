@@ -147,6 +147,8 @@ export const API_ENDPOINTS = {
     upload: "/admin/upload",
     enquiries: "/admin/enquiries",
     enquiryDetail: (id: string) => `/admin/enquiries/${id}`,
+    registrations: "/admin/registrations",
+    registrationDetail: (id: string) => `/admin/registrations/${id}`,
   },
   leads: {
     create: "/leads",
