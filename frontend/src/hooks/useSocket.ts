@@ -4,6 +4,7 @@ import { getSocket } from "@/lib/socket";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 import { notificationsKeys } from "./queries/useNotifications";
+import { authService } from "@/services/auth.service";
 
 // Map notification types to human readable messages for toasts
 const getNotificationToastMessage = (notification: any): string => {
@@ -70,7 +71,6 @@ export function useSocket() {
         isRefreshing = true;
         try {
           // Try to refresh token if socket failed due to missing/expired token
-          const { authService } = await import("@/services/auth.service");
           await authService.refreshToken();
           // Reconnect after a short delay to ensure cookies are updated
           setTimeout(() => {
