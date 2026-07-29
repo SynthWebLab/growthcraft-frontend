@@ -37,6 +37,7 @@ export const adminKeys = {
   userById: (id: string) => [...adminKeys.all, "user", id] as const,
   colleges: () => [...adminKeys.all, "colleges"] as const,
   employers: () => [...adminKeys.all, "employers"] as const,
+  enquiries: () => [...adminKeys.all, "enquiries"] as const,
 };
 
 const STALE = 2 * 60 * 1000; // 2 minutes
@@ -601,6 +602,46 @@ export function useDeleteEvent() {
     },
     onError: (err) => {
       toast.error(extractApiError(err, "Failed to delete event"));
+    },
+  });
+}
+
+// --- Enquiry & Lead Callback Hooks ---
+
+export function useAdminEnquiries() {
+  return useQuery({
+    queryKey: adminKeys.enquiries(),
+    queryFn: () => adminService.getEnquiries(),
+    staleTime: STALE,
+  });
+}
+
+export function useUpdateAdminEnquiry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { status: string; notes?: string; enquiry_type: string } }) =>
+      adminService.updateEnquiry(id, data),
+    onSuccess: () => {
+      toast.success("Enquiry updated successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.enquiries() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to update enquiry"));
+    },
+  });
+}
+
+export function useDeleteAdminEnquiry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, enquiryType }: { id: string; enquiryType: string }) =>
+      adminService.deleteEnquiry(id, enquiryType),
+    onSuccess: () => {
+      toast.success("Enquiry deleted successfully");
+      queryClient.invalidateQueries({ queryKey: adminKeys.enquiries() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to delete enquiry"));
     },
   });
 }

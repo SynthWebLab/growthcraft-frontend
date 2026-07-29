@@ -303,4 +303,17 @@ export const adminService = {
       },
     });
   },
+
+  // --- Enquiries & Lead Callbacks ---
+  getEnquiries: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.admin.enquiries);
+  },
+
+  updateEnquiry: async (id: string, data: { status: string; notes?: string; enquiry_type: string }): Promise<any> => {
+    return apiClient.patch<any>(API_ENDPOINTS.admin.enquiryDetail(id), data);
+  },
+
+  deleteEnquiry: async (id: string, enquiryType: string): Promise<any> => {
+    return apiClient.delete<any>(`${API_ENDPOINTS.admin.enquiryDetail(id)}?enquiry_type=${encodeURIComponent(enquiryType)}`);
+  },
 };
