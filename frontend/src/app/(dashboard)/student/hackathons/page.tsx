@@ -10,13 +10,15 @@ export default function StudentHackathonsPage() {
 
   const items: EnrollmentGridItem[] = (data?.data?.hackathons ?? []).map((e) => {
     const event = resolveRef(e.eventId);
+    const slug = event?.slug || "build-a-thon-2026";
     return {
       id: e._id,
       title: event?.title ?? e.title,
       subtitle: event?.mode || event?.domain,
       status: e.status,
       enrollmentDate: e.enrollmentDate,
-      href: event?.slug ? `/events/${event.slug}` : undefined,
+      href: `/events/${slug}`,
+      workspaceHref: `/student/hackathons/${slug}`,
       emoji: "🏆",
     };
   });

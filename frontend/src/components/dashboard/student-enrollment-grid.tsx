@@ -19,6 +19,7 @@ export interface EnrollmentGridItem {
   status: EnrollmentStatus;
   enrollmentDate: string;
   href?: string;
+  workspaceHref?: string;
   emoji?: string;
 }
 
@@ -121,8 +122,11 @@ function StudentEnrollmentGridContent({
                   <p className="text-sm text-foreground">
                     Enrolled {formatDate(item.enrollmentDate)}
                   </p>
-                  {item.href && (
-                    <Link href={item.href} className="ml-auto">
+                  {(item.workspaceHref || item.href) && (
+                    <Link
+                      href={item.status === "confirmed" && item.workspaceHref ? item.workspaceHref : (item.href || item.workspaceHref || "#")}
+                      className="ml-auto"
+                    >
                       <Button size="sm" variant="outline">
                         {item.status === "confirmed" ? "View Workspace" : "View Details"}
                       </Button>
