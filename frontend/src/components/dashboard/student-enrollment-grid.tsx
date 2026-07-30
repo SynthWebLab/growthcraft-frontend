@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
 import { PanelEmptyState } from "@/components/panel";
-import { Calendar } from "lucide-react";
+import { Calendar, CreditCard } from "lucide-react";
 import { formatDate, statusBadge } from "@/lib/student-dashboard.utils";
 import type { EnrollmentStatus } from "@/types/student";
+import { PaymentCheckoutModal, type PaymentItemDetails } from "@/components/dashboard/payment-checkout-modal";
 
 export interface EnrollmentGridItem {
   id: string;
@@ -22,6 +23,7 @@ export interface EnrollmentGridItem {
   href?: string;
   workspaceHref?: string;
   emoji?: string;
+  type?: string;
 }
 
 interface StudentEnrollmentGridProps {
@@ -50,16 +52,26 @@ function StudentEnrollmentGridContent({
   browseLabel = "Browse",
 }: StudentEnrollmentGridProps) {
   const searchParams = useSearchParams();
-  const q = searchParams.get("q") || "";
+  const filter = searchParams.get("filter") ?? "all";
 
-  const filteredItems = items.filter((item) =>
-    item.title.toLowerCase().includes(q.toLowerCase()) ||
-    (item.subtitle && item.subtitle.toLowerCase().includes(q.toLowerCase()))
-  );
+  // State for Payment Checkout Modal
+  const [selectedPaymentItem, setSelectedPaymentItem] = useState<PaymentItemDetails | null>(null);
+
+  const filteredItems = items.filter((item) => {
+    if (filter === "all") return true;
+    return item.status.toLowerCase() === filter.toLowerCase();
+  });
 
   return (
     <div className="space-y-6">
       <PageHeader title={pageTitle} description={pageDescription} />
+
+      {/* Payment Gateway Modal */}
+      <PaymentCheckoutModal
+        isOpen={!!selectedPaymentItem}
+        onClose={() => setSelectedPaymentItem(null)}
+        item={selectedPaymentItem}
+      />
 
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2">
@@ -71,36 +83,31 @@ function StudentEnrollmentGridContent({
           ))}
         </div>
       ) : isError ? (
-        <PanelEmptyState
-          icon={icon}
-          title="Couldn't load your data"
-          description="Something went wrong. Please refresh and try again."
-        />
-      ) : items.length === 0 ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-700">
+          <p className="text-sm font-medium">Failed to load items. Please try again later.</p>
+        </div>
+      ) : filteredItems.length === 0 ? (
         <PanelEmptyState
           icon={icon}
           title={emptyTitle}
           description={emptyDescription}
           action={
-            browseHref ? (
-              <Link href={browseHref}>
-                <Button className="bg-magenta text-white hover:bg-magenta/90">
-                  {browseLabel}
-                </Button>
-              </Link>
-            ) : undefined
+            browseHref
+              ? {
+                  href: browseHref,
+                  label: browseLabel,
+                }
+              : undefined
           }
-        />
-      ) : filteredItems.length === 0 ? (
-        <PanelEmptyState
-          icon={icon}
-          title="No results found"
-          description={`We couldn't find any matches for "${q}".`}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {filteredItems.map((item) => {
-            const badge = statusBadge(item.status);
+            const isUnpaid = item.paymentStatus === "pending" || item.status === "pending";
+            const badge = isUnpaid 
+              ? { label: "Pending Payment", className: "bg-amber-100 text-amber-800 border-amber-200" }
+              : statusBadge(item.status);
+
             return (
               <DataCard key={item.id}>
                 <div className="flex items-start gap-4 mb-4">
@@ -125,12 +132,20 @@ function StudentEnrollmentGridContent({
                   </p>
                   {(item.workspaceHref || item.href) && (
                     <div className="ml-auto">
-                      {item.paymentStatus === "pending" || item.status === "pending" ? (
-                        <Link href={item.href || "#"}>
-                          <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-lg shadow-sm">
-                            Pending Payment
-                          </Button>
-                        </Link>
+                      {isUnpaid ? (
+                        <Button 
+                          size="sm" 
+                          onClick={() => setSelectedPaymentItem({
+                            id: item.id,
+                            title: item.title,
+                            subtitle: item.subtitle,
+                            type: item.type || "bootcamp",
+                          })}
+                          className="bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-lg shadow-sm flex items-center gap-1.5"
+                        >
+                          <CreditCard className="h-3.5 w-3.5" />
+                          Pending Payment
+                        </Button>
                       ) : (
                         <Link href={item.workspaceHref || item.href || "#"}>
                           <Button size="sm" variant="outline" className="border-magenta/40 text-magenta hover:bg-magenta/10 text-xs rounded-lg">

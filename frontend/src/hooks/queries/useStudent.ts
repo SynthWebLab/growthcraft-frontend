@@ -329,3 +329,35 @@ export function useSubmitWorkshopAssignment(slug: string) {
   });
 }
 
+/** Fetch the student's bootcamp workspace details (assigned mentors, attendance, capstone project). */
+export function useStudentBootcampWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "bootcamps", "workspace", slug],
+    queryFn: () => studentService.getBootcampWorkspace(slug),
+    enabled: !!slug,
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Submit or update bootcamp capstone project details. */
+export function useSubmitBootcampProject(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitBootcampProject(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Capstone project submission saved", {
+          description: "Your bootcamp capstone project submission has been saved.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "bootcamps", "workspace", slug] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
+    },
+  });
+}
+

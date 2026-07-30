@@ -130,5 +130,11 @@ export const studentService = {
   submitWorkshopAssignment: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.students.submitWorkshopAssignment(slug), data);
   },
+  getBootcampWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.bootcampWorkspace(slug));
+  },
+  submitBootcampProject: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.submitBootcampProject(slug), data);
+  },
 };
 

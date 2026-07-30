@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { 
-  Trophy, 
+  Rocket, 
   Calendar, 
   Clock, 
   MapPin, 
@@ -35,29 +35,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useStudentHackathonWorkspace, useSubmitHackathonProject } from "@/hooks/queries/useStudent";
+import { useStudentBootcampWorkspace, useSubmitBootcampProject } from "@/hooks/queries/useStudent";
 import { PaymentCheckoutModal } from "@/components/dashboard/payment-checkout-modal";
 
-export default function StudentHackathonWorkspacePage({ params }: { params: Promise<{ slug: string }> }) {
+export default function StudentBootcampWorkspacePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
 
-  // Fetch dynamic workspace data from API
-  const { data: workspaceRes, isLoading, isError } = useStudentHackathonWorkspace(slug);
-  const submitMutation = useSubmitHackathonProject(slug);
+  // Fetch dynamic bootcamp workspace data from API
+  const { data: workspaceRes, isLoading, isError } = useStudentBootcampWorkspace(slug);
+  const submitMutation = useSubmitBootcampProject(slug);
 
   const workspaceData = workspaceRes?.data || workspaceRes;
   const event = workspaceData?.event;
   const enrollment = workspaceData?.enrollment;
   const mentors = workspaceData?.mentors || [];
-  const DEFAULT_MENTOR_PHASES = [
-    { phase: 1, name: "Mentor Orientation & Team Registration", status: "Completed", description: "Assigned Campus Mentor verifies team roster and completes student check-in." },
-    { phase: 2, name: "Mentor Problem Briefing & Track Allocation", status: "Completed", description: "Mentor releases track problem statements and conducts technical brief." },
-    { phase: 3, name: "Mentor Architecture Review (Checkpoint 1)", status: "Completed", description: "1:1 mentor code review, database schema evaluation, and tech stack approval." },
-    { phase: 4, name: "Mentor Mid-way Demo & Code Audit (Checkpoint 2)", status: "Completed", description: "Campus mentor audits progress, reviews GitHub commits, and provides feedback." },
-    { phase: 5, name: "Mentor Final Pitch & Project Evaluation", status: "Completed", description: "Campus mentor & Admin jury evaluate final submission and sign off for certificate." },
+  
+  const DEFAULT_BOOTCAMP_PHASES = [
+    { phase: 1, name: "Cohort Onboarding & Fundamentals", status: "Completed", description: "Orientation address, environment setup, and foundational architecture." },
+    { phase: 2, name: "Core Stack Modules & Guided Labs", status: "Completed", description: "Deep-dive technical modules, database modeling, and live instructor labs." },
+    { phase: 3, name: "Capstone Project Build & Code Audits", status: "Completed", description: "Build your industry capstone project with daily mentor reviews." },
+    { phase: 4, name: "Final Demo, Evaluation & Certificate Sign-off", status: "Completed", description: "Capstones evaluation by jury, career guidance, and certificate distribution." },
   ];
 
-  const phases = (workspaceData?.phases && workspaceData.phases.length > 0) ? workspaceData.phases : DEFAULT_MENTOR_PHASES;
+  const phases = (workspaceData?.phases && workspaceData.phases.length > 0) ? workspaceData.phases : DEFAULT_BOOTCAMP_PHASES;
 
   // Form & Check-in state
   const [projectTitle, setProjectTitle] = useState("");
@@ -100,7 +100,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
   const handleSelfCheckin = () => {
     setIsCheckedIn(true);
     toast.success("Check-in confirmed!", {
-      description: "Your attendance status has been updated and recorded."
+      description: "Your bootcamp attendance has been recorded."
     });
   };
 
@@ -120,6 +120,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
     );
   }
 
+  // Payment Gate Check
   const isPendingPayment = enrollment?.paymentStatus === 'pending';
   if (isPendingPayment) {
     const pageTitle = event?.title || slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -131,8 +132,8 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
           item={{
             id: enrollment?._id || slug,
             title: pageTitle,
-            subtitle: "Hackathon Challenge",
-            type: "hackathon",
+            subtitle: "Bootcamp Program",
+            type: "bootcamp",
           }}
         />
         <Card className="p-8 rounded-3xl border-2 border-amber-500/30 bg-gradient-to-b from-amber-500/5 via-white to-amber-500/5 shadow-xl space-y-6">
@@ -143,9 +144,9 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
             <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 font-bold px-3 py-1">
               Payment Pending
             </Badge>
-            <h2 className="text-2xl font-extrabold text-foreground">Payment Required to Access Workspace</h2>
+            <h2 className="text-2xl font-extrabold text-foreground">Payment Required to Access Bootcamp Workspace</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              You have registered for <strong className="text-foreground">{pageTitle}</strong>, but your enrollment payment is currently pending. Please complete the registration payment to unlock access to assigned mentors, campus check-in passes, and project submission.
+              You have registered for <strong className="text-foreground">{pageTitle}</strong>, but your enrollment payment is currently pending. Please complete the registration payment to unlock access to assigned mentors, campus check-in passes, and capstone project submission.
             </p>
           </div>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -156,9 +157,9 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
             >
               <CreditCard className="h-5 w-5" /> Pay Now & Unlock Workspace
             </Button>
-            <Link href="/student/hackathons">
+            <Link href="/student/bootcamps">
               <Button size="lg" variant="outline" className="rounded-xl">
-                Back to My Hackathons
+                Back to My Bootcamps
               </Button>
             </Link>
           </div>
@@ -169,22 +170,22 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
 
   const title = event?.title || slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   const rawStart = event?.startDate || "2026-06-25T09:00:00Z";
-  const rawEnd = event?.endDate || "2026-06-26T18:00:00Z";
+  const rawEnd = event?.endDate || "2026-06-30T18:00:00Z";
   const startObj = new Date(rawStart);
   const endObj = new Date(rawEnd);
   const now = new Date();
 
   const startDate = !isNaN(startObj.getTime()) ? startObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "June 25, 2026 • 09:00 AM";
-  const endDate = !isNaN(endObj.getTime()) ? endObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "June 26, 2026 • 06:00 PM";
+  const endDate = !isNaN(endObj.getTime()) ? endObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "June 30, 2026 • 06:00 PM";
   
-  // Mode detection
+  // Dynamic Mode detection
   const eventMode = (event?.mode || "Offline").toLowerCase();
   const isOnline = eventMode === "online" || eventMode.includes("online") || /online/i.test(slug);
   const venue = isOnline 
-    ? "Online Event • GrowthCraft Live Stream" 
-    : (event?.venue || "GrowthCraft Campus Hub • Lab 402");
+    ? "Online Bootcamp • GrowthCraft Virtual Classroom" 
+    : (event?.venue || "GrowthCraft Campus Hub • Main Auditorium");
   
-  const checkinCode = enrollment?.checkinCode || "GC-HACK-2026-8942";
+  const checkinCode = enrollment?.checkinCode || "GC-BTC-2026-9012";
   const isSubmitted = !!(enrollment?.projectSubmission?.submittedAt || repoUrl);
   const hasAttended = isCheckedIn || (enrollment?.isAttended !== false);
 
@@ -218,7 +219,6 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
     }
   }
 
-  // Certificate Workflow State
   const canUnlockCert = hasAttended && isSubmitted;
 
   return (
@@ -226,11 +226,11 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
       {/* Navigation & Status Header */}
       <div className="flex items-center justify-between">
         <Link 
-          href="/student/hackathons" 
+          href="/student/bootcamps" 
           className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-magenta transition-colors gap-1.5"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to My Hackathons
+          Back to My Bootcamps
         </Link>
         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-3 py-1 font-semibold text-xs">
           Confirmed Enrollment
@@ -246,7 +246,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
           <div className="space-y-3 max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center text-xs font-bold tracking-wider uppercase text-magenta bg-magenta/15 border border-magenta/25 px-3 py-1 rounded-full">
-                🏆 Hackathon Workspace
+                🚀 Bootcamp Workspace
               </span>
               <span className="inline-flex items-center text-xs font-bold uppercase text-slate-300 bg-white/10 px-2.5 py-0.5 rounded-full">
                 {isOnline ? "🌐 Online Event" : "🏛️ Offline Campus Event"}
@@ -273,7 +273,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
             
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">{title}</h1>
             <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-              Welcome to your hackathon workspace. Track event timeline, verify attendance, collaborate with Admin-assigned mentors, and submit your project demo.
+              Welcome to your bootcamp workspace. Access live module sessions, collaborate with Admin-assigned mentors, track cohort milestones, and submit your capstone project.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm text-slate-300 pt-2">
@@ -300,10 +300,10 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
               {isOnline ? <Video className="h-4 w-4" /> : <QrCode className="h-4 w-4" />}
               {isOnline ? "Virtual Pass & Check-in" : "Campus Pass & Check-in"}
             </Button>
-            <a href="#submission-form">
+            <a href="#capstone-form">
               <Button variant="outline" className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20 font-medium rounded-xl flex items-center gap-2">
                 <Code2 className="h-4 w-4" />
-                Jump to Submission
+                Jump to Capstone
               </Button>
             </a>
           </div>
@@ -320,26 +320,26 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
               </div>
               <div>
                 <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                  {isOnline ? "Virtual Event Pass & Meeting Link" : "Campus Check-in Token"}
+                  {isOnline ? "Virtual Bootcamp Pass & Meeting Link" : "Campus Check-in Token"}
                   <Badge className="bg-emerald-500 text-white text-[10px]">
                     {hasAttended ? "VERIFIED PRESENT" : "ATTENDANCE PASS"}
                   </Badge>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {isOnline 
-                    ? "Click to join the virtual hackathon session room or perform 1-click online check-in." 
-                    : "Show this pass code to your GrowthCraft Campus Mentor or click self check-in."}
+                    ? "Click to join the virtual bootcamp live classroom or perform 1-click online check-in." 
+                    : "Show this pass code to your GrowthCraft Bootcamp Mentor or click self check-in."}
                 </p>
                 
                 {isOnline ? (
                   <div className="flex flex-wrap items-center gap-3 mt-3">
                     <a 
-                      href={mentors[0]?.meetingLink || "https://meet.google.com/gc-hackathon-room"} 
+                      href={mentors[0]?.meetingLink || "https://meet.google.com/gc-bootcamp-room"} 
                       target="_blank" 
                       rel="noreferrer"
                     >
                       <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg flex items-center gap-1.5 font-medium shadow-sm">
-                        <Video className="h-4 w-4" /> Join Google Meet Session
+                        <Video className="h-4 w-4" /> Join Google Meet Classroom
                       </Button>
                     </a>
                     <Button 
@@ -385,7 +385,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
       {/* Main Grid: Status & Submission + Admin Mentors */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left 2 Columns: Attendance Status, Timeline & Submission Form */}
+        {/* Left 2 Columns: Attendance Status, Timeline & Capstone Form */}
         <div className="lg:col-span-2 space-y-6">
           
           {/* Attendance & Student Participation Card */}
@@ -411,12 +411,12 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-xs text-muted-foreground block font-medium">Admin-Assigned Mentor</span>
                 <span className="text-sm font-bold text-foreground mt-1 block">
-                  {mentors[0]?.name || "Prof. R. Sharma"}
+                  {mentors[0]?.name || "Prof. Rajesh Sharma"}
                 </span>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-xs text-muted-foreground block font-medium">Team Role</span>
-                <span className="text-sm font-bold text-foreground mt-1 block">Lead Developer</span>
+                <span className="text-xs text-muted-foreground block font-medium">Bootcamp Track</span>
+                <span className="text-sm font-bold text-foreground mt-1 block">Software Engineering</span>
               </div>
             </div>
 
@@ -424,7 +424,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
               <div className="pt-1 flex items-center justify-between bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20">
                 <span className="text-xs font-medium text-emerald-800 flex items-center gap-1.5">
                   <AlertCircle className="h-4 w-4 text-emerald-600" />
-                  Have you arrived at the campus lab / joined the live room?
+                  Have you arrived at the campus auditorium / joined the live room?
                 </span>
                 <Button size="sm" onClick={handleSelfCheckin} className="bg-emerald-600 text-white hover:bg-emerald-700 h-8 text-xs px-3">
                   Check-in Now
@@ -433,15 +433,15 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
             )}
           </Card>
 
-          {/* Hackathon Milestones & Phase Schedule */}
+          {/* Bootcamp Milestones & Phase Schedule */}
           <Card className="p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-magenta" />
-                <h2 className="text-lg font-bold text-foreground">Hackathon Timeline & Milestones</h2>
+                <h2 className="text-lg font-bold text-foreground">Bootcamp Timeline & Cohort Milestones</h2>
               </div>
               <span className="text-xs font-semibold text-muted-foreground">
-                {computedStatus === "Closed" ? "All 5 Phases Concluded" : computedStatus === "Live" ? "Phase 3 of 5 Active" : "Starting Soon"}
+                {computedStatus === "Closed" ? "All 4 Phases Concluded" : computedStatus === "Live" ? "Phase 3 of 4 Active" : "Starting Soon"}
               </span>
             </div>
 
@@ -454,7 +454,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                     if (p.phase === 3) return "In Progress";
                     return "Upcoming";
                   }
-                  // Open status (not started yet)
+                  // Open status
                   if (p.phase === 1) return "In Progress";
                   return "Upcoming";
                 })();
@@ -496,14 +496,14 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
             </div>
           </Card>
 
-          {/* Project Submission Workspace Form */}
-          <Card id="submission-form" className="p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
+          {/* Capstone Project Submission Form */}
+          <Card id="capstone-form" className="p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-2">
                 <Code2 className="h-5 w-5 text-magenta" />
                 <div>
-                  <h2 className="text-lg font-bold text-foreground">Project Submission Workspace</h2>
-                  <p className="text-xs text-muted-foreground">Keep your team repository and demo URL updated for mentor & admin review.</p>
+                  <h2 className="text-lg font-bold text-foreground">Capstone Project Submission</h2>
+                  <p className="text-xs text-muted-foreground">Keep your team capstone repository and demo URL updated for mentor evaluation.</p>
                 </div>
               </div>
               {isSubmitted && (
@@ -515,12 +515,12 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
 
             <form onSubmit={handleSaveSubmission} className="space-y-4 pt-2">
               <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Project Title</label>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Capstone Project Title</label>
                 <input 
                   type="text" 
                   value={projectTitle}
                   onChange={(e) => setProjectTitle(e.target.value)}
-                  placeholder="e.g. Smart Campus AI Helper" 
+                  placeholder="e.g. Enterprise Microservices Platform" 
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                   required
                 />
@@ -535,7 +535,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                     type="url" 
                     value={repoUrl}
                     onChange={(e) => setRepoUrl(e.target.value)}
-                    placeholder="https://github.com/org/repo" 
+                    placeholder="https://github.com/org/bootcamp-capstone" 
                     className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                     required
                   />
@@ -548,7 +548,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                     type="url" 
                     value={demoUrl}
                     onChange={(e) => setDemoUrl(e.target.value)}
-                    placeholder="https://my-demo.vercel.app" 
+                    placeholder="https://bootcamp-demo.vercel.app" 
                     className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                   />
                 </div>
@@ -560,18 +560,18 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                   type="text" 
                   value={techStack}
                   onChange={(e) => setTechStack(e.target.value)}
-                  placeholder="e.g. Next.js, Node.js, MongoDB" 
+                  placeholder="e.g. Next.js, Node.js, Docker, PostgreSQL" 
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Project Overview / Mentor Notes</label>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Capstone Overview / Mentor Notes</label>
                 <textarea 
                   rows={3}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Briefly describe what your hackathon project does..." 
+                  placeholder="Briefly describe what your capstone project accomplishes..." 
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                 />
               </div>
@@ -579,7 +579,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
               <div className="flex items-center justify-between pt-2">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
-                  Your project submission is required for certificate approval.
+                  Capstone submission is required for bootcamp certificate approval.
                 </p>
                 <Button 
                   type="submit" 
@@ -619,12 +619,12 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-foreground">{m.name}</h4>
-                      <p className="text-xs text-muted-foreground">{m.designation || m.areaOfExpertise || "Campus Mentor"}</p>
+                      <p className="text-xs text-muted-foreground">{m.designation || m.areaOfExpertise || "Bootcamp Mentor"}</p>
                     </div>
                   </div>
                   {isOnline || m.meetingLink ? (
                     <a 
-                      href={m.meetingLink || "https://meet.google.com/gc-hackathon-room"} 
+                      href={m.meetingLink || "https://meet.google.com/gc-bootcamp-room"} 
                       target="_blank" 
                       rel="noreferrer"
                     >
@@ -655,10 +655,9 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Award className="h-5 w-5 text-amber-500" />
-                <h2 className="text-lg font-bold text-foreground">Event Certificate</h2>
+                <h2 className="text-lg font-bold text-foreground">Bootcamp Certificate</h2>
               </div>
               
-              {/* Badge based on Certificate Workflow */}
               {!canUnlockCert ? (
                 <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] flex items-center gap-1">
                   <Lock className="h-3 w-3" /> Locked
@@ -674,11 +673,10 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
               )}
             </div>
 
-            {/* Workflow Message & Actions */}
             {!canUnlockCert ? (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Certificate download will unlock once you have <strong className="text-foreground">attended the event</strong> and <strong className="text-foreground">submitted your project assignment</strong>.
+                  Certificate download will unlock once you have <strong className="text-foreground">attended the bootcamp</strong> and <strong className="text-foreground">submitted your capstone project</strong>.
                 </p>
                 <div className="space-y-1.5 text-xs text-slate-600 bg-white p-3 rounded-xl border border-border">
                   <div className="flex items-center gap-2">
@@ -687,7 +685,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                   </div>
                   <div className="flex items-center gap-2">
                     {isSubmitted ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertCircle className="h-4 w-4 text-amber-500" />}
-                    <span>Project Assignment: <strong>{isSubmitted ? "Submitted" : "Not Submitted"}</strong></span>
+                    <span>Capstone Project: <strong>{isSubmitted ? "Submitted" : "Not Submitted"}</strong></span>
                   </div>
                 </div>
                 <Button 
@@ -695,13 +693,13 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                   className="w-full bg-slate-200 text-slate-500 font-medium rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
                 >
                   <Lock className="h-4 w-4" />
-                  Submit Project to Unlock
+                  Submit Capstone to Unlock
                 </Button>
               </div>
             ) : !isAdminApproved ? (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Your attendance and project submission have been logged. GrowthCraft Admins are verifying your details before issuing your official certificate.
+                  Your attendance and capstone project submission have been logged. GrowthCraft Admins are verifying your details before issuing your official bootcamp certificate.
                 </p>
 
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-900 space-y-1">
@@ -709,7 +707,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                     <Hourglass className="h-3.5 w-3.5 text-amber-600" /> Details Submitted for Admin Review
                   </div>
                   <p className="text-[11px] text-amber-800">
-                    Admin verification ensures valid project repository and attendance proof.
+                    Admin verification ensures valid capstone code repository and attendance proof.
                   </p>
                 </div>
 
@@ -721,7 +719,6 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                   Awaiting Admin Approval
                 </Button>
 
-                {/* Simulation Button for Testing/Demo */}
                 <button
                   onClick={() => {
                     setIsAdminApproved(true);
@@ -735,18 +732,18 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
             ) : (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Congratulations! Your attendance and project submission have been verified and approved by GrowthCraft Admin. Download your certificate below.
+                  Congratulations! Your attendance and capstone project have been verified and approved by GrowthCraft Admin. Download your bootcamp certificate below.
                 </p>
                 
                 <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-900 flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>Verified by Admin • Serial No: GC-CERT-2026-8942</span>
+                  <span>Verified by Admin • Serial No: GC-BTC-2026-9012</span>
                 </div>
 
                 <Button 
                   onClick={() => {
                     toast.success("Certificate download started!", {
-                      description: "Your verified PDF certificate is downloading."
+                      description: "Your verified PDF bootcamp certificate is downloading."
                     });
                   }}
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl flex items-center justify-center gap-2 shadow-md"

@@ -29,6 +29,8 @@ export const API_ENDPOINTS = {
     hackathonWorkspace: (slug: string) => `/students/hackathons/workspace/${slug}`,
     submitHackathonProject: (slug: string) => `/students/hackathons/workspace/${slug}/submission`,
     bootcamps: "/students/bootcamps",
+    bootcampWorkspace: (slug: string) => `/students/bootcamps/workspace/${slug}`,
+    submitBootcampProject: (slug: string) => `/students/bootcamps/workspace/${slug}/submission`,
     workshops: "/students/workshops",
     workshopWorkspace: (slug: string) => `/students/workshops/workspace/${slug}`,
     submitWorkshopAssignment: (slug: string) => `/students/workshops/workspace/${slug}/submission`,

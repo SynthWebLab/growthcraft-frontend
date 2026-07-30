@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useStudentWorkshopWorkspace, useSubmitWorkshopAssignment } from "@/hooks/queries/useStudent";
+import { PaymentCheckoutModal } from "@/components/dashboard/payment-checkout-modal";
 
 export default function StudentWorkshopWorkspacePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -125,6 +126,16 @@ export default function StudentWorkshopWorkspacePage({ params }: { params: Promi
     const pageTitle = event?.title || slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     return (
       <div className="max-w-4xl mx-auto p-6 md:p-12 text-center space-y-6 my-12">
+        <PaymentCheckoutModal
+          isOpen={showPassModal}
+          onClose={() => setShowPassModal(false)}
+          item={{
+            id: enrollment?._id || slug,
+            title: pageTitle,
+            subtitle: "Workshop Program",
+            type: "workshop",
+          }}
+        />
         <Card className="p-8 rounded-3xl border-2 border-amber-500/30 bg-gradient-to-b from-amber-500/5 via-white to-amber-500/5 shadow-xl space-y-6">
           <div className="h-16 w-16 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto border border-amber-500/20">
             <Lock className="h-8 w-8" />
@@ -139,11 +150,13 @@ export default function StudentWorkshopWorkspacePage({ params }: { params: Promi
             </p>
           </div>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href={`/events/${slug}`}>
-              <Button size="lg" className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-amber-600/20 flex items-center gap-2">
-                <CreditCard className="h-5 w-5" /> Pay Now & Unlock Workspace
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              onClick={() => setShowPassModal(true)}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-amber-600/20 flex items-center gap-2"
+            >
+              <CreditCard className="h-5 w-5" /> Pay Now & Unlock Workspace
+            </Button>
             <Link href="/student/workshops">
               <Button size="lg" variant="outline" className="rounded-xl">
                 Back to My Workshops
