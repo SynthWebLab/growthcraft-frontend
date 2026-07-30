@@ -92,12 +92,13 @@ function StudentEnrollmentGridContent({
           title={emptyTitle}
           description={emptyDescription}
           action={
-            browseHref
-              ? {
-                  href: browseHref,
-                  label: browseLabel,
-                }
-              : undefined
+            browseHref ? (
+              <Link href={browseHref}>
+                <Button className="bg-magenta text-white hover:bg-magenta/90">
+                  {browseLabel}
+                </Button>
+              </Link>
+            ) : undefined
           }
         />
       ) : (
