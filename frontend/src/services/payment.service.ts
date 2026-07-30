@@ -4,7 +4,7 @@ import { API_ENDPOINTS } from "@/lib/api/endpoints";
 export interface CreateOrderPayload {
   amount: number;
   currency?: string;
-  itemType: "course" | "bootcamp" | "training-program" | "enrollment" | "reservation";
+  itemType: "course" | "bootcamp" | "workshop" | "hackathon" | "training-program" | "enrollment" | "reservation";
   itemId: string;
   receipt?: string;
   notes?: Record<string, any>;

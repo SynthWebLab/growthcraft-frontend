@@ -66,6 +66,7 @@ export const API_ENDPOINTS = {
     dashboard: "/students/dashboard",
     profile: "/students/profile",
     courses: "/students/courses",
+    courseWorkspace: (slug: string) => `/students/courses/workspace/${slug}`,
     bootcamps: "/students/bootcamps",
     workshops: "/students/workshops",
     hackathons: "/students/hackathons",

@@ -123,10 +123,16 @@ function StudentCoursesContent() {
                       Enrolled {formatDate(enrollment.enrollmentDate)}
                     </p>
 
-                    {course?.slug && (
-                      <Link href={`/courses/${course.slug}`}>
+                    {course?.slug ? (
+                      <Link href={enrollment.status === "confirmed" ? `/student/courses/${course.slug}` : `/courses/${course.slug}`}>
                         <Button size="sm" variant="outline" className="w-full">
-                          View Course
+                          {enrollment.status === "confirmed" ? "View Workspace" : "View Course Details"}
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href={`/courses/${enrollment.courseId}`}>
+                        <Button size="sm" variant="outline" className="w-full">
+                          View Course Details
                         </Button>
                       </Link>
                     )}

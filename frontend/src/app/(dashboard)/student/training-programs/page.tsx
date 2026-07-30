@@ -16,7 +16,9 @@ export default function StudentTrainingProgramsPage() {
       subtitle: program?.domain,
       status: e.status,
       enrollmentDate: e.enrollmentDate,
-      href: program?.slug ? `/training-programs/${program.slug}` : undefined,
+      href: program?.slug
+        ? (e.status === "confirmed" ? `/student/courses/${program.slug}` : `/training-programs/${program.slug}`)
+        : undefined,
       emoji: "💼",
     };
   });

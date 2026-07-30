@@ -44,23 +44,41 @@ const subscribeToClientSnapshot = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-function getEventDuration(startDate: string, endDate: string, durationDays?: number) {
-  if (durationDays && durationDays > 1) return durationDays * 24;
+function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMMM dd, yyyy"): string {
+  if (!dateStr) return "";
+  const dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return "";
+  try {
+    return format(dateObj, formatPattern);
+  } catch (err) {
+    return "";
+  }
+}
 
-  const durationMs = new Date(endDate).getTime() - new Date(startDate).getTime();
+function getEventDuration(startDate?: string, endDate?: string, durationDays?: number) {
+  if (durationDays && durationDays > 1) return durationDays * 24;
+  if (!startDate || !endDate) return 1;
+
+  const start = new Date(startDate).getTime();
+  const end = new Date(endDate).getTime();
+  if (isNaN(start) || isNaN(end)) return 1;
+
+  const durationMs = end - start;
   return Math.max(1, Math.round(durationMs / (1000 * 60 * 60)));
 }
 
 function mapEventDetailToEventData(response: EventDetailResponse) {
-  const details = response.data.eventDetails;
-  const event = details.eventId;
-  const primaryCTA = event.primaryCTA || details.primaryCTA || (
-    event.status === "Open" && event.availableSeats > 0 ? "Reserve Seat" : "Request Callback"
+  const details = response?.data?.eventDetails || ({} as any);
+  const event = details?.eventId || (response?.data as any)?.event || ({} as any);
+  
+  const primaryCTA = event?.primaryCTA || details?.primaryCTA || (
+    event?.status === "Open" && (event?.availableSeats ?? 0) > 0 ? "Reserve Seat" : "Request Callback"
   );
-  const secondaryCTA = event.secondaryCTA ?? details.secondaryCTA ?? (
+  const secondaryCTA = event?.secondaryCTA ?? details?.secondaryCTA ?? (
     primaryCTA === "Reserve Seat" ? "Request Callback" : null
   );
-  const venue = details.venue
+  
+  const venue = details?.venue
     ? {
         name: details.venue.name || details.venue.mode || details.venue.type,
         address: details.venue.description,
@@ -72,84 +90,98 @@ function mapEventDetailToEventData(response: EventDetailResponse) {
     : undefined;
 
   return {
-    success: response.success,
-    message: response.message,
+    success: response?.success ?? false,
+    message: response?.message ?? "",
     data: {
       event: {
-        _id: event._id,
-        title: event.title,
-        slug: event.slug,
-        description: event.description,
-        type: event.type,
-        category: event.category,
+        _id: event?._id || "",
+        title: event?.title || "Event Details",
+        slug: event?.slug || "",
+        description: event?.description || "",
+        type: event?.type || "Event",
+        category: event?.category || "",
         level: "Beginner" as const,
-        duration: getEventDuration(event.startDate, event.endDate, event.durationDays),
-        price: event.price,
-        originalPrice: event.originalPrice,
-        mode: event.mode,
+        duration: getEventDuration(event?.startDate || new Date().toISOString(), event?.endDate || new Date().toISOString(), event?.durationDays),
+        price: event?.price || 0,
+        originalPrice: event?.originalPrice || 0,
+        mode: event?.mode || "Online",
         venue,
         zoomLink: undefined,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        maxSeats: event.maxSeats,
-        enrolledCount: event.enrolledCount,
-        status: event.status,
-        rating: event.rating,
-        tools: event.skillsCovered,
-        mentorName: event.mentorNames.join(", "),
-        thumbnail: event.banner,
+        startDate: event?.startDate,
+        endDate: event?.endDate,
+        maxSeats: event?.maxSeats || 0,
+        enrolledCount: event?.enrolledCount || 0,
+        status: event?.status || "Open",
+        rating: event?.rating || 5,
+        tools: event?.skillsCovered || [],
+        mentorName: event?.mentorNames ? event.mentorNames.join(", ") : "",
+        thumbnail: event?.banner || "",
         primaryCTA,
         secondaryCTA,
-        isFeatured: (event as any).isFeatured || (event as any).is_featured || false,
-        mentors: (event as any).mentors && (event as any).mentors.length > 0
-          ? (event as any).mentors
-          : (details as any).mentors && (details as any).mentors.length > 0
-          ? (details as any).mentors
+        isFeatured: (event as any)?.isFeatured || (event as any)?.is_featured || false,
+        mentors: (event as any)?.mentors && (event as any)?.mentors.length > 0
+          ? (event as any)?.mentors
+          : (details as any)?.mentors && (details as any)?.mentors.length > 0
+          ? (details as any)?.mentors
           : [],
-        createdAt: event.createdAt,
-        updatedAt: event.updatedAt,
+        createdAt: event?.createdAt || new Date().toISOString(),
+        updatedAt: event?.updatedAt || new Date().toISOString(),
       },
       overview: {
-        aboutEvent: details.overview.aboutEvent,
-        whatYouWillLearn: details.overview.whatYouWillLearn.map((item, index) => ({
-          ...item,
-          _id: `learn-${index}`,
-        })),
-        prerequisites: details.overview.prerequisites.map((item, index) => ({
-          ...item,
-          _id: `prerequisite-${index}`,
-        })),
-        whatsIncluded: details.overview.whatsIncluded.map((item, index) => ({
-          ...item,
-          icon: "Check",
-          _id: `included-${index}`,
-        })),
+        aboutEvent: details?.overview?.aboutEvent || "",
+        whatYouWillLearn: details?.overview?.whatYouWillLearn
+          ? details.overview.whatYouWillLearn.map((item: any, index: number) => ({
+              ...item,
+              _id: `learn-${index}`,
+            }))
+          : [],
+        prerequisites: details?.overview?.prerequisites
+          ? details.overview.prerequisites.map((item: any, index: number) => ({
+              ...item,
+              _id: `prerequisite-${index}`,
+            }))
+          : [],
+        whatsIncluded: details?.overview?.whatsIncluded
+          ? details.overview.whatsIncluded.map((item: any, index: number) => ({
+              ...item,
+              icon: "Check",
+              _id: `included-${index}`,
+            }))
+          : [],
       },
-      agenda: details.agenda.map((session, index) => ({
-        sessionNumber: session.step,
-        title: session.title,
-        topics: session.topics.map((topic, topicIndex) => ({
-          text: topic,
-          _id: `agenda-${index}-topic-${topicIndex}`,
-        })),
-        duration: session.duration,
-        _id: `agenda-${index}`,
-      })),
-      mentorDetails: details.mentors.map((mentor, index) => ({
-        name: mentor.name || event.mentorNames[index] || "GrowthCraft Mentor",
-        avatar: mentor.avatar || "",
-        bio: mentor.bio || "Industry expert with extensive experience in training and mentorship.",
-        designation: mentor.designation || "Event Mentor",
-        rating: mentor.rating || event.rating,
-        studentsCount: mentor.studentsCount || event.enrolledCount,
-        expertise: mentor.expertise || event.skillsCovered,
-      })),
-      faqs: details.faqs.map((faq, index) => ({
-        ...faq,
-        _id: `faq-${index}`,
-      })),
+      agenda: details?.agenda
+        ? details.agenda.map((session: any, index: number) => ({
+            sessionNumber: session?.step || index + 1,
+            title: session?.title || "",
+            topics: session?.topics
+              ? session.topics.map((topic: any, topicIndex: number) => ({
+                  text: topic,
+                  _id: `agenda-${index}-topic-${topicIndex}`,
+                }))
+              : [],
+            duration: session?.duration || 0,
+            _id: `agenda-${index}`,
+          }))
+        : [],
+      mentorDetails: details?.mentors
+        ? details.mentors.map((mentor: any, index: number) => ({
+            name: mentor?.name || (event?.mentorNames ? event.mentorNames[index] : "") || "GrowthCraft Mentor",
+            avatar: mentor?.avatar || "",
+            bio: mentor?.bio || "Industry expert with extensive experience in training and mentorship.",
+            designation: mentor?.designation || "Event Mentor",
+            rating: mentor?.rating || event?.rating || 5,
+            studentsCount: mentor?.studentsCount || event?.enrolledCount || 0,
+            expertise: mentor?.expertise || event?.skillsCovered || [],
+          }))
+        : [],
+      faqs: details?.faqs
+        ? details.faqs.map((faq: any, index: number) => ({
+            ...faq,
+            _id: `faq-${index}`,
+          }))
+        : [],
     },
-    meta: response.meta,
+    meta: response?.meta,
   };
 }
 
@@ -158,7 +190,7 @@ export default function EventDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } =
+  const { isOpen, formType, formTitle, courseId, courseTitle, price, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
   const hasMounted = useSyncExternalStore(
@@ -243,7 +275,8 @@ export default function EventDetailPage({
       `${label} - ${event.title}`,
       event._id,
       event.title,
-      "workshop"
+      "workshop",
+      event.price || 0
     );
   };
 
@@ -264,7 +297,8 @@ export default function EventDetailPage({
         `${label} - ${event.title}`,
         event._id,
         event.title,
-        "bootcamp"
+        "bootcamp",
+        event.price || 0
       );
       return;
     }
@@ -280,7 +314,8 @@ export default function EventDetailPage({
         `${label} - ${event.title}`,
         event._id,
         event.title,
-        "hackathon"
+        "hackathon",
+        event.price || 0
       );
     }
   };
@@ -415,6 +450,7 @@ export default function EventDetailPage({
         courseId={courseId}
         courseTitle={courseTitle}
         itemType={isWorkshopEvent ? "workshop" : isBootcampEvent ? "bootcamp" : isHackathonEvent ? "hackathon" : "course"}
+        price={price}
       />
 
       <Section variant="white" className="overflow-hidden">
@@ -488,7 +524,7 @@ export default function EventDetailPage({
                     </span>
                   </div>
                 )}
-                <span className="flex items-center gap-1 font-medium">
+                <span className="flex items-center gap-1 font-medium" suppressHydrationWarning>
                   <Star className="h-4 w-4 text-warning fill-warning" />
                   {event.rating && event.rating > 0 ? event.rating.toFixed(1) : "New"}
                 </span>
@@ -573,7 +609,7 @@ export default function EventDetailPage({
                             {session.duration}
                           </p>
                           <ul className="space-y-1">
-                            {session.topics.map((topic) => (
+                            {session.topics.map((topic: { _id: string; text: string }) => (
                               <li
                                 key={topic._id}
                                 className="flex items-start gap-2 text-sm"
@@ -653,14 +689,14 @@ export default function EventDetailPage({
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-magenta" />
                       <span>
-                        {format(new Date(event.startDate), "MMMM dd, yyyy")}
+                        {safeFormatDate(event.startDate, "MMMM dd, yyyy")}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-magenta" />
                       <span>
-                        {format(new Date(event.startDate), "h:mm a")} -{" "}
-                        {format(new Date(event.endDate), "h:mm a")}
+                        {safeFormatDate(event.startDate, "h:mm a")} -{" "}
+                        {safeFormatDate(event.endDate, "h:mm a")}
                       </span>
                     </div>
                   </div>

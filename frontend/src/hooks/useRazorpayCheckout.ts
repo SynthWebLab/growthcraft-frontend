@@ -27,7 +27,7 @@ function loadRazorpayScript(): Promise<boolean> {
 
 export interface CheckoutOptions {
   amount: number;
-  itemType: "course" | "bootcamp" | "training-program" | "enrollment" | "reservation";
+  itemType: "course" | "bootcamp" | "workshop" | "hackathon" | "training-program" | "enrollment" | "reservation";
   itemId: string;
   title?: string;
   description?: string;

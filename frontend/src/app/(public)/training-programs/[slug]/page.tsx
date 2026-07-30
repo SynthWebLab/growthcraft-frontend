@@ -42,13 +42,24 @@ import {
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 
 
+function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMM dd, yyyy"): string {
+  if (!dateStr) return "";
+  const dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return "";
+  try {
+    return format(dateObj, formatPattern);
+  } catch (err) {
+    return "";
+  }
+}
+
 export default function TrainingProgramDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const queryClient = useQueryClient();
-  const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } =
+  const { isOpen, formType, formTitle, courseId, courseTitle, price, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
 
@@ -138,7 +149,8 @@ export default function TrainingProgramDetailPage({
           `${primaryCTA} - ${program.title}`,
           program._id,
           program.title,
-          "training-program"
+          "training-program",
+          program.price || 0
         );
         return;
       }
@@ -171,7 +183,8 @@ export default function TrainingProgramDetailPage({
           `${primaryCTA} - ${program.title}`,
           program._id,
           program.title,
-          "training-program"
+          "training-program",
+          program.price || 0
         );
         return;
       }
@@ -352,6 +365,7 @@ export default function TrainingProgramDetailPage({
         courseId={courseId}
         courseTitle={courseTitle}
         itemType="training-program"
+        price={price}
       />
 
       <Section variant="white" className="overflow-hidden">
@@ -523,7 +537,7 @@ export default function TrainingProgramDetailPage({
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
-                                {format(new Date(cohort.startDate), "MMM dd, yyyy")}
+                                {safeFormatDate(cohort.startDate, "MMM dd, yyyy")}
                               </span>
                               <span>
                                 {cohort.maxSeats - cohort.enrolledCount} seats left

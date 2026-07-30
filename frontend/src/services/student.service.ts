@@ -115,5 +115,8 @@ export const studentService = {
   getBatches: async (): Promise<any> => {
     return apiClient.get<any>(API_ENDPOINTS.students.batches);
   },
+  getCourseWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.courseWorkspace(slug));
+  },
 };
 

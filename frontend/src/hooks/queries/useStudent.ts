@@ -254,3 +254,14 @@ export function useStudentBatches() {
   });
 }
 
+/** Fetch the student's progress and workspace details for a course. */
+export function useStudentCourseWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "courses", "workspace", slug],
+    queryFn: () => studentService.getCourseWorkspace(slug),
+    enabled: !!slug,
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+

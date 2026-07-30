@@ -124,7 +124,7 @@ function StudentEnrollmentGridContent({
                   {item.href && (
                     <Link href={item.href} className="ml-auto">
                       <Button size="sm" variant="outline">
-                        View
+                        {item.status === "confirmed" ? "View Workspace" : "View Details"}
                       </Button>
                     </Link>
                   )}

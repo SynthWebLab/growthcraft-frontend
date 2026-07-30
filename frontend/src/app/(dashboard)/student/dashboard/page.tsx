@@ -13,10 +13,52 @@ import Link from "next/link";
 import { useStudentDashboard } from "@/hooks/queries/useStudent";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { formatDate, resolveRef, statusBadge } from "@/lib/student-dashboard.utils";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import { toast } from "sonner";
+
+const CountdownTimer = ({ targetDate, labelPrefix }: { targetDate: string | Date; labelPrefix: string }) => {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = new Date(targetDate).getTime() - new Date().getTime();
+      if (difference <= 0) {
+        return "Expired/Started";
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((difference / 1000 / 60) % 60);
+
+      const parts = [];
+      if (days > 0) parts.push(`${days}d`);
+      if (hours > 0 || days > 0) parts.push(`${hours}h`);
+      parts.push(`${minutes}m`);
+
+      return `${labelPrefix} ${parts.join(" ")}`;
+    };
+
+    setTimeLeft(calculateTimeLeft());
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [targetDate, labelPrefix]);
+
+  if (!timeLeft || timeLeft === "Expired/Started") return null;
+
+  return (
+    <span className="inline-flex items-center text-[10px] font-semibold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md mt-1 animate-pulse">
+      {timeLeft}
+    </span>
+  );
+};
 
 const StudentDashboard = () => {
-  const { data, isLoading, isError } = useStudentDashboard();
+  const { data, isLoading, isError, refetch } = useStudentDashboard();
   const { data: user } = useCurrentUser();
+  const { openCheckout } = useRazorpayCheckout();
 
   const dashboard = data?.data;
   const counts = dashboard?.counts;
@@ -43,6 +85,38 @@ const StudentDashboard = () => {
   }
 
   const { mutate: activateAmbassador, isPending: isActivating } = useActivateAmbassador();
+
+  const handlePayNow = (
+    enrollment: any,
+    itemTitle: string,
+    itemType: "course" | "bootcamp" | "training-program" | "workshop" | "hackathon"
+  ) => {
+    let amount = 4999;
+    if (itemType === "course") amount = 4999;
+    else if (itemType === "training-program") amount = 9999;
+    else if (itemType === "workshop") amount = 999;
+    else if (itemType === "bootcamp") amount = 4999;
+
+    openCheckout({
+      amount,
+      itemType: itemType === "course" ? "course" : "bootcamp",
+      itemId: enrollment._id,
+      title: itemTitle,
+      description: `Complete enrollment for ${itemTitle}`,
+      prefill: {
+        name: user?.fullName || "",
+        email: user?.email || "",
+        contact: user?.phone || "",
+      },
+      onSuccess: (paymentId) => {
+        toast.success("Payment completed successfully!");
+        refetch();
+      },
+      onError: (err) => {
+        toast.error(err || "Payment failed. Please try again.");
+      },
+    });
+  };
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -123,20 +197,50 @@ const StudentDashboard = () => {
             {recentCourses.map((enrollment) => {
               const course = resolveRef(enrollment.courseId);
               const badge = statusBadge(enrollment.status);
+              const expiryDate = enrollment.status === "pending"
+                ? new Date(new Date(enrollment.enrollmentDate || enrollment.createdAt).getTime() + 24 * 60 * 60 * 1000)
+                : null;
+
               return (
-                <div key={enrollment._id} className="rounded-xl border border-border bg-white p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-3xl">📘</span>
-                    <Badge variant="secondary" className={badge.className}>
-                      {badge.label}
-                    </Badge>
+                <div key={enrollment._id} className="flex flex-col justify-between rounded-xl border border-border bg-white p-4">
+                  <div>
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-3xl">📘</span>
+                      <Badge variant="secondary" className={badge.className}>
+                        {badge.label}
+                      </Badge>
+                    </div>
+                    <h3 className="font-semibold text-foreground text-sm mb-1">
+                      {course?.title ?? enrollment.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Enrolled {formatDate(enrollment.enrollmentDate)}
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-foreground text-sm mb-1">
-                    {course?.title ?? enrollment.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Enrolled {formatDate(enrollment.enrollmentDate)}
-                  </p>
+                  {expiryDate && (
+                    <div className="mt-3 flex flex-col gap-2">
+                      <CountdownTimer targetDate={expiryDate} labelPrefix="Hold expires in" />
+                      <button
+                        type="button"
+                        className="w-full bg-magenta text-white hover:bg-magenta/90 text-[10px] py-1.5 rounded-lg font-bold transition-colors"
+                        onClick={() => handlePayNow(enrollment, course?.title ?? enrollment.title, "course")}
+                      >
+                        Pay Now
+                      </button>
+                    </div>
+                  )}
+                  {enrollment.status === "confirmed" && course?.slug && (
+                    <div className="mt-3">
+                      <Link href={`/student/courses/${course.slug}`}>
+                        <button
+                          type="button"
+                          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] py-1.5 rounded-lg font-bold transition-colors"
+                        >
+                          View Workspace
+                        </button>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -173,6 +277,15 @@ const StudentDashboard = () => {
             {recentEvents.map((enrollment) => {
               const event = resolveRef(enrollment.eventId);
               const badge = statusBadge(enrollment.status);
+              
+              const expiryDate = enrollment.status === "pending"
+                ? new Date(new Date(enrollment.enrollmentDate || enrollment.createdAt).getTime() + 24 * 60 * 60 * 1000)
+                : null;
+              
+              const eventStartDate = enrollment.status === "confirmed" && (event as any)?.startDate
+                ? new Date((event as any).startDate)
+                : null;
+
               return (
                 <div
                   key={enrollment._id}
@@ -186,6 +299,21 @@ const StudentDashboard = () => {
                     <p className="text-xs text-muted-foreground">
                       {enrollment.eventType} · Enrolled {formatDate(enrollment.enrollmentDate)}
                     </p>
+                    {expiryDate && (
+                      <div className="flex flex-wrap items-center gap-3 mt-1">
+                        <CountdownTimer targetDate={expiryDate} labelPrefix="Hold expires in" />
+                        <button
+                          type="button"
+                          className="bg-magenta text-white hover:bg-magenta/90 text-[10px] px-3 py-1 rounded-md font-bold transition-colors"
+                          onClick={() => handlePayNow(enrollment, event?.title ?? enrollment.title, enrollment.eventType.toLowerCase() as any)}
+                        >
+                          Pay Now
+                        </button>
+                      </div>
+                    )}
+                    {eventStartDate && eventStartDate.getTime() > Date.now() && (
+                      <CountdownTimer targetDate={eventStartDate} labelPrefix="Starts in" />
+                    )}
                   </div>
                   <Badge variant="secondary" className={badge.className}>
                     {badge.label}
