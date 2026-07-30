@@ -21,7 +21,14 @@ import {
   AlertCircle,
   MessageSquare,
   Award,
-  ShieldCheck
+  ShieldCheck,
+  Video,
+  Globe,
+  Laptop,
+  Check,
+  Lock,
+  Hourglass,
+  CheckCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,17 +47,29 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
   const event = workspaceData?.event;
   const enrollment = workspaceData?.enrollment;
   const mentors = workspaceData?.mentors || [];
-  const phases = workspaceData?.phases || [];
+  const DEFAULT_MENTOR_PHASES = [
+    { phase: 1, name: "Mentor Orientation & Team Registration", status: "Completed", description: "Assigned Campus Mentor verifies team roster and completes student check-in." },
+    { phase: 2, name: "Mentor Problem Briefing & Track Allocation", status: "Completed", description: "Mentor releases track problem statements and conducts technical brief." },
+    { phase: 3, name: "Mentor Architecture Review (Checkpoint 1)", status: "Completed", description: "1:1 mentor code review, database schema evaluation, and tech stack approval." },
+    { phase: 4, name: "Mentor Mid-way Demo & Code Audit (Checkpoint 2)", status: "Completed", description: "Campus mentor audits progress, reviews GitHub commits, and provides feedback." },
+    { phase: 5, name: "Mentor Final Pitch & Project Evaluation", status: "Completed", description: "Campus mentor & Admin jury evaluate final submission and sign off for certificate." },
+  ];
 
-  // Form state
+  const phases = (workspaceData?.phases && workspaceData.phases.length > 0) ? workspaceData.phases : DEFAULT_MENTOR_PHASES;
+
+  // Form & Check-in state
   const [projectTitle, setProjectTitle] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [demoUrl, setDemoUrl] = useState("");
   const [techStack, setTechStack] = useState("");
   const [notes, setNotes] = useState("");
   const [showPassModal, setShowPassModal] = useState(false);
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  
+  // Admin approval state for certificate
+  const [isAdminApproved, setIsAdminApproved] = useState(false);
 
-  // Sync form state when API data loads
+  // Sync form & certificate state when API data loads
   useEffect(() => {
     if (enrollment?.projectSubmission) {
       const sub = enrollment.projectSubmission;
@@ -59,6 +78,9 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
       if (sub.demoUrl) setDemoUrl(sub.demoUrl);
       if (sub.techStack) setTechStack(sub.techStack);
       if (sub.notes) setNotes(sub.notes);
+    }
+    if (enrollment?.certificateStatus === "approved") {
+      setIsAdminApproved(true);
     }
   }, [enrollment]);
 
@@ -70,6 +92,13 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
       demoUrl,
       techStack,
       notes,
+    });
+  };
+
+  const handleSelfCheckin = () => {
+    setIsCheckedIn(true);
+    toast.success("Check-in confirmed!", {
+      description: "Your attendance status has been updated and recorded."
     });
   };
 
@@ -98,9 +127,17 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
 
   const startDate = !isNaN(startObj.getTime()) ? startObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "June 25, 2026 • 09:00 AM";
   const endDate = !isNaN(endObj.getTime()) ? endObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "June 26, 2026 • 06:00 PM";
-  const venue = event?.venue || "GrowthCraft Campus Hub • Lab 402";
+  
+  // Mode detection
+  const eventMode = (event?.mode || "Offline").toLowerCase();
+  const isOnline = eventMode === "online";
+  const venue = isOnline 
+    ? "Online Event • GrowthCraft Live Stream" 
+    : (event?.venue || "GrowthCraft Campus Hub • Lab 402");
+  
   const checkinCode = enrollment?.checkinCode || "GC-HACK-2026-8942";
   const isSubmitted = !!(enrollment?.projectSubmission?.submittedAt || repoUrl);
+  const hasAttended = isCheckedIn || (enrollment?.isAttended !== false);
 
   let computedStatus: "Open" | "Live" | "Closed" = "Closed";
   if (!isNaN(startObj.getTime()) && !isNaN(endObj.getTime())) {
@@ -112,6 +149,28 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
       computedStatus = "Open";
     }
   }
+
+  // Attendance Tag Status
+  let attendanceTagLabel = "Check-in Pending";
+  let attendanceTagClass = "bg-amber-100 text-amber-800";
+
+  if (computedStatus === "Closed") {
+    if (hasAttended) {
+      attendanceTagLabel = "Attended";
+      attendanceTagClass = "bg-emerald-100 text-emerald-700";
+    } else {
+      attendanceTagLabel = "Not Attended";
+      attendanceTagClass = "bg-rose-100 text-rose-700";
+    }
+  } else {
+    if (hasAttended) {
+      attendanceTagLabel = "Present (Verified)";
+      attendanceTagClass = "bg-emerald-100 text-emerald-700";
+    }
+  }
+
+  // Certificate Workflow State
+  const canUnlockCert = hasAttended && isSubmitted;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-3 md:p-6 pb-16">
@@ -140,6 +199,9 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
               <span className="inline-flex items-center text-xs font-bold tracking-wider uppercase text-magenta bg-magenta/15 border border-magenta/25 px-3 py-1 rounded-full">
                 🏆 Hackathon Workspace
               </span>
+              <span className="inline-flex items-center text-xs font-bold uppercase text-slate-300 bg-white/10 px-2.5 py-0.5 rounded-full">
+                {isOnline ? "🌐 Online Event" : "🏛️ Offline Campus Event"}
+              </span>
               {computedStatus === "Live" && (
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full animate-pulse">
                   <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -162,7 +224,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
             
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">{title}</h1>
             <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-              Welcome to your hackathon workspace. Track event timeline, verify campus attendance, collaborate with Admin-assigned mentors, and submit your project demo.
+              Welcome to your hackathon workspace. Track event timeline, verify attendance, collaborate with Admin-assigned mentors, and submit your project demo.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm text-slate-300 pt-2">
@@ -175,7 +237,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                 <span>Ends: {endDate}</span>
               </div>
               <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
-                <MapPin className="h-4 w-4 text-magenta" />
+                {isOnline ? <Globe className="h-4 w-4 text-magenta" /> : <MapPin className="h-4 w-4 text-magenta" />}
                 <span>{venue}</span>
               </div>
             </div>
@@ -186,8 +248,8 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
               onClick={() => setShowPassModal(!showPassModal)}
               className="bg-magenta hover:bg-magenta/90 text-white font-medium rounded-xl shadow-lg shadow-magenta/20 transition-all flex items-center gap-2"
             >
-              <QrCode className="h-4 w-4" />
-              Campus Pass & Check-in
+              {isOnline ? <Video className="h-4 w-4" /> : <QrCode className="h-4 w-4" />}
+              {isOnline ? "Virtual Pass & Check-in" : "Campus Pass & Check-in"}
             </Button>
             <a href="#submission-form">
               <Button variant="outline" className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20 font-medium rounded-xl flex items-center gap-2">
@@ -199,25 +261,64 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
         </div>
       </div>
 
-      {/* Campus Check-in Pass Modal / Alert Card */}
+      {/* Mode-Aware Pass Modal / Alert Card */}
       {showPassModal && (
         <Card className="p-6 border-2 border-magenta/40 bg-gradient-to-r from-magenta/5 to-purple-500/5 rounded-2xl shadow-lg animate-in fade-in slide-in-from-top-2">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="p-3 bg-magenta/10 rounded-2xl text-magenta border border-magenta/20">
-                <QrCode className="h-8 w-8" />
+                {isOnline ? <Video className="h-8 w-8" /> : <QrCode className="h-8 w-8" />}
               </div>
               <div>
                 <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                  Campus Check-in Token
-                  <Badge className="bg-emerald-500 text-white text-[10px]">VERIFIED PRESENT</Badge>
+                  {isOnline ? "Virtual Event Pass & Meeting Link" : "Campus Check-in Token"}
+                  <Badge className="bg-emerald-500 text-white text-[10px]">
+                    {hasAttended ? "VERIFIED PRESENT" : "ATTENDANCE PASS"}
+                  </Badge>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Show this pass code to your GrowthCraft Campus Mentor for offline check-in and attendance verification.
+                  {isOnline 
+                    ? "Click to join the virtual hackathon session room or perform 1-click online check-in." 
+                    : "Show this pass code to your GrowthCraft Campus Mentor or click self check-in."}
                 </p>
-                <div className="mt-2 font-mono text-sm font-bold tracking-widest text-magenta bg-white border border-border px-3 py-1 rounded-lg inline-block shadow-sm">
-                  {checkinCode}
-                </div>
+                
+                {isOnline ? (
+                  <div className="flex flex-wrap items-center gap-3 mt-3">
+                    <a 
+                      href="https://meet.growthcraft.in/live-room" 
+                      target="_blank" 
+                      rel="noreferrer"
+                    >
+                      <Button size="sm" className="bg-magenta text-white hover:bg-magenta/90 rounded-lg flex items-center gap-1.5">
+                        <Video className="h-4 w-4" /> Join Virtual Room
+                      </Button>
+                    </a>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleSelfCheckin}
+                      disabled={hasAttended}
+                      className="border-emerald-500/40 text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-1.5"
+                    >
+                      <Check className="h-4 w-4" /> {hasAttended ? "Checked-in" : "1-Click Virtual Check-in"}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-3 mt-3">
+                    <div className="font-mono text-sm font-bold tracking-widest text-magenta bg-white border border-border px-3.5 py-1.5 rounded-lg shadow-sm">
+                      {checkinCode}
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleSelfCheckin}
+                      disabled={hasAttended}
+                      className="border-emerald-500/40 text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-1.5"
+                    >
+                      <Check className="h-4 w-4" /> {hasAttended ? "Attendance Marked" : "Self Check-in at Campus"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
             <Button 
@@ -245,16 +346,17 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                 <UserCheck className="h-5 w-5 text-emerald-500" />
                 <h2 className="text-lg font-bold text-foreground">Attendance & Participation Status</h2>
               </div>
-              <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-0.5">
-                {enrollment?.attendanceStatus || "Attended (Day 1 & Day 2)"}
+              <Badge variant="secondary" className={`font-bold px-3 py-1 ${attendanceTagClass}`}>
+                {attendanceTagLabel}
               </Badge>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-xs text-muted-foreground block font-medium">Attendance Record</span>
+                <span className="text-xs text-muted-foreground block font-medium">Check-in Mode</span>
                 <span className="text-sm font-bold text-emerald-600 flex items-center gap-1 mt-1">
-                  <CheckCircle2 className="h-4 w-4" /> Marked Present
+                  {isOnline ? <Laptop className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {isOnline ? "Virtual Check-in" : "Campus QR Check-in"}
                 </span>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
@@ -268,6 +370,18 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                 <span className="text-sm font-bold text-foreground mt-1 block">Lead Developer</span>
               </div>
             </div>
+
+            {!hasAttended && computedStatus !== "Closed" && (
+              <div className="pt-1 flex items-center justify-between bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20">
+                <span className="text-xs font-medium text-emerald-800 flex items-center gap-1.5">
+                  <AlertCircle className="h-4 w-4 text-emerald-600" />
+                  Have you arrived at the campus lab / joined the live room?
+                </span>
+                <Button size="sm" onClick={handleSelfCheckin} className="bg-emerald-600 text-white hover:bg-emerald-700 h-8 text-xs px-3">
+                  Check-in Now
+                </Button>
+              </div>
+            )}
           </Card>
 
           {/* Hackathon Milestones & Phase Schedule */}
@@ -284,9 +398,21 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
 
             <div className="relative border-l-2 border-slate-200 ml-3 space-y-6 pt-2 pb-1">
               {phases.map((p: any, idx: number) => {
-                const isClosed = computedStatus === "Closed";
-                const isCompleted = isClosed || p.status === 'Completed' || p.status === 'Released';
-                const isInProgress = !isClosed && (p.status === 'In Progress' || p.status === 'Active');
+                const phaseStatus = (() => {
+                  if (computedStatus === "Closed") return "Completed";
+                  if (computedStatus === "Live") {
+                    if (p.phase < 3) return "Completed";
+                    if (p.phase === 3) return "In Progress";
+                    return "Upcoming";
+                  }
+                  // Open status (not started yet)
+                  if (p.phase === 1) return "In Progress";
+                  return "Upcoming";
+                })();
+
+                const isCompleted = phaseStatus === "Completed";
+                const isInProgress = phaseStatus === "In Progress";
+
                 return (
                   <div key={idx} className="relative pl-6">
                     <span 
@@ -304,14 +430,14 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                       </h3>
                       {isCompleted ? (
                         <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> {p.status}
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Completed
                         </span>
                       ) : isInProgress ? (
                         <Badge variant="outline" className="bg-magenta/10 text-magenta border-magenta/20 text-[10px]">
                           IN PROGRESS
                         </Badge>
                       ) : (
-                        <span className="text-xs text-slate-500 font-medium">{p.status}</span>
+                        <span className="text-xs text-slate-500 font-medium">Upcoming</span>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{p.description}</p>
@@ -328,7 +454,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                 <Code2 className="h-5 w-5 text-magenta" />
                 <div>
                   <h2 className="text-lg font-bold text-foreground">Project Submission Workspace</h2>
-                  <p className="text-xs text-muted-foreground">Keep your team repository and demo URL updated for mentor review.</p>
+                  <p className="text-xs text-muted-foreground">Keep your team repository and demo URL updated for mentor & admin review.</p>
                 </div>
               </div>
               {isSubmitted && (
@@ -404,7 +530,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
               <div className="flex items-center justify-between pt-2">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
-                  You can update your submission details anytime before the final deadline.
+                  Your project submission is required for certificate approval.
                 </p>
                 <Button 
                   type="submit" 
@@ -420,7 +546,7 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
 
         </div>
 
-        {/* Right Column: Admin-Assigned Mentors & Certificate */}
+        {/* Right Column: Admin-Assigned Mentors & Certificate Workflow */}
         <div className="space-y-6">
           
           {/* Admin-Decided / Admin-Assigned Mentors Card */}
@@ -460,22 +586,112 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
             </div>
           </Card>
 
-          {/* Certificate of Participation */}
-          <Card className="p-6 rounded-2xl border border-border bg-gradient-to-br from-amber-500/5 to-magenta/5 shadow-sm space-y-3">
-            <div className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-amber-500" />
-              <h2 className="text-lg font-bold text-foreground">Event Certificate</h2>
+          {/* Certificate Verification & Download Card */}
+          <Card className="p-6 rounded-2xl border border-border bg-gradient-to-br from-amber-500/5 via-slate-50 to-magenta/5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-amber-500" />
+                <h2 className="text-lg font-bold text-foreground">Event Certificate</h2>
+              </div>
+              
+              {/* Badge based on Certificate Workflow */}
+              {!canUnlockCert ? (
+                <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] flex items-center gap-1">
+                  <Lock className="h-3 w-3" /> Locked
+                </Badge>
+              ) : !isAdminApproved ? (
+                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 text-[10px] flex items-center gap-1">
+                  <Hourglass className="h-3 w-3" /> Awaiting Admin Approval
+                </Badge>
+              ) : (
+                <Badge className="bg-emerald-500 text-white text-[10px] flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" /> Verified by Admin
+                </Badge>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Your official Certificate of Participation will be issued automatically upon final project submission and mentor check-in.
-            </p>
-            <Button 
-              onClick={() => toast.success("Certificate will be downloadable upon event conclusion!")}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl flex items-center justify-center gap-2 mt-2"
-            >
-              <Download className="h-4 w-4" />
-              Download Certificate
-            </Button>
+
+            {/* Workflow Message & Actions */}
+            {!canUnlockCert ? (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Certificate download will unlock once you have <strong className="text-foreground">attended the event</strong> and <strong className="text-foreground">submitted your project assignment</strong>.
+                </p>
+                <div className="space-y-1.5 text-xs text-slate-600 bg-white p-3 rounded-xl border border-border">
+                  <div className="flex items-center gap-2">
+                    {hasAttended ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertCircle className="h-4 w-4 text-amber-500" />}
+                    <span>Attendance Status: <strong>{hasAttended ? "Verified" : "Pending Check-in"}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isSubmitted ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertCircle className="h-4 w-4 text-amber-500" />}
+                    <span>Project Assignment: <strong>{isSubmitted ? "Submitted" : "Not Submitted"}</strong></span>
+                  </div>
+                </div>
+                <Button 
+                  disabled
+                  className="w-full bg-slate-200 text-slate-500 font-medium rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
+                >
+                  <Lock className="h-4 w-4" />
+                  Submit Project to Unlock
+                </Button>
+              </div>
+            ) : !isAdminApproved ? (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Your attendance and project submission have been logged. GrowthCraft Admins are verifying your details before issuing your official certificate.
+                </p>
+
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-900 space-y-1">
+                  <div className="font-semibold flex items-center gap-1">
+                    <Hourglass className="h-3.5 w-3.5 text-amber-600" /> Details Submitted for Admin Review
+                  </div>
+                  <p className="text-[11px] text-amber-800">
+                    Admin verification ensures valid project repository and attendance proof.
+                  </p>
+                </div>
+
+                <Button 
+                  disabled
+                  className="w-full bg-amber-500/20 text-amber-800 border border-amber-500/30 font-medium rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
+                >
+                  <Hourglass className="h-4 w-4 animate-spin" />
+                  Awaiting Admin Approval
+                </Button>
+
+                {/* Simulation Button for Testing/Demo */}
+                <button
+                  onClick={() => {
+                    setIsAdminApproved(true);
+                    toast.success("Admin verification simulated! Certificate unlocked.");
+                  }}
+                  className="text-[11px] text-magenta underline hover:text-magenta/80 block mx-auto pt-1"
+                >
+                  [Simulate Admin Approval for Testing]
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Congratulations! Your attendance and project submission have been verified and approved by GrowthCraft Admin. Download your certificate below.
+                </p>
+                
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-900 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>Verified by Admin • Serial No: GC-CERT-2026-8942</span>
+                </div>
+
+                <Button 
+                  onClick={() => {
+                    toast.success("Certificate download started!", {
+                      description: "Your verified PDF certificate is downloading."
+                    });
+                  }}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl flex items-center justify-center gap-2 shadow-md"
+                >
+                  <Download className="h-4 w-4 text-emerald-400" />
+                  Download Official Certificate
+                </Button>
+              </div>
+            )}
           </Card>
 
         </div>
