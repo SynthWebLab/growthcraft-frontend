@@ -124,5 +124,11 @@ export const studentService = {
   submitHackathonProject: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.students.submitHackathonProject(slug), data);
   },
+  getWorkshopWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.workshopWorkspace(slug));
+  },
+  submitWorkshopAssignment: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.submitWorkshopAssignment(slug), data);
+  },
 };
 

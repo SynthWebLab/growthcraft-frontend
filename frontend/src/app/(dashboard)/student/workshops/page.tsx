@@ -10,13 +10,16 @@ export default function StudentWorkshopsPage() {
 
   const items: EnrollmentGridItem[] = (data?.data?.workshops ?? []).map((e) => {
     const event = resolveRef(e.eventId);
+    const slug = event?.slug || "fullstack-ai-workshop-2026";
     return {
       id: e._id,
       title: event?.title ?? e.title,
       subtitle: event?.mode || event?.domain,
       status: e.status,
+      paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
       enrollmentDate: e.enrollmentDate,
-      href: event?.slug ? `/events/${event.slug}` : undefined,
+      href: `/events/${slug}`,
+      workspaceHref: `/student/workshops/${slug}`,
       emoji: "🛠️",
     };
   });

@@ -297,3 +297,35 @@ export function useSubmitHackathonProject(slug: string) {
   });
 }
 
+/** Fetch the student's workshop workspace details (assigned mentors, attendance, assignment). */
+export function useStudentWorkshopWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "workshops", "workspace", slug],
+    queryFn: () => studentService.getWorkshopWorkspace(slug),
+    enabled: !!slug,
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Submit or update workshop assignment details. */
+export function useSubmitWorkshopAssignment(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitWorkshopAssignment(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Assignment submission saved", {
+          description: "Your workshop exercise submission has been saved.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "workshops", "workspace", slug] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
+    },
+  });
+}
+
