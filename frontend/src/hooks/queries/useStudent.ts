@@ -265,3 +265,35 @@ export function useStudentCourseWorkspace(slug: string) {
   });
 }
 
+/** Fetch the student's hackathon workspace details (assigned mentors, attendance, submission). */
+export function useStudentHackathonWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "hackathons", "workspace", slug],
+    queryFn: () => studentService.getHackathonWorkspace(slug),
+    enabled: !!slug,
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Submit or update hackathon project details. */
+export function useSubmitHackathonProject(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitHackathonProject(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Project submission saved", {
+          description: "Your submission has been updated for mentor evaluation.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "hackathons", "workspace", slug] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
+    },
+  });
+}
+

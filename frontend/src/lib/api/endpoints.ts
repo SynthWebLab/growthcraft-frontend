@@ -20,7 +20,18 @@ export const API_ENDPOINTS = {
   users: {
     update: (id: string) => `/users/${id}`,
   },
-  // Future endpoints can be added here
+  students: {
+    dashboard: "/students/dashboard",
+    profile: "/students/profile",
+    courses: "/students/courses",
+    courseWorkspace: (slug: string) => `/students/courses/workspace/${slug}`,
+    hackathons: "/students/hackathons",
+    hackathonWorkspace: (slug: string) => `/students/hackathons/workspace/${slug}`,
+    submitHackathonProject: (slug: string) => `/students/hackathons/workspace/${slug}/submission`,
+    bootcamps: "/students/bootcamps",
+    workshops: "/students/workshops",
+    batches: "/students/batches",
+  },
   courses: {
     list: "/courses",
     detail: (id: string) => `/courses/${id}`,
