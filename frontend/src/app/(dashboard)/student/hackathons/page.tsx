@@ -16,6 +16,7 @@ export default function StudentHackathonsPage() {
       title: event?.title ?? e.title,
       subtitle: event?.mode || event?.domain,
       status: e.status,
+      paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
       enrollmentDate: e.enrollmentDate,
       href: `/events/${slug}`,
       workspaceHref: `/student/hackathons/${slug}`,

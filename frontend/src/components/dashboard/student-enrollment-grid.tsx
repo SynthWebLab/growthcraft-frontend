@@ -17,6 +17,7 @@ export interface EnrollmentGridItem {
   title: string;
   subtitle?: string;
   status: EnrollmentStatus;
+  paymentStatus?: "pending" | "completed" | "failed" | string;
   enrollmentDate: string;
   href?: string;
   workspaceHref?: string;
@@ -123,14 +124,21 @@ function StudentEnrollmentGridContent({
                     Enrolled {formatDate(item.enrollmentDate)}
                   </p>
                   {(item.workspaceHref || item.href) && (
-                    <Link
-                      href={item.status === "confirmed" && item.workspaceHref ? item.workspaceHref : (item.href || item.workspaceHref || "#")}
-                      className="ml-auto"
-                    >
-                      <Button size="sm" variant="outline">
-                        {item.status === "confirmed" ? "View Workspace" : "View Details"}
-                      </Button>
-                    </Link>
+                    <div className="ml-auto">
+                      {item.paymentStatus === "pending" || item.status === "pending" ? (
+                        <Link href={item.href || "#"}>
+                          <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-lg shadow-sm">
+                            Pending Payment
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link href={item.workspaceHref || item.href || "#"}>
+                          <Button size="sm" variant="outline" className="border-magenta/40 text-magenta hover:bg-magenta/10 text-xs rounded-lg">
+                            View Workspace
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   )}
                 </div>
               </DataCard>

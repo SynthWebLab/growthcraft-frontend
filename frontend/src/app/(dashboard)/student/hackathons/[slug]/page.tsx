@@ -28,7 +28,8 @@ import {
   Check,
   Lock,
   Hourglass,
-  CheckCircle
+  CheckCircle,
+  CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -114,6 +115,41 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
           </div>
           <div className="h-64 bg-slate-200 rounded-2xl" />
         </div>
+      </div>
+    );
+  }
+
+  const isPendingPayment = enrollment?.paymentStatus === 'pending';
+  if (isPendingPayment) {
+    const pageTitle = event?.title || slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    return (
+      <div className="max-w-4xl mx-auto p-6 md:p-12 text-center space-y-6 my-12">
+        <Card className="p-8 rounded-3xl border-2 border-amber-500/30 bg-gradient-to-b from-amber-500/5 via-white to-amber-500/5 shadow-xl space-y-6">
+          <div className="h-16 w-16 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto border border-amber-500/20">
+            <Lock className="h-8 w-8" />
+          </div>
+          <div className="space-y-2 max-w-md mx-auto">
+            <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 font-bold px-3 py-1">
+              Payment Pending
+            </Badge>
+            <h2 className="text-2xl font-extrabold text-foreground">Payment Required to Access Workspace</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              You have registered for <strong className="text-foreground">{pageTitle}</strong>, but your enrollment payment is currently pending. Please complete the registration payment to unlock access to assigned mentors, campus check-in passes, and project submission.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href={`/events/${slug}`}>
+              <Button size="lg" className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-amber-600/20 flex items-center gap-2">
+                <CreditCard className="h-5 w-5" /> Pay Now & Unlock Workspace
+              </Button>
+            </Link>
+            <Link href="/student/hackathons">
+              <Button size="lg" variant="outline" className="rounded-xl">
+                Back to My Hackathons
+              </Button>
+            </Link>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -285,12 +321,12 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                 {isOnline ? (
                   <div className="flex flex-wrap items-center gap-3 mt-3">
                     <a 
-                      href="https://meet.growthcraft.in/live-room" 
+                      href={mentors[0]?.meetingLink || "https://meet.google.com/gc-hackathon-room"} 
                       target="_blank" 
                       rel="noreferrer"
                     >
-                      <Button size="sm" className="bg-magenta text-white hover:bg-magenta/90 rounded-lg flex items-center gap-1.5">
-                        <Video className="h-4 w-4" /> Join Virtual Room
+                      <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg flex items-center gap-1.5 font-medium shadow-sm">
+                        <Video className="h-4 w-4" /> Join Google Meet Session
                       </Button>
                     </a>
                     <Button 
@@ -573,14 +609,29 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                       <p className="text-xs text-muted-foreground">{m.designation || m.areaOfExpertise || "Campus Mentor"}</p>
                     </div>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => toast.info(`Session query sent to ${m.name}`)}
-                    className="h-8 text-xs rounded-lg border-magenta/30 text-magenta hover:bg-magenta/10"
-                  >
-                    <MessageSquare className="h-3.5 w-3.5 mr-1" /> Ask
-                  </Button>
+                  {isOnline || m.meetingLink ? (
+                    <a 
+                      href={m.meetingLink || "https://meet.google.com/gc-hackathon-room"} 
+                      target="_blank" 
+                      rel="noreferrer"
+                    >
+                      <Button 
+                        size="sm" 
+                        className="h-8 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Video className="h-3.5 w-3.5 text-white" /> Join Meet
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => toast.info(`Session query sent to ${m.name}`)}
+                      className="h-8 text-xs rounded-lg border-magenta/30 text-magenta hover:bg-magenta/10"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5 mr-1" /> Ask
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
