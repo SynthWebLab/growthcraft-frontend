@@ -136,5 +136,17 @@ export const studentService = {
   submitBootcampProject: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.students.submitBootcampProject(slug), data);
   },
+  getCourseWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.courseWorkspace(slug));
+  },
+  submitCourseProject: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.submitCourseProject(slug), data);
+  },
+  getTrainingProgramWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.trainingProgramWorkspace(slug));
+  },
+  submitTrainingProgramProject: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.submitTrainingProgramProject(slug), data);
+  },
 };
 

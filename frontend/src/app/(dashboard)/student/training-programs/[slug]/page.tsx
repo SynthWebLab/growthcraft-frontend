@@ -3,7 +3,8 @@
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { 
-  BookOpen, 
+  GraduationCap, 
+  Calendar, 
   Clock, 
   MapPin, 
   UserCheck, 
@@ -13,6 +14,7 @@ import {
   ArrowLeft, 
   Send, 
   Users, 
+  QrCode, 
   Sparkles, 
   Download, 
   Code2, 
@@ -21,40 +23,42 @@ import {
   Award,
   ShieldCheck,
   Video,
+  Globe,
+  Laptop,
+  Check,
   Lock,
   Hourglass,
   CheckCircle,
   CreditCard,
-  Layers,
-  FileText
+  Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useStudentCourseWorkspace, useSubmitCourseProject } from "@/hooks/queries/useStudent";
+import { useStudentTrainingProgramWorkspace, useSubmitTrainingProgramProject } from "@/hooks/queries/useStudent";
 import { PaymentCheckoutModal } from "@/components/dashboard/payment-checkout-modal";
 
-export default function StudentCourseWorkspacePage({ params }: { params: Promise<{ slug: string }> }) {
+export default function StudentTrainingProgramWorkspacePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
 
-  // Fetch dynamic course workspace data from API
-  const { data: workspaceRes, isLoading } = useStudentCourseWorkspace(slug);
-  const submitMutation = useSubmitCourseProject(slug);
+  // Fetch dynamic training program workspace data from API
+  const { data: workspaceRes, isLoading } = useStudentTrainingProgramWorkspace(slug);
+  const submitMutation = useSubmitTrainingProgramProject(slug);
 
   const workspaceData = workspaceRes?.data || workspaceRes;
-  const course = workspaceData?.course;
+  const program = workspaceData?.program;
   const enrollment = workspaceData?.enrollment;
-  const instructors = workspaceData?.instructors || [];
+  const mentors = workspaceData?.mentors || [];
   
-  const DEFAULT_COURSE_MODULES = [
-    { moduleNumber: 1, title: "Foundations & Environment Architecture", lessonsCount: 6, status: "Completed", description: "Core concepts setup, environment configuration, and architectural paradigms." },
-    { moduleNumber: 2, title: "Advanced Technical Deep-Dive", lessonsCount: 8, status: "Completed", description: "Advanced patterns, performance optimization, and database integration." },
-    { moduleNumber: 3, title: "Production Build & Hands-on Labs", lessonsCount: 6, status: "In Progress", description: "Building end-to-end applications with mentor code reviews." },
-    { moduleNumber: 4, title: "Final Evaluation & Project Sign-off", lessonsCount: 4, status: "Upcoming", description: "Capstone review by instructors and course completion certificate." },
+  const DEFAULT_PROGRAM_PHASES = [
+    { phase: 1, name: "Orientation & Architecture Setup", status: "Completed", description: "Industry onboarding, toolchains setup, and microservices architecture." },
+    { phase: 2, name: "Core Domain Deep-Dive & Mentor Labs", status: "Completed", description: "Guided industrial modules, live coding sessions, and mentor reviews." },
+    { phase: 3, name: "Industrial Capstone Project Build", status: "In Progress", description: "Real-world industrial capstone build under senior mentor supervision." },
+    { phase: 4, name: "Jury Evaluation & Placement Sign-off", status: "Upcoming", description: "Capstone evaluation by hiring partners and certificate issuance." },
   ];
 
-  const modules = (workspaceData?.modules && workspaceData.modules.length > 0) ? workspaceData.modules : DEFAULT_COURSE_MODULES;
+  const phases = (workspaceData?.phases && workspaceData.phases.length > 0) ? workspaceData.phases : DEFAULT_PROGRAM_PHASES;
 
   // Form & Modal state
   const [projectTitle, setProjectTitle] = useState("");
@@ -62,7 +66,8 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
   const [demoUrl, setDemoUrl] = useState("");
   const [techStack, setTechStack] = useState("");
   const [notes, setNotes] = useState("");
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showPassModal, setShowPassModal] = useState(false);
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isAdminApproved, setIsAdminApproved] = useState(false);
 
   useEffect(() => {
@@ -90,6 +95,13 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
     });
   };
 
+  const handleSelfCheckin = () => {
+    setIsCheckedIn(true);
+    toast.success("Industrial Training Check-in confirmed!", {
+      description: "Your training program attendance has been logged."
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-8 animate-pulse">
@@ -109,17 +121,17 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
   // Payment Gate Check
   const isPendingPayment = enrollment?.paymentStatus === "pending";
   if (isPendingPayment) {
-    const pageTitle = course?.title || slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const pageTitle = program?.title || slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     return (
       <div className="max-w-4xl mx-auto p-6 md:p-12 text-center space-y-6 my-12">
         <PaymentCheckoutModal
-          isOpen={showCheckoutModal}
-          onClose={() => setShowCheckoutModal(false)}
+          isOpen={showPassModal}
+          onClose={() => setShowPassModal(false)}
           item={{
             id: enrollment?._id || slug,
             title: pageTitle,
-            subtitle: "Course Learning Program",
-            type: "course",
+            subtitle: "Industrial Training Program",
+            type: "training-program",
           }}
         />
         <Card className="p-8 rounded-3xl border-2 border-amber-500/30 bg-gradient-to-b from-amber-500/5 via-white to-amber-500/5 shadow-xl space-y-6">
@@ -130,22 +142,22 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
             <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 font-bold px-3 py-1">
               Payment Pending
             </Badge>
-            <h2 className="text-2xl font-extrabold text-foreground">Payment Required to Access Course Workspace</h2>
+            <h2 className="text-2xl font-extrabold text-foreground">Payment Required to Access Training Workspace</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              You have registered for <strong className="text-foreground">{pageTitle}</strong>, but your course enrollment payment is currently pending. Please complete the registration payment to unlock access to instructors, course modules, and project submissions.
+              You have registered for <strong className="text-foreground">{pageTitle}</strong>, but your training program enrollment payment is currently pending. Please complete the registration payment to unlock access to industry mentors, training passes, and capstone submissions.
             </p>
           </div>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button 
               size="lg" 
-              onClick={() => setShowCheckoutModal(true)}
+              onClick={() => setShowPassModal(true)}
               className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl px-8 shadow-lg shadow-amber-600/20 flex items-center gap-2"
             >
               <CreditCard className="h-5 w-5" /> Pay Now & Unlock Workspace
             </Button>
-            <Link href="/student/courses">
+            <Link href="/student/training-programs">
               <Button size="lg" variant="outline" className="rounded-xl">
-                Back to My Courses
+                Back to My Training Programs
               </Button>
             </Link>
           </div>
@@ -154,15 +166,19 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
     );
   }
 
-  const title = course?.title || slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  const category = course?.category || "Software Development";
-  const level = course?.level || "Intermediate";
-  const durationHours = course?.durationHours || 40;
-  const totalLessons = course?.totalLessons || 24;
-  const venue = course?.venue || "GrowthCraft Campus Hub • Tech Lab 101";
+  const title = program?.title || slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const domain = program?.domain || "Industrial Engineering & SaaS";
   
+  // Dynamic Mode detection
+  const programMode = (program?.mode || "Offline").toLowerCase();
+  const isOnline = programMode === "online" || programMode.includes("online") || /online/i.test(slug);
+  const venue = isOnline 
+    ? "Online Training • GrowthCraft Live Enterprise Stream" 
+    : (program?.venue || "GrowthCraft Campus Hub • Industrial Training Center");
+  
+  const checkinCode = enrollment?.checkinCode || "GC-TRN-2026-7788";
   const isSubmitted = !!(enrollment?.projectSubmission?.submittedAt || repoUrl);
-  const hasAttended = enrollment?.isAttended !== false;
+  const hasAttended = isCheckedIn || (enrollment?.isAttended !== false);
 
   const canUnlockCert = hasAttended && isSubmitted;
 
@@ -171,151 +187,239 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
       {/* Header Navigation */}
       <div className="flex items-center justify-between">
         <Link 
-          href="/student/courses" 
+          href="/student/training-programs" 
           className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-magenta transition-colors gap-1.5"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to My Courses
+          Back to My Training Programs
         </Link>
         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-3 py-1 font-semibold text-xs">
-          Confirmed Course Enrollment
+          Confirmed Industrial Registration
         </Badge>
       </div>
 
-      {/* Hero Banner */}
+      {/* Hero Workspace Banner */}
       <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-graphite via-slate-900 to-graphite p-6 md:p-8 text-white shadow-2xl">
         <div className="absolute right-0 top-0 w-96 h-96 bg-magenta/15 rounded-full blur-3xl -z-10" />
-        <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -z-10" />
+        <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl -z-10" />
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-3 max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center text-xs font-bold tracking-wider uppercase text-magenta bg-magenta/15 border border-magenta/25 px-3 py-1 rounded-full">
-                📚 Course Workspace
+                💼 Industrial Training Workspace
               </span>
               <span className="inline-flex items-center text-xs font-bold uppercase text-slate-300 bg-white/10 px-2.5 py-0.5 rounded-full">
-                {category}
+                {isOnline ? "🌐 Online Stream" : "🏛️ Offline Industrial Hub"}
               </span>
               <span className="inline-flex items-center text-xs font-bold uppercase text-slate-300 bg-white/10 px-2.5 py-0.5 rounded-full">
-                Level: {level}
+                {domain}
               </span>
             </div>
             
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">{title}</h1>
             <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-              Track offline campus course modules, collaborate with assigned instructors, complete hands-on technical labs, and submit your final course project.
+              Industrial campus training workspace. Access live enterprise modules, collaborate with Admin-assigned industry mentors, build industrial capstones, and track placement readiness.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm text-slate-300 pt-2">
               <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
-                <Clock className="h-4 w-4 text-magenta" />
-                <span>{durationHours} Hours • {totalLessons} Lessons</span>
+                <Briefcase className="h-4 w-4 text-magenta" />
+                <span>Industry Capstone Track</span>
               </div>
               <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
-                <MapPin className="h-4 w-4 text-magenta" />
+                {isOnline ? <Globe className="h-4 w-4 text-magenta" /> : <MapPin className="h-4 w-4 text-magenta" />}
                 <span>{venue}</span>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[200px]">
-            <a href="#course-project-form">
-              <Button size="lg" className="w-full bg-magenta hover:bg-magenta/90 text-white font-medium rounded-xl shadow-lg shadow-magenta/20 flex items-center justify-center gap-2">
+            <Button 
+              onClick={() => setShowPassModal(!showPassModal)}
+              className="bg-magenta hover:bg-magenta/90 text-white font-medium rounded-xl shadow-lg shadow-magenta/20 flex items-center gap-2"
+            >
+              {isOnline ? <Video className="h-4 w-4" /> : <QrCode className="h-4 w-4" />}
+              {isOnline ? "Virtual Pass & Stream" : "Campus Training Pass"}
+            </Button>
+            <a href="#industrial-capstone-form">
+              <Button variant="outline" className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20 font-medium rounded-xl flex items-center gap-2">
                 <Code2 className="h-4 w-4" />
-                Jump to Project
+                Jump to Capstone
               </Button>
             </a>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Modules & Form + Instructors & Cert */}
+      {/* Mode-Aware Pass Modal / Alert Card */}
+      {showPassModal && (
+        <Card className="p-6 border-2 border-magenta/40 bg-gradient-to-r from-magenta/5 to-purple-500/5 rounded-2xl shadow-lg animate-in fade-in slide-in-from-top-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-magenta/10 rounded-2xl text-magenta border border-magenta/20">
+                {isOnline ? <Video className="h-8 w-8" /> : <QrCode className="h-8 w-8" />}
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                  {isOnline ? "Virtual Training Pass & Stream Link" : "Industrial Campus Pass Token"}
+                  <Badge className="bg-emerald-500 text-white text-[10px]">
+                    {hasAttended ? "VERIFIED PRESENT" : "INDUSTRIAL PASS"}
+                  </Badge>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {isOnline 
+                    ? "Click to join the virtual enterprise live stream or perform 1-click online check-in." 
+                    : "Show this pass code to your GrowthCraft Industrial Mentor or click self check-in."}
+                </p>
+                
+                {isOnline ? (
+                  <div className="flex flex-wrap items-center gap-3 mt-3">
+                    <a 
+                      href={mentors[0]?.meetingLink || "https://meet.google.com/gc-training-room"} 
+                      target="_blank" 
+                      rel="noreferrer"
+                    >
+                      <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg flex items-center gap-1.5 font-medium shadow-sm">
+                        <Video className="h-4 w-4" /> Join Live Enterprise Stream
+                      </Button>
+                    </a>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleSelfCheckin}
+                      disabled={hasAttended}
+                      className="border-emerald-500/40 text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-1.5"
+                    >
+                      <Check className="h-4 w-4" /> {hasAttended ? "Checked-in" : "1-Click Virtual Check-in"}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-3 mt-3">
+                    <div className="font-mono text-sm font-bold tracking-widest text-magenta bg-white border border-border px-3.5 py-1.5 rounded-lg shadow-sm">
+                      {checkinCode}
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleSelfCheckin}
+                      disabled={hasAttended}
+                      className="border-emerald-500/40 text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-1.5"
+                    >
+                      <Check className="h-4 w-4" /> {hasAttended ? "Attendance Marked" : "Self Check-in at Campus"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => setShowPassModal(false)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Dismiss
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left 2 Columns: Status, Module Curriculum & Project Submission */}
+        {/* Left 2 Columns: Status, Milestones & Capstone Form */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Course Progress Card */}
+          {/* Status & Participation Card */}
           <Card className="p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5 text-emerald-500" />
-                <h2 className="text-lg font-bold text-foreground">Course Status & Record</h2>
+                <h2 className="text-lg font-bold text-foreground">Training Record & Participation</h2>
               </div>
               <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 font-bold px-3 py-1">
-                Verified Student
+                Verified Industrial Student
               </Badge>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-xs text-muted-foreground block font-medium">Instruction Mode</span>
-                <span className="text-sm font-bold text-foreground mt-1 block">Campus Hands-on Labs</span>
-              </div>
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-xs text-muted-foreground block font-medium">Lead Instructor</span>
-                <span className="text-sm font-bold text-foreground mt-1 block">
-                  {instructors[0]?.name || "Dr. Vikram Sethi"}
+                <span className="text-xs text-muted-foreground block font-medium">Training Center</span>
+                <span className="text-sm font-bold text-emerald-600 flex items-center gap-1 mt-1">
+                  {isOnline ? <Laptop className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {isOnline ? "Virtual Training Stream" : "Campus Industrial Hub"}
                 </span>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-xs text-muted-foreground block font-medium">Modules Completed</span>
-                <span className="text-sm font-bold text-emerald-600 mt-1 block">2 of 4 Modules</span>
+                <span className="text-xs text-muted-foreground block font-medium">Industry Lead Mentor</span>
+                <span className="text-sm font-bold text-foreground mt-1 block">
+                  {mentors[0]?.name || "Suresh Menon"}
+                </span>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-xs text-muted-foreground block font-medium">Training Track</span>
+                <span className="text-sm font-bold text-foreground mt-1 block">{domain}</span>
               </div>
             </div>
           </Card>
 
-          {/* Module Curriculum Breakdown */}
+          {/* Program Milestones & Phases */}
           <Card className="p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Layers className="h-5 w-5 text-magenta" />
-                <h2 className="text-lg font-bold text-foreground">Course Modules & Curriculum</h2>
+                <Sparkles className="h-5 w-5 text-magenta" />
+                <h2 className="text-lg font-bold text-foreground">Training Timeline & Industry Milestones</h2>
               </div>
-              <span className="text-xs font-semibold text-muted-foreground">Logged by Mentor</span>
+              <span className="text-xs font-semibold text-muted-foreground">Phase 3 of 4 Active</span>
             </div>
 
-            <div className="space-y-4 pt-1">
-              {modules.map((m: any, idx: number) => {
-                const isCompleted = m.status === "Completed";
-                const isInProgress = m.status === "In Progress";
+            <div className="relative border-l-2 border-slate-200 ml-3 space-y-6 pt-2 pb-1">
+              {phases.map((p: any, idx: number) => {
+                const isCompleted = p.status === "Completed";
+                const isInProgress = p.status === "In Progress";
 
                 return (
-                  <div key={idx} className="p-4 rounded-xl border border-border bg-slate-50 space-y-2">
+                  <div key={idx} className="relative pl-6">
+                    <span 
+                      className={`absolute -left-[9px] top-0.5 h-4 w-4 rounded-full border-2 border-white ${
+                        isCompleted 
+                          ? "bg-emerald-500 ring-2 ring-emerald-100" 
+                          : isInProgress 
+                          ? "bg-magenta ring-4 ring-magenta/20 animate-pulse" 
+                          : "bg-slate-300"
+                      }`} 
+                    />
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                        <span className="h-6 w-6 rounded-full bg-magenta/10 text-magenta font-bold flex items-center justify-center text-xs">
-                          {m.moduleNumber}
-                        </span>
-                        {m.title}
+                      <h3 className={`text-sm font-bold ${isInProgress ? "text-magenta" : "text-foreground"}`}>
+                        Phase {p.phase}: {p.name}
                       </h3>
                       {isCompleted ? (
                         <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                          <CheckCircle2 className="h-4 w-4" /> Completed ({m.lessonsCount} lessons)
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Completed
                         </span>
                       ) : isInProgress ? (
                         <Badge variant="outline" className="bg-magenta/10 text-magenta border-magenta/20 text-[10px]">
                           IN PROGRESS
                         </Badge>
                       ) : (
-                        <span className="text-xs text-slate-500 font-medium">Upcoming ({m.lessonsCount} lessons)</span>
+                        <span className="text-xs text-slate-500 font-medium">Upcoming</span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">{m.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{p.description}</p>
                   </div>
                 );
               })}
             </div>
           </Card>
 
-          {/* Course Project Submission Form */}
-          <Card id="course-project-form" className="p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
+          {/* Industrial Capstone Form */}
+          <Card id="industrial-capstone-form" className="p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-2">
                 <Code2 className="h-5 w-5 text-magenta" />
                 <div>
-                  <h2 className="text-lg font-bold text-foreground">Course Project Submission</h2>
-                  <p className="text-xs text-muted-foreground">Submit your repository link and live app demo for instructor evaluation.</p>
+                  <h2 className="text-lg font-bold text-foreground">Industrial Capstone Submission</h2>
+                  <p className="text-xs text-muted-foreground">Keep your enterprise capstone repository and demo URL updated for hiring partner evaluation.</p>
                 </div>
               </div>
               {isSubmitted && (
@@ -327,12 +431,12 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
 
             <form onSubmit={handleSaveSubmission} className="space-y-4 pt-2">
               <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Course Project Title</label>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Industrial Capstone Title</label>
                 <input 
                   type="text" 
                   value={projectTitle}
                   onChange={(e) => setProjectTitle(e.target.value)}
-                  placeholder="e.g. Production Application Architecture" 
+                  placeholder="e.g. Enterprise Cloud Microservices Engine" 
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                   required
                 />
@@ -347,7 +451,7 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
                     type="url" 
                     value={repoUrl}
                     onChange={(e) => setRepoUrl(e.target.value)}
-                    placeholder="https://github.com/org/course-project" 
+                    placeholder="https://github.com/org/industrial-capstone" 
                     className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                     required
                   />
@@ -360,30 +464,30 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
                     type="url" 
                     value={demoUrl}
                     onChange={(e) => setDemoUrl(e.target.value)}
-                    placeholder="https://course-demo.vercel.app" 
+                    placeholder="https://industrial-demo.vercel.app" 
                     className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Technologies Used</label>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Technologies & Cloud Architecture</label>
                 <input 
                   type="text" 
                   value={techStack}
                   onChange={(e) => setTechStack(e.target.value)}
-                  placeholder="e.g. React, TypeScript, Express, MongoDB" 
+                  placeholder="e.g. Full-Stack, Docker, Kubernetes, AWS, MongoDB" 
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground block mb-1.5">Project Overview / Instructor Notes</label>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">Capstone Overview & Industrial Notes</label>
                 <textarea 
                   rows={3}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Briefly describe what your course project implements..." 
+                  placeholder="Describe your industrial capstone implementation..." 
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-magenta/30"
                 />
               </div>
@@ -391,7 +495,7 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
               <div className="flex items-center justify-between pt-2">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
-                  Project submission is required for course certificate approval.
+                  Capstone submission is required for industrial certificate issuance.
                 </p>
                 <Button 
                   type="submit" 
@@ -407,41 +511,56 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
 
         </div>
 
-        {/* Right Column: Instructors & Certificate Workflow */}
+        {/* Right Column: Mentors & Certificate Workflow */}
         <div className="space-y-6">
           
-          {/* Admin-Assigned Instructors Card */}
+          {/* Industry Mentors Card */}
           <Card className="p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-magenta" />
-                <h2 className="text-lg font-bold text-foreground">Course Instructors</h2>
+                <h2 className="text-lg font-bold text-foreground">Industry Mentors</h2>
               </div>
               <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-[10px] flex items-center gap-1">
-                <ShieldCheck className="h-3 w-3" /> Admin Assigned
+                <ShieldCheck className="h-3 w-3" /> Admin Verified
               </Badge>
             </div>
             
             <div className="space-y-3">
-              {instructors.map((ins: any, idx: number) => (
+              {mentors.map((m: any, idx: number) => (
                 <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-magenta/10 text-magenta font-bold flex items-center justify-center text-sm border border-magenta/20">
-                      {ins.name ? ins.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() : "I"}
+                      {m.name ? m.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() : "M"}
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-foreground">{ins.name}</h4>
-                      <p className="text-xs text-muted-foreground">{ins.designation || "Course Lead Instructor"}</p>
+                      <h4 className="text-sm font-bold text-foreground">{m.name}</h4>
+                      <p className="text-xs text-muted-foreground">{m.designation || "Industrial Training Lead"}</p>
                     </div>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => toast.info(`Doubt query sent to ${ins.name}`)}
-                    className="h-8 text-xs rounded-lg border-magenta/30 text-magenta hover:bg-magenta/10"
-                  >
-                    <MessageSquare className="h-3.5 w-3.5 mr-1" /> Ask
-                  </Button>
+                  {isOnline || m.meetingLink ? (
+                    <a 
+                      href={m.meetingLink || "https://meet.google.com/gc-training-room"} 
+                      target="_blank" 
+                      rel="noreferrer"
+                    >
+                      <Button 
+                        size="sm" 
+                        className="h-8 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Video className="h-3.5 w-3.5 text-white" /> Join Meet
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => toast.info(`Industrial query sent to ${m.name}`)}
+                      className="h-8 text-xs rounded-lg border-magenta/30 text-magenta hover:bg-magenta/10"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5 mr-1" /> Ask
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -452,7 +571,7 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Award className="h-5 w-5 text-amber-500" />
-                <h2 className="text-lg font-bold text-foreground">Course Certificate</h2>
+                <h2 className="text-lg font-bold text-foreground">Industrial Certificate</h2>
               </div>
               
               {!canUnlockCert ? (
@@ -473,16 +592,16 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
             {!canUnlockCert ? (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Certificate download will unlock once you have <strong className="text-foreground">completed course attendance</strong> and <strong className="text-foreground">submitted your course project</strong>.
+                  Certificate download will unlock once you have <strong className="text-foreground">completed training attendance</strong> and <strong className="text-foreground">submitted your industrial capstone</strong>.
                 </p>
                 <div className="space-y-1.5 text-xs text-slate-600 bg-white p-3 rounded-xl border border-border">
                   <div className="flex items-center gap-2">
                     {hasAttended ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertCircle className="h-4 w-4 text-amber-500" />}
-                    <span>Attendance: <strong>{hasAttended ? "Verified" : "Pending"}</strong></span>
+                    <span>Attendance Status: <strong>{hasAttended ? "Verified" : "Pending Check-in"}</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
                     {isSubmitted ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertCircle className="h-4 w-4 text-amber-500" />}
-                    <span>Course Project: <strong>{isSubmitted ? "Submitted" : "Not Submitted"}</strong></span>
+                    <span>Industrial Capstone: <strong>{isSubmitted ? "Submitted" : "Not Submitted"}</strong></span>
                   </div>
                 </div>
                 <Button 
@@ -490,13 +609,13 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
                   className="w-full bg-slate-200 text-slate-500 font-medium rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
                 >
                   <Lock className="h-4 w-4" />
-                  Submit Project to Unlock
+                  Submit Capstone to Unlock
                 </Button>
               </div>
             ) : !isAdminApproved ? (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Your project submission has been logged. GrowthCraft Admins are verifying your submission before issuing your official course certificate.
+                  Your industrial capstone has been submitted. GrowthCraft Admins and hiring partners are evaluating your submission before issuing your official industrial certificate.
                 </p>
 
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-900 space-y-1">
@@ -504,7 +623,7 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
                     <Hourglass className="h-3.5 w-3.5 text-amber-600" /> Details Submitted for Admin Review
                   </div>
                   <p className="text-[11px] text-amber-800">
-                    Admin verification ensures valid project code repository and course attendance proof.
+                    Admin verification ensures valid capstone code repository and training attendance proof.
                   </p>
                 </div>
 
@@ -529,18 +648,18 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
             ) : (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Congratulations! Your course project has been verified and approved by GrowthCraft Admin. Download your course certificate below.
+                  Congratulations! Your industrial training capstone has been verified and approved by GrowthCraft Admin. Download your official certificate below.
                 </p>
                 
                 <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-900 flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>Verified by Admin • Serial No: GC-CRS-2026-3391</span>
+                  <span>Verified by Admin • Serial No: GC-TRN-2026-7788</span>
                 </div>
 
                 <Button 
                   onClick={() => {
                     toast.success("Certificate download started!", {
-                      description: "Your verified PDF course certificate is downloading."
+                      description: "Your verified PDF industrial training certificate is downloading."
                     });
                   }}
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl flex items-center justify-center gap-2 shadow-md"

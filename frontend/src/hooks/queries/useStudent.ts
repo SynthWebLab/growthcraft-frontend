@@ -254,17 +254,6 @@ export function useStudentBatches() {
   });
 }
 
-/** Fetch the student's progress and workspace details for a course. */
-export function useStudentCourseWorkspace(slug: string) {
-  return useQuery({
-    queryKey: ["student", "courses", "workspace", slug],
-    queryFn: () => studentService.getCourseWorkspace(slug),
-    enabled: !!slug,
-    staleTime: STALE,
-    retry: 1,
-  });
-}
-
 /** Fetch the student's hackathon workspace details (assigned mentors, attendance, submission). */
 export function useStudentHackathonWorkspace(slug: string) {
   return useQuery({
@@ -353,6 +342,70 @@ export function useSubmitBootcampProject(slug: string) {
           description: "Your bootcamp capstone project submission has been saved.",
         });
         queryClient.invalidateQueries({ queryKey: ["student", "bootcamps", "workspace", slug] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
+    },
+  });
+}
+
+/** Fetch the student's course workspace details. */
+export function useStudentCourseWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "courses", "workspace", slug],
+    queryFn: () => studentService.getCourseWorkspace(slug),
+    enabled: !!slug,
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Submit or update course project details. */
+export function useSubmitCourseProject(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitCourseProject(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Course project submission saved", {
+          description: "Your course capstone project submission has been saved.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "courses", "workspace", slug] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
+    },
+  });
+}
+
+/** Fetch the student's training program workspace details. */
+export function useStudentTrainingProgramWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "training-programs", "workspace", slug],
+    queryFn: () => studentService.getTrainingProgramWorkspace(slug),
+    enabled: !!slug,
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Submit or update training program capstone project. */
+export function useSubmitTrainingProgramProject(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitTrainingProgramProject(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Industrial capstone submission saved", {
+          description: "Your industrial training capstone project submission has been saved.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "training-programs", "workspace", slug] });
       }
     },
     onError: (error: any) => {

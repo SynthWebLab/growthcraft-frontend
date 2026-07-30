@@ -10,23 +10,25 @@ export default function StudentTrainingProgramsPage() {
 
   const items: EnrollmentGridItem[] = (data?.data?.trainingPrograms ?? []).map((e) => {
     const program = resolveRef(e.programId);
+    const slug = program?.slug || "industrial-software-engineering-program";
     return {
       id: e._id,
       title: program?.title ?? e.title,
-      subtitle: program?.domain,
+      subtitle: program?.domain || "Industrial Training",
       status: e.status,
-      enrollmentDate: e.enrollmentDate,
-      href: program?.slug
-        ? (e.status === "confirmed" ? `/student/courses/${program.slug}` : `/training-programs/${program.slug}`)
-        : undefined,
+      paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
+      enrollmentDate: e.createdAt || e.enrollmentDate || new Date().toISOString(),
+      href: `/training-programs/${slug}`,
+      workspaceHref: `/student/training-programs/${slug}`,
       emoji: "💼",
+      type: "training-program",
     };
   });
 
   return (
     <StudentEnrollmentGrid
       pageTitle="My Training Programs"
-      pageDescription="Training programs you've enrolled in"
+      pageDescription="Industrial training programs you've enrolled in"
       items={items}
       isLoading={isLoading}
       isError={isError}
