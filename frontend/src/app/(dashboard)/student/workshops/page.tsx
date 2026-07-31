@@ -34,7 +34,7 @@ export default function StudentWorkshopsPage() {
       icon={<Presentation className="h-12 w-12" />}
       emptyTitle="No workshops yet"
       emptyDescription="You haven't registered for any workshops."
-      browseHref="/events"
+      browseHref="/events?tab=workshops"
       browseLabel="Browse Workshops"
     />
   );

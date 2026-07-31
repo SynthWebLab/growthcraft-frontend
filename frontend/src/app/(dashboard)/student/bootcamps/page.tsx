@@ -34,7 +34,7 @@ export default function StudentBootcampsPage() {
       icon={<Rocket className="h-12 w-12" />}
       emptyTitle="No bootcamps yet"
       emptyDescription="You haven't registered for any bootcamps."
-      browseHref="/events"
+      browseHref="/events?tab=bootcamps"
       browseLabel="Browse Bootcamps"
     />
   );

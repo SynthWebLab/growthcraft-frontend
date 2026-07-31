@@ -14,7 +14,7 @@ export default function StudentCoursesPage() {
     return {
       id: e._id,
       title: course?.title ?? e.title,
-      subtitle: course?.category || course?.level || "Development",
+      subtitle: course?.category || course?.difficultyLevel || "Development",
       status: e.status,
       paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
       enrollmentDate: e.createdAt || e.enrollmentDate || new Date().toISOString(),

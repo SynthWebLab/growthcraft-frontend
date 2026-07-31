@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card";
 import { KpiCard, PanelEmptyState } from "@/components/panel";
 import DataCard from "@/components/ui/data-card";
 import { PageHeader } from "@/components/ui/page-header";
-import { useActivateAmbassador } from "@/hooks/queries/useAmbassador";
 import Link from "next/link";
 import { useStudentDashboard } from "@/hooks/queries/useStudent";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -84,8 +83,6 @@ const StudentDashboard = () => {
     );
   }
 
-  const { mutate: activateAmbassador, isPending: isActivating } = useActivateAmbassador();
-
   const handlePayNow = (
     enrollment: any,
     itemTitle: string,
@@ -125,29 +122,6 @@ const StudentDashboard = () => {
         description="Track your enrollments and recent activity"
         suppressHydrationWarning
       />
-
-      {!user?.isAmbassador && (
-        <Card className="p-6 border-none bg-gradient-to-r from-graphite to-slate-900 text-white shadow-md relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="absolute right-0 top-0 w-48 h-48 bg-magenta/10 rounded-full blur-2xl -z-10" />
-          <div>
-            <h2 className="text-xl font-bold font-display">Become a GrowthCraft Ambassador! 🚀</h2>
-            <p className="text-sm text-slate-300 mt-1">Refer your friends to GrowthCraft and earn 5% cash commission on their enrollment fees.</p>
-          </div>
-          <Button
-            onClick={() => activateAmbassador()}
-            disabled={isActivating}
-            className="bg-magenta hover:bg-magenta/90 text-white font-semibold rounded-xl px-5 py-2.5 h-auto self-start sm:self-auto hover:scale-[1.02] transition-all shrink-0"
-          >
-            {isActivating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Activating...
-              </>
-            ) : (
-              "Activate Ambassador Mode"
-            )}
-          </Button>
-        </Card>
-      )}
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

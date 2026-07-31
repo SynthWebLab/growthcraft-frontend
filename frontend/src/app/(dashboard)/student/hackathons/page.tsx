@@ -34,7 +34,7 @@ export default function StudentHackathonsPage() {
       icon={<Trophy className="h-12 w-12" />}
       emptyTitle="No hackathons yet"
       emptyDescription="You haven't registered for any hackathons."
-      browseHref="/events"
+      browseHref="/events?tab=hackathons"
       browseLabel="Browse Hackathons"
     />
   );

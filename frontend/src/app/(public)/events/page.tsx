@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { Section } from "@/components/ui/section";
@@ -15,16 +15,28 @@ type EventTab = "workshops" | "bootcamps" | "hackathons";
 
 function EventsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const tabParam = searchParams.get("tab") as EventTab | null;
 
   const { isOpen, formType, formTitle, courseId, courseTitle, itemType, openForm, closeForm } = usePopupForm();
-  const [activeTab, setActiveTab] = useState<EventTab>(tabParam || "bootcamps");
+  const [activeTab, setActiveTab] = useState<EventTab>(
+    tabParam && (tabParam === "workshops" || tabParam === "bootcamps" || tabParam === "hackathons")
+      ? tabParam
+      : "bootcamps"
+  );
 
   useEffect(() => {
     if (tabParam && (tabParam === "workshops" || tabParam === "bootcamps" || tabParam === "hackathons")) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
+
+  const handleTabChange = (value: EventTab) => {
+    setActiveTab(value);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", value);
+    router.replace(`/events?${params.toString()}`, { scroll: false });
+  };
 
   const { data: user } = useCurrentUser();
   const isMentor = user?.role === "mentor";
@@ -47,7 +59,7 @@ function EventsContent() {
         <Tabs
           defaultValue="bootcamps"
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as EventTab)}
+          onValueChange={(value) => handleTabChange(value as EventTab)}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-3 gap-1 rounded-md bg-muted p-1 sm:inline-flex sm:w-auto sm:gap-2 sm:p-2">

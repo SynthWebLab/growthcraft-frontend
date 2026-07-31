@@ -151,71 +151,95 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
+            <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none rounded-full hover:bg-muted/50">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-magenta text-[9px] font-bold text-white">
-                  {unreadCount}
+                <span className="absolute top-0.5 right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-magenta text-[10px] font-bold text-white shadow-sm animate-pulse">
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <div className="flex items-center justify-between p-3 border-b">
-              <span className="text-sm font-semibold">Notifications</span>
+          <DropdownMenuContent align="end" className="w-80 sm:w-96 p-0 shadow-xl border-border">
+            <div className="flex items-center justify-between p-3.5 border-b border-border bg-muted/20">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-foreground">Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] font-semibold bg-magenta/10 text-magenta px-2 py-0.5 rounded-full">
+                    {unreadCount} new
+                  </span>
+                )}
+              </div>
               {unreadCount > 0 && (
                 <button
                   onClick={() => markAllRead.mutate()}
-                  className="text-xs text-magenta hover:underline"
+                  disabled={markAllRead.isPending}
+                  className="text-xs text-magenta hover:underline font-medium transition-colors"
                 >
                   Mark all read
                 </button>
               )}
             </div>
-            <div className="max-h-[300px] overflow-y-auto">
+            <div className="max-h-[360px] overflow-y-auto divide-y divide-border">
               {recentNotifications.length > 0 ? (
-                recentNotifications.map((notif: any) => (
-                  <div
-                    key={notif._id}
-                    onClick={() => !notif.readAt && markRead.mutate(notif._id)}
-                    className={cn(
-                      "p-3 text-xs border-b border-border cursor-pointer hover:bg-muted/50 transition-colors space-y-1",
-                      !notif.readAt && "bg-lavender/5 font-medium"
-                    )}
-                  >
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="text-foreground">
-                        {notif.type === "enrollment.created" && "Enrollment Confirmed"}
-                        {notif.type === "batch.assigned" && "Batch Assigned"}
-                        {notif.type === "mentor.checkin.verified" && "Session Verified"}
-                        {notif.type === "referral.conversion" && "Referral Conversion"}
-                        {notif.type !== "enrollment.created" && notif.type !== "batch.assigned" && notif.type !== "mentor.checkin.verified" && notif.type !== "referral.conversion" && "New Alert"}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground shrink-0">
-                        {new Date(notif.createdAt).toLocaleDateString()}
-                      </span>
+                recentNotifications.map((notif: any) => {
+                  const isUnread = !notif.readAt;
+                  return (
+                    <div
+                      key={notif._id}
+                      onClick={() => isUnread && markRead.mutate(notif._id)}
+                      className={cn(
+                        "p-3.5 text-xs cursor-pointer hover:bg-muted/40 transition-all space-y-1.5 relative",
+                        isUnread ? "bg-magenta/[0.03]" : "opacity-80"
+                      )}
+                    >
+                      {isUnread && (
+                        <span className="absolute left-1.5 top-4 w-1.5 h-1.5 rounded-full bg-magenta" />
+                      )}
+                      <div className="flex justify-between items-start gap-2 pl-1.5">
+                        <span className="font-semibold text-foreground text-xs">
+                          {notif.type === "enrollment.created" && "🎓 Enrollment Confirmed"}
+                          {notif.type === "batch.assigned" && "📚 Batch Assigned"}
+                          {notif.type === "mentor.checkin.verified" && "✅ Session Verified"}
+                          {notif.type === "referral.conversion" && "🎉 Referral Conversion"}
+                          {notif.type !== "enrollment.created" &&
+                            notif.type !== "batch.assigned" &&
+                            notif.type !== "mentor.checkin.verified" &&
+                            notif.type !== "referral.conversion" &&
+                            "🔔 Notification"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground shrink-0 font-mono">
+                          {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground line-clamp-2 pl-1.5 leading-relaxed">
+                        {notif.type === "enrollment.created" && `Successfully enrolled in batch ${notif.data?.batchCode || ""}`}
+                        {notif.type === "batch.assigned" && `Assigned to batch ${notif.data?.batchCode || ""}`}
+                        {notif.type === "mentor.checkin.verified" && `Check-in verified: ${notif.data?.hoursWorked || 0} hrs worked`}
+                        {notif.type === "referral.conversion" && `Referral converted! Commission: INR ${notif.data?.commissionAmount || 0}`}
+                        {notif.type !== "enrollment.created" &&
+                          notif.type !== "batch.assigned" &&
+                          notif.type !== "mentor.checkin.verified" &&
+                          notif.type !== "referral.conversion" &&
+                          (notif.data?.message || "You have a new update.")}
+                      </p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground line-clamp-2">
-                      {notif.type === "enrollment.created" && `Enrolled in batch ${notif.data?.batchCode || ""}`}
-                      {notif.type === "batch.assigned" && `Assigned to batch ${notif.data?.batchCode || ""}`}
-                      {notif.type === "mentor.checkin.verified" && `Check-in verified: ${notif.data?.hoursWorked || 0} hrs worked`}
-                      {notif.type === "referral.conversion" && `Referral converted! Commission: INR ${notif.data?.commissionAmount || 0}`}
-                      {notif.type !== "enrollment.created" && notif.type !== "batch.assigned" && notif.type !== "mentor.checkin.verified" && notif.type !== "referral.conversion" && (notif.data?.message || "")}
-                    </p>
-                  </div>
-                ))
+                  );
+                })
               ) : (
-                <div className="p-4 text-sm text-muted-foreground text-center">
-                  No notifications
+                <div className="p-8 text-center space-y-2">
+                  <Bell className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+                  <p className="text-sm font-medium text-muted-foreground">No notifications yet</p>
+                  <p className="text-xs text-muted-foreground/70">You will receive updates here as activity occurs.</p>
                 </div>
               )}
             </div>
-            <div className="p-2 border-t text-center">
+            <div className="p-2.5 border-t border-border bg-muted/10 text-center">
               <Link
                 href={`${basePath}/notifications`}
                 className="text-xs text-magenta font-semibold hover:underline block w-full py-1"
               >
-                View all notifications
+                View all notifications →
               </Link>
             </div>
           </DropdownMenuContent>
