@@ -24,7 +24,8 @@ interface HackathonEventsProps {
     title?: string,
     courseIdParam?: string,
     courseTitleParam?: string,
-    itemTypeParam?: "course" | "workshop" | "hackathon"
+    itemTypeParam?: "course" | "workshop" | "hackathon",
+    priceParam?: number
   ) => void;
 }
 
@@ -64,21 +65,21 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
     const ctaText = hackathon.primaryCTA || "Register Now";
 
     if (ctaText.toLowerCase().includes("callback")) {
-      onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+      onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price || 499);
       return;
     }
 
     if (ctaText.toLowerCase().includes("interest")) {
-      onOpenForm("register-interest", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+      onOpenForm("register-interest", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price || 499);
       return;
     }
 
-    onOpenForm("reserve-seat", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+    onOpenForm("reserve-seat", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price || 499);
   };
 
   const handleHackathonSecondaryCTA = (hackathon: Hackathon) => {
     const ctaText = hackathon.secondaryCTA || "Request Callback";
-    onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+    onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price || 499);
   };
 
   const clearHackathonFilters = () => {

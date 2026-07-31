@@ -18,7 +18,7 @@ function EventsContent() {
   const router = useRouter();
   const tabParam = searchParams.get("tab") as EventTab | null;
 
-  const { isOpen, formType, formTitle, courseId, courseTitle, itemType, openForm, closeForm } = usePopupForm();
+  const { isOpen, formType, formTitle, courseId, courseTitle, itemType, price, openForm, closeForm } = usePopupForm();
   const [activeTab, setActiveTab] = useState<EventTab>(
     tabParam && (tabParam === "workshops" || tabParam === "bootcamps" || tabParam === "hackathons")
       ? tabParam
@@ -53,6 +53,7 @@ function EventsContent() {
         courseId={courseId}
         courseTitle={courseTitle}
         itemType={itemType}
+        price={price}
       />
 
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">

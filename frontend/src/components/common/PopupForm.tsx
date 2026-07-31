@@ -237,11 +237,11 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
     const enrollment = enrollRes?.data?.enrollment;
     if (!enrollment?._id) return;
 
-    // For hackathon with price=0: skip Razorpay, confirm immediately
-    if (itemType === "hackathon" && (!price || price <= 0)) {
+    // For item with price explicitly set to 0: skip Razorpay, confirm immediately
+    if (price === 0) {
       triggerConfetti();
       toast.success("Registration confirmed!", {
-        description: "You're registered for this hackathon. Check your email for details.",
+        description: "You're registered for this event. Check your email for details.",
       });
       setEnrollmentResult({
         ...enrollRes,

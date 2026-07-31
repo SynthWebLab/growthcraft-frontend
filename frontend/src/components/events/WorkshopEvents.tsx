@@ -24,7 +24,8 @@ interface WorkshopEventsProps {
     title?: string,
     courseIdParam?: string,
     courseTitleParam?: string,
-    itemTypeParam?: "course" | "workshop"
+    itemTypeParam?: "course" | "workshop",
+    priceParam?: number
   ) => void;
 }
 
@@ -64,21 +65,21 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
     const ctaText = workshop.primaryCTA || "Reserve Seat";
 
     if (ctaText.toLowerCase().includes("callback")) {
-      onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+      onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price || 999);
       return;
     }
 
     if (ctaText.toLowerCase().includes("interest")) {
-      onOpenForm("register-interest", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+      onOpenForm("register-interest", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price || 999);
       return;
     }
 
-    onOpenForm("reserve-seat", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+    onOpenForm("reserve-seat", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price || 999);
   };
 
   const handleWorkshopSecondaryCTA = (workshop: Workshop) => {
     const ctaText = workshop.secondaryCTA || "Request Callback";
-    onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+    onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price || 999);
   };
 
   const clearWorkshopFilters = () => {

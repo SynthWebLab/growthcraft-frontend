@@ -286,8 +286,8 @@ export default function EventDetailPage({
   const isRestrictedRole = isMounted && (user?.role === "mentor" || user?.role === "employer");
 
   // Use backend-provided CTAs
-  const primaryCTA = event.primaryCTA || "Register Now";
-  const secondaryCTA = event.secondaryCTA;
+  const primaryCTA = event.primaryCTA || "Reserve Seat";
+  const secondaryCTA = event.secondaryCTA || "Request Callback";
   const displayRating = useMemo(() => event.rating.toFixed(1), [event.rating]);
 
   // Determine CTA behavior

@@ -30,18 +30,17 @@ export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick }: Work
   const toneStyles = getEventCardToneStyles("purple");
 
   const primaryCTA = workshop.primaryCTA || "Reserve Seat";
-  const secondaryCTA = workshop.secondaryCTA;
+  const secondaryCTA = workshop.secondaryCTA || "Request Callback";
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = workshop.status === "Closed" || workshop.status === "Completed";
   const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? workshop.status : primaryCTA);
 
   const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
+  const seatsAvailable = workshop.availableSeats ?? ((workshop.maxSeats || 50) - (workshop.enrolledCount || 0));
   const isPrimaryDisabled = isRestrictedRole || isFinalizedStatus || (isRegistrationAction && (
     workshop.status === "Completed" || 
-    workshop.availableSeats <= 0 ||
-    !workshop.canRegister
+    seatsAvailable <= 0
   ));
-  const seatsAvailable = workshop.availableSeats;
 
   return (
     <Link href={`/events/${workshop.slug}`} className="block">

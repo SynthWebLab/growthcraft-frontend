@@ -24,8 +24,8 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: Ha
   const toneStyles = getEventCardToneStyles("orange");
   
   // Get CTAs from hackathon data
-  const primaryCTA = hackathon.primaryCTA || "Register Now";
-  const secondaryCTA = hackathon.secondaryCTA;
+  const primaryCTA = hackathon.primaryCTA || "Reserve Seat";
+  const secondaryCTA = hackathon.secondaryCTA || "Request Callback";
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = hackathon.status === "Closed" || hackathon.status === "Completed";
   const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? hackathon.status : primaryCTA);
@@ -33,11 +33,11 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: Ha
   // Only disable primary button if it's a registration action AND (seats full OR event completed)
   // "Request Callback" buttons should always be enabled
   const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
+  const seatsAvailable = hackathon.availableSeats ?? ((hackathon.maxSeats || 50) - (hackathon.enrolledCount || 0));
   const isPrimaryDisabled = isRestrictedRole || isFinalizedStatus || (isRegistrationAction && (
     hackathon.status === "Completed" || 
-    hackathon.availableSeats === 0
+    seatsAvailable <= 0
   ));
-  const seatsAvailable = hackathon.availableSeats;
 
   return (
     <Link href={`/events/${hackathon.slug}`} className="block">
