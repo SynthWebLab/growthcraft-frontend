@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Clock, MapPin, ArrowRight, Trophy, Flame } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowRight, Trophy, Flame, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
@@ -11,12 +11,13 @@ interface HackathonCardProps {
   hackathon: Hackathon;
   onCTAClick: (hackathon: Hackathon) => void;
   onSecondaryCTAClick?: (hackathon: Hackathon) => void;
+  isProcessing?: boolean;
 }
 
 const formatEventDate = (date: string) =>
   new Date(date).toLocaleDateString("en-GB");
 
-export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: HackathonCardProps) {
+export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick, isProcessing }: HackathonCardProps) {
   const { data: user } = useCurrentUser();
   const isMentor = user?.role === "mentor";
   const isEmployer = user?.role === "employer";
@@ -24,17 +25,21 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: Ha
   const toneStyles = getEventCardToneStyles("orange");
   
   // Get CTAs from hackathon data
-  const primaryCTA = hackathon.primaryCTA || "Reserve Seat";
-  const secondaryCTA = hackathon.secondaryCTA || "Request Callback";
+  const isEnrolled = (hackathon as any).isEnrolled || 
+    hackathon.primaryCTA === "Already Enrolled" || 
+    hackathon.primaryCTA === "Interest Registered" ||
+    hackathon.primaryCTA === "Seat Reserved";
+
+  const rawPrimaryCTA = hackathon.primaryCTA || "Reserve Seat";
+  const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
+  const secondaryCTA = isEnrolled ? null : (hackathon.secondaryCTA || "Request Callback");
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = hackathon.status === "Closed" || hackathon.status === "Completed";
   const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? hackathon.status : primaryCTA);
   
-  // Only disable primary button if it's a registration action AND (seats full OR event completed)
-  // "Request Callback" buttons should always be enabled
-  const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
+  const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve") || isEnrolled;
   const seatsAvailable = hackathon.availableSeats ?? ((hackathon.maxSeats || 50) - (hackathon.enrolledCount || 0));
-  const isPrimaryDisabled = isRestrictedRole || isFinalizedStatus || (isRegistrationAction && (
+  const isPrimaryDisabled = Boolean(isProcessing) || isRestrictedRole || isFinalizedStatus || isEnrolled || (isRegistrationAction && (
     hackathon.status === "Completed" || 
     seatsAvailable <= 0
   ));
@@ -130,17 +135,26 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: Ha
                 if (!isPrimaryDisabled && !isRestrictedRole) onCTAClick(hackathon);
               }}
             >
-              <span className="hidden sm:inline">
-                {primaryButtonLabel}
-              </span>
-              <span className="sm:hidden">
-                {isFinalizedStatus
-                  ? primaryButtonLabel
-                  : primaryCTA === "Register Now"
-                  ? "Register"
-                  : primaryCTA}
-              </span>
-              {!isPrimaryDisabled && <ArrowRight className="ml-2 h-4 w-4" />}
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                  Checking Payment...
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">
+                    {primaryButtonLabel}
+                  </span>
+                  <span className="sm:hidden">
+                    {isFinalizedStatus
+                      ? primaryButtonLabel
+                      : primaryCTA === "Register Now"
+                      ? "Register"
+                      : primaryCTA}
+                  </span>
+                  {!isPrimaryDisabled && <ArrowRight className="ml-2 h-4 w-4" />}
+                </>
+              )}
             </Button>
           </div>
         }

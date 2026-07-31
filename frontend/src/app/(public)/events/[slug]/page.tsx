@@ -26,6 +26,7 @@ import {
   Clock,
   MapPin,
   Flame,
+  Loader2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
@@ -34,6 +35,7 @@ import { useWorkshopDetails } from "@/hooks/queries/useWorkshops";
 import { useHackathonDetails } from "@/hooks/queries/useHackathons";
 import { useEventBySlug } from "@/hooks/queries/useEvents";
 import { useBootcampBySlug } from "@/hooks/queries/useBootcamps";
+import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getEventDetailBySlug } from "@/data/events-detail.mock";
@@ -210,6 +212,7 @@ export default function EventDetailPage({
   const { isOpen, formType, formTitle, courseId, courseTitle, price, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
+  const { checkout, isProcessing: isDirectCheckoutProcessing } = useDirectCheckout();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -286,8 +289,14 @@ export default function EventDetailPage({
   const isRestrictedRole = isMounted && (user?.role === "mentor" || user?.role === "employer");
 
   // Use backend-provided CTAs
-  const primaryCTA = event.primaryCTA || "Reserve Seat";
-  const secondaryCTA = event.secondaryCTA || "Request Callback";
+  const isEnrolled = (event as any).isEnrolled || 
+    event.primaryCTA === "Already Enrolled" || 
+    event.primaryCTA === "Interest Registered" ||
+    event.primaryCTA === "Seat Reserved";
+
+  const rawPrimaryCTA = event.primaryCTA || "Reserve Seat";
+  const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
+  const secondaryCTA = isEnrolled ? null : (event.secondaryCTA || "Request Callback");
   const displayRating = useMemo(() => event.rating.toFixed(1), [event.rating]);
 
   // Determine CTA behavior
@@ -392,7 +401,7 @@ export default function EventDetailPage({
       return;
     }
 
-    // For "Register Now" - require login
+    // For "Register Now" / "Reserve Seat" — require login, then direct checkout
     if (!isAuthenticated) {
       if (typeof window !== "undefined") {
         const currentUrl = window.location.pathname;
@@ -409,12 +418,14 @@ export default function EventDetailPage({
       return;
     }
 
-    if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
-      openEventActionForm("reserve-seat");
-      return;
-    }
-
-    toast.success("Registration successful! Check your email for details.");
+    // Direct checkout — skip the popup form
+    const directItemType = isWorkshopEvent ? "workshop" : isBootcampEvent ? "bootcamp" : isHackathonEvent ? "hackathon" : "course";
+    checkout({
+      itemId: event._id,
+      itemType: directItemType as any,
+      itemTitle: event.title,
+      price: event.price ?? 0,
+    });
   };
 
   // Handle secondary CTA click
@@ -453,7 +464,9 @@ export default function EventDetailPage({
     primaryCTA.toLowerCase().includes("reserve") || 
     primaryCTA.toLowerCase().includes("enroll");
   const isPrimaryButtonDisabled = 
+    isDirectCheckoutProcessing ||
     isFinalizedStatus || 
+    isEnrolled ||
     (isAuthenticated && isRestrictedRole) ||
     (isRegistrationAction && isAuthenticated && !isStudent) ||
     (isRegistrationAction && (isSeatsFull || event.status === "Completed"));
@@ -857,7 +870,14 @@ export default function EventDetailPage({
                   onClick={handlePrimaryCTAClick}
                   disabled={isPrimaryButtonDisabled}
                 >
-                  {primaryButtonLabel}
+                  {isDirectCheckoutProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                      Checking Payment...
+                    </>
+                  ) : (
+                    primaryButtonLabel
+                  )}
                 </Button>
 
                 {/* Secondary CTA */}

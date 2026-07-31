@@ -194,7 +194,7 @@ export default function CourseDetailPage({
 
         if (response?.data?.enrollment?._id) {
           openCheckout({
-            amount: course.price || 4999,
+            amount: course.price ?? 0,
             itemType: "course",
             itemId: response.data.enrollment._id,
             title: course.title,

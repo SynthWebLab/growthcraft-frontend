@@ -21,6 +21,7 @@ import {
   type Bootcamp,
   type BootcampQueryParams,
 } from "@/types/bootcamp";
+import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { FormType } from "@/lib/ctaPolicy";
 
 interface BootcampEventsProps {
@@ -37,6 +38,7 @@ interface BootcampEventsProps {
 const ITEMS_PER_PAGE = 10;
 
 export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsProps) {
+  const { checkout, isProcessing, processingItemId } = useDirectCheckout();
   const [bootcampMode, setBootcampMode] = useState<(typeof BOOTCAMP_MODES)[number] | null>(null);
   const [bootcampStatus, setBootcampStatus] = useState<(typeof BOOTCAMP_FILTER_STATUSES)[number] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,14 +69,20 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
   const hasNextPage = currentPage < totalPages;
   const hasPreviousPage = currentPage > 1;
 
-  const openBootcampForm = (bootcamp: Bootcamp, type: "reserve-seat" | "callback") => {
-    const label = type === "reserve-seat" ? bootcamp.primaryCTA || "Reserve Seat" : bootcamp.secondaryCTA || "Request Callback";
+  const openBootcampForm = (bootcamp: Bootcamp, type: "callback") => {
+    const label = bootcamp.secondaryCTA || "Request Callback";
     onOpenForm(type, `${label} - ${bootcamp.title}`, bootcamp.id, bootcamp.title, "bootcamp");
   };
 
   const handleBootcampCTA = (bootcamp: Bootcamp) => {
-    if (bootcamp.primaryCTA.toLowerCase().includes("reserve")) {
-      openBootcampForm(bootcamp, "reserve-seat");
+    if (bootcamp.primaryCTA.toLowerCase().includes("reserve") || bootcamp.primaryCTA.toLowerCase().includes("enroll")) {
+      // Direct checkout — skip the popup form
+      checkout({
+        itemId: bootcamp.id,
+        itemType: "bootcamp",
+        itemTitle: bootcamp.title,
+        price: bootcamp.price ?? 0,
+      });
       return;
     }
 
@@ -174,6 +182,7 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
               bootcamp={bootcamp}
               onPrimaryCTAClick={handleBootcampCTA}
               onSecondaryCTAClick={() => openBootcampForm(bootcamp, "callback")}
+              isProcessing={isProcessing && processingItemId === bootcamp.id}
             />
           </EventSection>
         ))

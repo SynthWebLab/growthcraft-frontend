@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, ArrowRight, MapPin, Flame } from "lucide-react";
+import { Calendar, ArrowRight, MapPin, Flame, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +12,7 @@ interface BootcampEventCardProps {
   bootcamp: Bootcamp;
   onPrimaryCTAClick: (bootcamp: Bootcamp) => void;
   onSecondaryCTAClick?: (bootcamp: Bootcamp) => void;
+  isProcessing?: boolean;
 }
 
 const formatBootcampDate = (date: string) =>
@@ -34,6 +35,7 @@ export function BootcampEventCard({
   bootcamp,
   onPrimaryCTAClick,
   onSecondaryCTAClick,
+  isProcessing,
 }: BootcampEventCardProps) {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -44,9 +46,17 @@ export function BootcampEventCard({
   const isMentor = isMounted && user?.role === "mentor";
   const isEmployer = isMounted && user?.role === "employer";
   const isRestrictedRole = isMentor || isEmployer;
+  const isEnrolled = (bootcamp as any).isEnrolled || 
+    bootcamp.primaryCTA === "Already Enrolled" || 
+    bootcamp.primaryCTA === "Interest Registered" ||
+    bootcamp.primaryCTA === "Seat Reserved";
+
+  const rawPrimaryCTA = bootcamp.primaryCTA || "Reserve Seat";
+  const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
+  const secondaryCTA = isEnrolled ? null : (bootcamp.secondaryCTA || "Request Callback");
   const isFinalizedStatus = bootcamp.status === "Closed" || bootcamp.status === "Completed";
-  const isPrimaryDisabled = isRestrictedRole || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus));
-  const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? bootcamp.status : bootcamp.primaryCTA);
+  const isPrimaryDisabled = Boolean(isProcessing) || isRestrictedRole || isEnrolled || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus));
+  const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? bootcamp.status : primaryCTA);
 
   return (
     <Link 
@@ -158,7 +168,7 @@ export function BootcampEventCard({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-            {bootcamp.secondaryCTA && (
+            {secondaryCTA && (
               <Button
                 variant="outline"
                 size="sm"
@@ -175,7 +185,7 @@ export function BootcampEventCard({
                   onPrimaryCTAClick(bootcamp);
                 }}
               >
-                {isRestrictedRole ? "Students Only" : bootcamp.secondaryCTA}
+                {isRestrictedRole ? "Students Only" : secondaryCTA}
               </Button>
             )}
             <Button
@@ -195,8 +205,17 @@ export function BootcampEventCard({
                 if (!isRestrictedRole) onPrimaryCTAClick(bootcamp);
               }}
             >
-              {primaryButtonLabel}
-              {!isFinalizedStatus && bootcamp.canRegister && <ArrowRight className="ml-2 h-4 w-4" />}
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                  Checking Payment...
+                </>
+              ) : (
+                <>
+                  {primaryButtonLabel}
+                  {!isFinalizedStatus && bootcamp.canRegister && <ArrowRight className="ml-2 h-4 w-4" />}
+                </>
+              )}
             </Button>
           </div>
         </div>

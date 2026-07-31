@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Clock, MapPin, ArrowRight, Flame } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowRight, Flame, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
@@ -11,6 +11,7 @@ interface WorkshopCardProps {
   workshop: Workshop;
   onCTAClick: (workshop: Workshop) => void;
   onSecondaryCTAClick: (workshop: Workshop) => void;
+  isProcessing?: boolean;
 }
 
 const formatEventDate = (date: string) =>
@@ -22,22 +23,27 @@ const formatEventTime = (date: string) =>
     minute: "2-digit",
   });
 
-export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick }: WorkshopCardProps) {
+export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick, isProcessing }: WorkshopCardProps) {
   const { data: user } = useCurrentUser();
   const isMentor = user?.role === "mentor";
   const isEmployer = user?.role === "employer";
   const isRestrictedRole = isMentor || isEmployer;
   const toneStyles = getEventCardToneStyles("purple");
+  const isEnrolled = (workshop as any).isEnrolled || 
+    workshop.primaryCTA === "Already Enrolled" || 
+    workshop.primaryCTA === "Interest Registered" ||
+    workshop.primaryCTA === "Seat Reserved";
 
-  const primaryCTA = workshop.primaryCTA || "Reserve Seat";
-  const secondaryCTA = workshop.secondaryCTA || "Request Callback";
+  const rawPrimaryCTA = workshop.primaryCTA || "Reserve Seat";
+  const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
+  const secondaryCTA = isEnrolled ? null : (workshop.secondaryCTA || "Request Callback");
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = workshop.status === "Closed" || workshop.status === "Completed";
   const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? workshop.status : primaryCTA);
 
-  const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
+  const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve") || isEnrolled;
   const seatsAvailable = workshop.availableSeats ?? ((workshop.maxSeats || 50) - (workshop.enrolledCount || 0));
-  const isPrimaryDisabled = isRestrictedRole || isFinalizedStatus || (isRegistrationAction && (
+  const isPrimaryDisabled = Boolean(isProcessing) || isRestrictedRole || isFinalizedStatus || isEnrolled || (isRegistrationAction && (
     workshop.status === "Completed" || 
     seatsAvailable <= 0
   ));
@@ -139,17 +145,26 @@ export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick }: Work
                 if (!isPrimaryDisabled && !isRestrictedRole) onCTAClick(workshop);
               }}
             >
-              <span className="hidden sm:inline">
-                {primaryButtonLabel}
-              </span>
-              <span className="sm:hidden">
-                {isFinalizedStatus
-                  ? primaryButtonLabel
-                  : primaryCTA === "Register Now"
-                  ? "Register"
-                  : primaryCTA}
-              </span>
-              {!isPrimaryDisabled && <ArrowRight className="ml-2 h-4 w-4" />}
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                  Checking Payment...
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">
+                    {primaryButtonLabel}
+                  </span>
+                  <span className="sm:hidden">
+                    {isFinalizedStatus
+                      ? primaryButtonLabel
+                      : primaryCTA === "Register Now"
+                      ? "Register"
+                      : primaryCTA}
+                  </span>
+                  {!isPrimaryDisabled && <ArrowRight className="ml-2 h-4 w-4" />}
+                </>
+              )}
             </Button>
           </div>
         }

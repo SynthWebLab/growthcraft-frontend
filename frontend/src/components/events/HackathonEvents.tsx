@@ -15,6 +15,7 @@ import {
 import { EventFilters } from "@/components/events/EventFilters";
 import { HackathonCard } from "@/components/events/HackathonCard";
 import { useHackathons } from "@/hooks/queries/useHackathons";
+import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { FormType } from "@/lib/ctaPolicy";
 import type { Hackathon, HackathonMode, HackathonStatus } from "@/types/hackathon";
 
@@ -34,6 +35,7 @@ const HACKATHON_MODES = ["Online", "Offline", "Hybrid"] as const;
 const HACKATHON_STATUSES = ["Open", "Closed", "Completed"] as const;
 
 export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
+  const { checkout, isProcessing, processingItemId } = useDirectCheckout();
   const [hackathonMode, setHackathonMode] = useState<typeof HACKATHON_MODES[number] | null>(null);
   const [hackathonStatus, setHackathonStatus] = useState<typeof HACKATHON_STATUSES[number] | null>("Open");
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,21 +67,27 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
     const ctaText = hackathon.primaryCTA || "Register Now";
 
     if (ctaText.toLowerCase().includes("callback")) {
-      onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price || 499);
+      onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price ?? 0);
       return;
     }
 
     if (ctaText.toLowerCase().includes("interest")) {
-      onOpenForm("register-interest", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price || 499);
+      onOpenForm("register-interest", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price ?? 0);
       return;
     }
 
-    onOpenForm("reserve-seat", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price || 499);
+    // Direct checkout — skip the popup form
+    checkout({
+      itemId: hackathon.id,
+      itemType: "hackathon",
+      itemTitle: hackathon.title,
+      price: hackathon.price ?? 0,
+    });
   };
 
   const handleHackathonSecondaryCTA = (hackathon: Hackathon) => {
     const ctaText = hackathon.secondaryCTA || "Request Callback";
-    onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price || 499);
+    onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price ?? 0);
   };
 
   const clearHackathonFilters = () => {
@@ -175,6 +183,7 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
               hackathon={hackathon}
               onCTAClick={handleHackathonCTA}
               onSecondaryCTAClick={handleHackathonSecondaryCTA}
+              isProcessing={isProcessing && processingItemId === hackathon.id}
             />
           </EventSection>
         ))

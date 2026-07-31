@@ -15,6 +15,7 @@ import {
 import { EventFilters } from "@/components/events/EventFilters";
 import { WorkshopCard } from "@/components/events/WorkshopCard";
 import { useWorkshops } from "@/hooks/queries/useWorkshops";
+import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { FormType } from "@/lib/ctaPolicy";
 import type { Workshop, WorkshopMode, WorkshopStatus } from "@/types/workshop";
 
@@ -34,6 +35,7 @@ const WORKSHOP_MODES = ["Online", "Offline", "Hybrid"] as const;
 const WORKSHOP_STATUSES = ["Open", "Closed", "Completed"] as const;
 
 export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
+  const { checkout, isProcessing, processingItemId } = useDirectCheckout();
   const [workshopMode, setWorkshopMode] = useState<(typeof WORKSHOP_MODES)[number] | null>(null);
   const [workshopStatus, setWorkshopStatus] = useState<(typeof WORKSHOP_STATUSES)[number] | null>("Open");
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,21 +67,27 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
     const ctaText = workshop.primaryCTA || "Reserve Seat";
 
     if (ctaText.toLowerCase().includes("callback")) {
-      onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price || 999);
+      onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price ?? 0);
       return;
     }
 
     if (ctaText.toLowerCase().includes("interest")) {
-      onOpenForm("register-interest", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price || 999);
+      onOpenForm("register-interest", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price ?? 0);
       return;
     }
 
-    onOpenForm("reserve-seat", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price || 999);
+    // Direct checkout — skip the popup form
+    checkout({
+      itemId: workshop.id,
+      itemType: "workshop",
+      itemTitle: workshop.title,
+      price: workshop.price ?? 0,
+    });
   };
 
   const handleWorkshopSecondaryCTA = (workshop: Workshop) => {
     const ctaText = workshop.secondaryCTA || "Request Callback";
-    onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price || 999);
+    onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price ?? 0);
   };
 
   const clearWorkshopFilters = () => {
@@ -175,6 +183,7 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
               workshop={workshop}
               onCTAClick={handleWorkshopCTA}
               onSecondaryCTAClick={handleWorkshopSecondaryCTA}
+              isProcessing={isProcessing && processingItemId === workshop.id}
             />
           </EventSection>
         ))
