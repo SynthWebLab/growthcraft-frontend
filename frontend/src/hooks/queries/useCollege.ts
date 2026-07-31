@@ -345,3 +345,32 @@ export function useDeactivateCollegeAmbassador() {
     },
   });
 }
+
+export function useBuyCollegeEvent() {
+  return useMutation({
+    mutationFn: ({ eventId, batchId, amount }: { eventId: string; batchId?: string; amount?: number }) =>
+      collegeService.buyEvent(eventId, { batchId, amount }),
+    onError: (error: any) => {
+      toast.error("Failed to initiate order", { description: extractApiError(error, "Order creation failed.") });
+    },
+  });
+}
+
+export function useVerifyCollegeEventPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature?: string }) =>
+      collegeService.verifyEventPayment(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Payment Successful!", { description: "Event access unlocked for college cohort." });
+        queryClient.invalidateQueries({ queryKey: collegeKeys.all });
+      } else {
+        toast.error("Payment Verification Failed", { description: response.message });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Verification Error", { description: extractApiError(error, "Failed to verify Razorpay payment.") });
+    },
+  });
+}

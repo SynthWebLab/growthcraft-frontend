@@ -1,7 +1,10 @@
+"use client";
+
 import { Calendar, ArrowRight, MapPin, Flame } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect } from "react";
 import type { Bootcamp } from "@/types/bootcamp";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
@@ -32,9 +35,14 @@ export function BootcampEventCard({
   onPrimaryCTAClick,
   onSecondaryCTAClick,
 }: BootcampEventCardProps) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const { data: user } = useCurrentUser();
-  const isMentor = user?.role === "mentor";
-  const isEmployer = user?.role === "employer";
+  const isMentor = isMounted && user?.role === "mentor";
+  const isEmployer = isMounted && user?.role === "employer";
   const isRestrictedRole = isMentor || isEmployer;
   const isFinalizedStatus = bootcamp.status === "Closed" || bootcamp.status === "Completed";
   const isPrimaryDisabled = isRestrictedRole || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus));

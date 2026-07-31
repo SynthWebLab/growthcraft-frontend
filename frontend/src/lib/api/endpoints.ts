@@ -81,7 +81,7 @@ export const API_ENDPOINTS = {
   events: {
     list: "/events",
     detail: (id: string) => `/events/${id}`,
-    detailBySlug: (slug: string) => `/events/slug/${slug}`,
+    detailBySlug: (slug: string) => `/events/${slug}/details`,
     detailBySlugV2: (slug: string) => `/events/${slug}/details`,
     register: (id: string) => `/events/${id}/register`,
     requestCallback: (id: string) => `/events/${id}/request-callback`,
@@ -116,6 +116,8 @@ export const API_ENDPOINTS = {
     attendanceExport: "/colleges/attendance/export",
     eventStudents: (eventId: string) => `/colleges/events/${eventId}/students`,
     eventAccess: (eventId: string) => `/colleges/events/${eventId}/access`,
+    buyEvent: (eventId: string) => `/colleges/events/${eventId}/buy`,
+    verifyEventPayment: "/colleges/events/verify-payment",
   },
   admin: {
     batches: "/admin/batches",

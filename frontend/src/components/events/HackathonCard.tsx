@@ -1,3 +1,5 @@
+"use client";
+
 import { Calendar, Clock, MapPin, ArrowRight, Trophy, Flame } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";

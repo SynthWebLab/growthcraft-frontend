@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo, useSyncExternalStore } from "react";
+import { use, useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useWorkshopDetails } from "@/hooks/queries/useWorkshops";
 import { useHackathonDetails } from "@/hooks/queries/useHackathons";
+import { useEventBySlug } from "@/hooks/queries/useEvents";
+import { useBootcampBySlug } from "@/hooks/queries/useBootcamps";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getEventDetailBySlug } from "@/data/events-detail.mock";
@@ -39,10 +41,6 @@ import type { WorkshopDetailResponse } from "@/types/workshop";
 import type { HackathonDetailResponse } from "@/types/hackathon";
 
 type EventDetailResponse = WorkshopDetailResponse | HackathonDetailResponse;
-
-const subscribeToClientSnapshot = () => () => {};
-const getClientSnapshot = () => true;
-const getServerSnapshot = () => false;
 
 function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMMM dd, yyyy"): string {
   if (!dateStr) return "";
@@ -67,119 +65,138 @@ function getEventDuration(startDate?: string, endDate?: string, durationDays?: n
   return Math.max(1, Math.round(durationMs / (1000 * 60 * 60)));
 }
 
-function mapEventDetailToEventData(response: EventDetailResponse) {
-  const details = response?.data?.eventDetails || ({} as any);
-  const event = details?.eventId || (response?.data as any)?.event || ({} as any);
+function mapEventDetailToEventData(response: any) {
+  if (!response) return null;
   
+  const rawData = response?.data || response;
+  const details = rawData?.eventDetails || rawData;
+  const event = 
+    (typeof details?.eventId === "object" && details?.eventId !== null ? details.eventId : null) ||
+    (typeof rawData?.event === "object" && rawData?.event !== null ? rawData.event : null) ||
+    (typeof details?.event === "object" && details?.event !== null ? details.event : null) ||
+    details ||
+    {};
+
+  const title = event?.title || details?.title || rawData?.title || "Event Details";
+  const type = event?.type || details?.type || rawData?.type || "Bootcamp";
+  const price = event?.price ?? details?.price ?? rawData?.price ?? 0;
+  const originalPrice = event?.originalPrice ?? details?.originalPrice ?? rawData?.originalPrice ?? 0;
+  const maxSeats = event?.maxSeats ?? details?.maxSeats ?? rawData?.maxSeats ?? 50;
+  const enrolledCount = event?.enrolledCount ?? details?.enrolledCount ?? rawData?.enrolledCount ?? 0;
+  const status = event?.status || details?.status || rawData?.status || "Open";
+  const mode = event?.mode || details?.venue?.mode || details?.mode || rawData?.mode || "Online";
+  const startDate = event?.startDate || details?.startDate || rawData?.startDate;
+  const endDate = event?.endDate || details?.endDate || rawData?.endDate;
+  const rating = event?.rating || details?.rating || rawData?.rating || 4.9;
+  const tools = event?.skillsCovered || event?.keyTools || details?.tools || details?.overview?.whatYouWillLearn?.map((w: any) => typeof w === "string" ? w : w.text) || [];
+  const mentors = 
+    (Array.isArray(event?.mentors) && event.mentors.length > 0) ? event.mentors :
+    (Array.isArray(details?.mentors) && details.mentors.length > 0) ? details.mentors :
+    (Array.isArray(rawData?.mentors) && rawData.mentors.length > 0) ? rawData.mentors :
+    [];
+  
+  const mentorName = 
+    Array.isArray(event?.mentorNames) ? event.mentorNames.join(", ") :
+    mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ") ||
+    event?.mentorName || details?.mentorName || "";
+
+  const availableSeats = event?.availableSeats ?? (maxSeats - enrolledCount);
   const primaryCTA = event?.primaryCTA || details?.primaryCTA || (
-    event?.status === "Open" && (event?.availableSeats ?? 0) > 0 ? "Reserve Seat" : "Request Callback"
+    status === "Open" && availableSeats > 0 ? "Reserve Seat" : "Request Callback"
   );
   const secondaryCTA = event?.secondaryCTA ?? details?.secondaryCTA ?? (
     primaryCTA === "Reserve Seat" ? "Request Callback" : null
   );
-  
-  const venue = details?.venue
+
+  const venue = details?.venue || event?.venue
     ? {
-        name: details.venue.name || details.venue.mode || details.venue.type,
-        address: details.venue.description,
-        city: details.venue.city || details.venue.country || "",
-        state: details.venue.state || "",
-        zipCode: details.venue.zipCode,
-        googleMapsLink: details.venue.googleMapsLink,
+        name: details?.venue?.name || event?.venue?.name || mode,
+        address: details?.venue?.description || details?.venue?.address || event?.venue?.address || "",
+        city: details?.venue?.city || event?.venue?.city || "",
+        state: details?.venue?.state || event?.venue?.state || "",
+        zipCode: details?.venue?.zipCode || event?.venue?.zipCode,
+        googleMapsLink: details?.venue?.googleMapsLink || event?.venue?.googleMapsLink,
       }
     : undefined;
 
   return {
-    success: response?.success ?? false,
+    success: response?.success ?? true,
     message: response?.message ?? "",
     data: {
       event: {
-        _id: event?._id || "",
-        title: event?.title || "Event Details",
-        slug: event?.slug || "",
-        description: event?.description || "",
-        type: event?.type || "Event",
-        category: event?.category || "",
+        _id: event?._id || event?.id || details?._id || "",
+        title,
+        slug: event?.slug || details?.slug || "",
+        description: event?.description || details?.overview?.aboutEvent || details?.description || "",
+        type,
+        category: event?.category || event?.domain || details?.category || "Web Development",
         level: "Beginner" as const,
-        duration: getEventDuration(event?.startDate || new Date().toISOString(), event?.endDate || new Date().toISOString(), event?.durationDays),
-        price: event?.price || 0,
-        originalPrice: event?.originalPrice || 0,
-        mode: event?.mode || "Online",
+        duration: getEventDuration(startDate || new Date().toISOString(), endDate || new Date().toISOString(), event?.durationDays),
+        price,
+        originalPrice,
+        mode,
         venue,
         zoomLink: undefined,
-        startDate: event?.startDate,
-        endDate: event?.endDate,
-        maxSeats: event?.maxSeats || 0,
-        enrolledCount: event?.enrolledCount || 0,
-        status: event?.status || "Open",
-        rating: event?.rating || 5,
-        tools: event?.skillsCovered || [],
-        mentorName: event?.mentorNames ? event.mentorNames.join(", ") : "",
-        thumbnail: event?.banner || "",
+        startDate,
+        endDate,
+        maxSeats,
+        enrolledCount,
+        availableSeats,
+        status,
+        rating,
+        tools,
+        mentorName,
+        thumbnail: event?.banner || event?.thumbnail || details?.banner || "",
         primaryCTA,
         secondaryCTA,
-        isFeatured: (event as any)?.isFeatured || (event as any)?.is_featured || false,
-        mentors: (event as any)?.mentors && (event as any)?.mentors.length > 0
-          ? (event as any)?.mentors
-          : (details as any)?.mentors && (details as any)?.mentors.length > 0
-          ? (details as any)?.mentors
-          : [],
+        isFeatured: Boolean(event?.isFeatured || event?.is_featured || details?.isFeatured),
+        mentors,
         createdAt: event?.createdAt || new Date().toISOString(),
         updatedAt: event?.updatedAt || new Date().toISOString(),
       },
       overview: {
-        aboutEvent: details?.overview?.aboutEvent || "",
-        whatYouWillLearn: details?.overview?.whatYouWillLearn
+        aboutEvent: details?.overview?.aboutEvent || event?.description || details?.description || "",
+        whatYouWillLearn: details?.overview?.whatYouWillLearn && Array.isArray(details.overview.whatYouWillLearn)
           ? details.overview.whatYouWillLearn.map((item: any, index: number) => ({
-              ...item,
+              text: typeof item === "string" ? item : item.text,
               _id: `learn-${index}`,
             }))
-          : [],
-        prerequisites: details?.overview?.prerequisites
+          : tools.map((tool: string, index: number) => ({
+              text: `Build practical skills with ${tool}`,
+              _id: `learn-${index}`,
+            })),
+        prerequisites: details?.overview?.prerequisites && Array.isArray(details.overview.prerequisites)
           ? details.overview.prerequisites.map((item: any, index: number) => ({
-              ...item,
+              text: typeof item === "string" ? item : item.text,
               _id: `prerequisite-${index}`,
             }))
-          : [],
-        whatsIncluded: details?.overview?.whatsIncluded
+          : [
+              { text: "Basic programming knowledge", _id: "prereq-1" },
+              { text: "A laptop with the required software installed", _id: "prereq-2" },
+            ],
+        whatsIncluded: details?.overview?.whatsIncluded && Array.isArray(details.overview.whatsIncluded)
           ? details.overview.whatsIncluded.map((item: any, index: number) => ({
-              ...item,
+              text: typeof item === "string" ? item : item.text || "Key module feature",
               icon: "Check",
               _id: `included-${index}`,
             }))
-          : [],
+          : [
+              { text: "Focused practical learning", icon: "Check", _id: "inc-1" },
+              { text: "Hands-on practice sessions", icon: "Check", _id: "inc-2" },
+              { text: "Certificate of participation", icon: "Check", _id: "inc-3" },
+            ],
       },
-      agenda: details?.agenda
-        ? details.agenda.map((session: any, index: number) => ({
-            sessionNumber: session?.step || index + 1,
-            title: session?.title || "",
-            topics: session?.topics
-              ? session.topics.map((topic: any, topicIndex: number) => ({
-                  text: topic,
-                  _id: `agenda-${index}-topic-${topicIndex}`,
-                }))
-              : [],
-            duration: session?.duration || 0,
-            _id: `agenda-${index}`,
-          }))
-        : [],
-      mentorDetails: details?.mentors
-        ? details.mentors.map((mentor: any, index: number) => ({
-            name: mentor?.name || (event?.mentorNames ? event.mentorNames[index] : "") || "GrowthCraft Mentor",
-            avatar: mentor?.avatar || "",
-            bio: mentor?.bio || "Industry expert with extensive experience in training and mentorship.",
-            designation: mentor?.designation || "Event Mentor",
-            rating: mentor?.rating || event?.rating || 5,
-            studentsCount: mentor?.studentsCount || event?.enrolledCount || 0,
-            expertise: mentor?.expertise || event?.skillsCovered || [],
-          }))
-        : [],
-      faqs: details?.faqs
-        ? details.faqs.map((faq: any, index: number) => ({
-            ...faq,
-            _id: `faq-${index}`,
-          }))
-        : [],
+      agenda: details?.agenda || [],
+      mentorDetails: mentors.map((m: any, index: number) => ({
+        name: m.name || m.fullName || "GrowthCraft Mentor",
+        avatar: m.avatar || "",
+        bio: m.bio || "Industry expert with extensive experience in training and mentorship.",
+        designation: m.designation || "Event Mentor",
+        rating: m.rating || rating || 5,
+        studentsCount: m.studentsCount || enrolledCount || 0,
+        expertise: m.expertise || tools || [],
+      })),
+      faqs: details?.faqs || [],
     },
     meta: response?.meta,
   };
@@ -193,36 +210,52 @@ export default function EventDetailPage({
   const { isOpen, formType, formTitle, courseId, courseTitle, price, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
-  const hasMounted = useSyncExternalStore(
-    subscribeToClientSnapshot,
-    getClientSnapshot,
-    getServerSnapshot
-  );
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const { slug } = use(params);
+  const normalizedSlug = useMemo(() => slug?.replace(/_/g, "-") || "", [slug]);
   
-  // First, try to get the event data from mock to determine type
-  const mockEventData = getEventDetailBySlug(slug);
-  const eventType = mockEventData?.data?.event?.type;
+  // 1. Fetch from unified event detail endpoint
+  const { data: unifiedEventData } = useEventBySlug(normalizedSlug);
+
+  // 2. Mock fallback for determining type or rendering mock details
+  const mockEventData = useMemo(() => getEventDetailBySlug(normalizedSlug) || getEventDetailBySlug(slug), [normalizedSlug, slug]);
+  const eventType = (unifiedEventData as any)?.data?.type || (unifiedEventData as any)?.data?.event?.type || (unifiedEventData as any)?.event?.type || mockEventData?.data?.event?.type;
   
-  // Fetch from appropriate API based on event type
+  // 3. Fetch from specific type endpoints if needed
   const { data: workshopDetailData } = useWorkshopDetails(
-    slug, 
-    hasMounted && eventType === "Workshop"
+    normalizedSlug, 
+    isMounted && (eventType === "Workshop" || !eventType)
   );
   const { data: hackathonDetailData } = useHackathonDetails(
-    slug, 
-    hasMounted && eventType === "Hackathon"
+    normalizedSlug, 
+    isMounted && (eventType === "Hackathon" || !eventType)
   );
+  const { data: bootcampDetailData } = useBootcampBySlug(normalizedSlug);
 
   const eventData = useMemo(
     () => {
       // Prioritize API data over mock data
+      if (unifiedEventData && (unifiedEventData as any).data) return mapEventDetailToEventData(unifiedEventData as any);
       if (workshopDetailData) return mapEventDetailToEventData(workshopDetailData);
       if (hackathonDetailData) return mapEventDetailToEventData(hackathonDetailData);
-      return mockEventData;
+      if (bootcampDetailData) {
+        const bootcampObj = (bootcampDetailData as any).data || bootcampDetailData;
+        if (bootcampObj && bootcampObj.title) {
+          return mapEventDetailToEventData({
+            success: true,
+            message: "Bootcamp fetched",
+            data: { event: bootcampObj, eventDetails: bootcampObj }
+          } as any);
+        }
+      }
+      return mapEventDetailToEventData(mockEventData);
     },
-    [slug, workshopDetailData, hackathonDetailData, mockEventData]
+    [normalizedSlug, unifiedEventData, workshopDetailData, hackathonDetailData, bootcampDetailData, mockEventData]
   );
   const event = eventData?.data?.event;
   const overview = eventData?.data?.overview;
@@ -248,9 +281,9 @@ export default function EventDetailPage({
   };
 
   // Check if user is logged in and verified
-  const isAuthenticated = user && user.isEmailVerified;
-  const isStudent = user?.role === "student";
-  const isRestrictedRole = user?.role === "mentor" || user?.role === "employer";
+  const isAuthenticated = isMounted && Boolean(user && user.isEmailVerified);
+  const isStudent = isMounted && user?.role === "student";
+  const isRestrictedRole = isMounted && (user?.role === "mentor" || user?.role === "employer");
 
   // Use backend-provided CTAs
   const primaryCTA = event.primaryCTA || "Register Now";
@@ -555,7 +588,7 @@ export default function EventDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">What you&apos;ll learn</h2>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {overview?.whatYouWillLearn?.map((item) => (
+                    {overview?.whatYouWillLearn?.map((item: any) => (
                       <div key={item._id} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-magenta mt-0.5 flex-shrink-0" />
                         <span className="text-sm text-foreground">{item.text}</span>
@@ -567,7 +600,7 @@ export default function EventDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">Tools & Technologies</h2>
                   <div className="flex flex-wrap gap-2">
-                    {event.tools.map((tool, idx) => (
+                    {event.tools.map((tool: any, idx: number) => (
                       <span
                         key={idx}
                         className="px-3 py-1 rounded-full text-xs font-medium bg-lavender/10 text-lavender"
@@ -581,7 +614,7 @@ export default function EventDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">Prerequisites</h2>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    {overview?.prerequisites?.map((item) => (
+                    {overview?.prerequisites?.map((item: any) => (
                       <li key={item._id} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-lavender mt-0.5" />
                         {item.text}
@@ -594,7 +627,7 @@ export default function EventDetailPage({
               <TabsContent value="agenda" className="pt-6">
                 <h2 className="text-xl font-bold mb-4">Event Agenda</h2>
                 <div className="space-y-3">
-                  {agenda.map((session) => (
+                  {agenda.map((session: any) => (
                     <DataCard key={session._id}>
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-magenta/10 flex items-center justify-center">
@@ -782,7 +815,7 @@ export default function EventDetailPage({
 
               <TabsContent value="faq" className="pt-6">
                 <Accordion type="single" collapsible className="space-y-2">
-                  {faqs.map((item) => (
+                  {faqs.map((item: any) => (
                     <AccordionItem
                       key={item._id}
                       value={`faq-${item._id}`}
@@ -840,7 +873,7 @@ export default function EventDetailPage({
 
                 <div className="mt-6 space-y-3 text-sm">
                   <h4 className="font-semibold">What&apos;s included</h4>
-                  {overview?.whatsIncluded?.map((item) => (
+                  {overview?.whatsIncluded?.map((item: any) => (
                     <div
                       key={item._id}
                       className="flex items-center gap-2 text-muted-foreground"

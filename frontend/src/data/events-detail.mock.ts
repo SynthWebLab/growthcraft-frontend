@@ -252,5 +252,7 @@ export { mockData as EVENTS_DETAIL_MOCK };
 
 // Helper to get event detail by slug
 export function getEventDetailBySlug(slug: string): EventDetailResponse | null {
-  return mockData[slug] || null;
+  if (!slug) return null;
+  const normalizedSlug = slug.replace(/_/g, "-");
+  return mockData[normalizedSlug] || mockData[slug] || null;
 }
