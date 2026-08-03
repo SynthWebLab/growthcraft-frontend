@@ -288,9 +288,9 @@ export default function EventDetailPage({
     }
   };
 
-  // Check if user is logged in and verified
   const isAuthenticated = isMounted && Boolean(user && user.isEmailVerified);
   const isStudent = isMounted && user?.role === "student";
+  const isCollege = isMounted && user?.role === "college";
   const isRestrictedRole = isMounted && (user?.role === "mentor" || user?.role === "employer");
 
   // Use backend-provided CTAs
@@ -415,16 +415,16 @@ export default function EventDetailPage({
     if (!isAuthenticated) {
       if (typeof window !== "undefined") {
         const currentUrl = window.location.pathname;
-        toast.info("Please register to join this event");
-        window.location.href = `/register/student?callbackUrl=${encodeURIComponent(
+        toast.info("Please register or login to join this event");
+        window.location.href = `/login?callbackUrl=${encodeURIComponent(
           currentUrl
         )}`;
       }
       return;
     }
 
-    if (!isStudent) {
-      toast.error("Please login as a student to register");
+    if (!isStudent && !isCollege) {
+      toast.error("Students & Colleges Only");
       return;
     }
 
@@ -478,14 +478,14 @@ export default function EventDetailPage({
     isFinalizedStatus || 
     isEnrolled ||
     (isAuthenticated && isRestrictedRole) ||
-    (isRegistrationAction && isAuthenticated && !isStudent) ||
+    (isRegistrationAction && isAuthenticated && !isStudent && !isCollege) ||
     (isRegistrationAction && (isSeatsFull || event.status === "Completed"));
   const isSecondaryButtonDisabled = isAuthenticated && isRestrictedRole;
   const primaryButtonLabel = isFinalizedStatus 
     ? eventStatus 
     : (isAuthenticated && isRestrictedRole)
     ? "Students Only"
-    : (isRegistrationAction && isAuthenticated && !isStudent)
+    : (isRegistrationAction && isAuthenticated && !isStudent && !isCollege)
     ? "Students Only"
     : primaryCTA;
   const primaryButtonClasses = isFinalizedStatus || isPrimaryCallback
