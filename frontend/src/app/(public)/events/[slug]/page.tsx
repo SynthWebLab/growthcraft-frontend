@@ -213,6 +213,7 @@ export default function EventDetailPage({
   const { data: user } = useCurrentUser();
   const { checkout, isProcessing: isDirectCheckoutProcessing } = useDirectCheckout();
   const [isMounted, setIsMounted] = useState(false);
+  const [hasJustEnrolled, setHasJustEnrolled] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -294,7 +295,8 @@ export default function EventDetailPage({
   const isRestrictedRole = isMounted && (user?.role === "mentor" || user?.role === "employer");
 
   // Use backend-provided CTAs
-  const isEnrolled = (event as any).isEnrolled || 
+  const isEnrolled = hasJustEnrolled ||
+    (event as any).isEnrolled || 
     event.primaryCTA === "Already Enrolled" || 
     event.primaryCTA === "Interest Registered" ||
     event.primaryCTA === "Seat Reserved";
@@ -435,6 +437,7 @@ export default function EventDetailPage({
       itemType: directItemType as any,
       itemTitle: event.title,
       price: event.price ?? 0,
+      onEnrolled: () => setHasJustEnrolled(true),
     });
   };
 

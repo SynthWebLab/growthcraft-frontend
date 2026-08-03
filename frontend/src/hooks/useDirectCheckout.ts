@@ -23,6 +23,7 @@ interface DirectCheckoutParams {
   itemType: DirectCheckoutItemType;
   itemTitle: string;
   price: number;
+  onEnrolled?: () => void;
 }
 
 // Confetti burst for successful checkout
@@ -107,7 +108,7 @@ export function useDirectCheckout() {
   const courseEnroll = useEnrollCourse();
   const trainingProgramEnroll = useEnrollInTrainingProgram();
 
-  const checkout = async ({ itemId, itemType, itemTitle, price }: DirectCheckoutParams) => {
+  const checkout = async ({ itemId, itemType, itemTitle, price, onEnrolled }: DirectCheckoutParams) => {
     // 1. Not logged in → redirect to registration
     if (!user || !user.isEmailVerified) {
       if (typeof window !== "undefined") {
@@ -177,6 +178,7 @@ export function useDirectCheckout() {
         toast.success("Seat Reserved!", {
           description: "Your seat has been reserved. Check your email for details.",
         });
+        onEnrolled?.();
         setIsProcessing(false);
         setProcessingItemId(null);
         return;
@@ -209,6 +211,7 @@ export function useDirectCheckout() {
         onSuccess: (_paymentId) => {
           invalidateQueries();
           triggerConfetti();
+          onEnrolled?.();
           toast.success("Payment completed successfully!", {
             description: "Your seat is confirmed. Check your email for details.",
           });
@@ -223,9 +226,30 @@ export function useDirectCheckout() {
         },
       });
     } catch (err: any) {
-      console.error("Direct checkout error:", err);
       setIsProcessing(false);
       setProcessingItemId(null);
+
+      // Extract a human-readable message from the backend error
+      const backendMsg =
+        err?.response?.data?.error?.message ||
+        err?.data?.error?.message ||
+        err?.message ||
+        "Something went wrong. Please try again.";
+
+      // Special case: already enrolled — show info toast, not error
+      const alreadyEnrolledPhrases = ["already registered", "already enrolled", "already paid"];
+      const isAlreadyEnrolled = alreadyEnrolledPhrases.some((phrase) =>
+        backendMsg.toLowerCase().includes(phrase)
+      );
+
+      if (isAlreadyEnrolled) {
+        onEnrolled?.();
+        toast.info("You're already registered!", {
+          description: "You have already reserved a seat for this event.",
+        });
+      } else {
+        toast.error("Checkout Failed", { description: backendMsg });
+      }
     }
   };
 
