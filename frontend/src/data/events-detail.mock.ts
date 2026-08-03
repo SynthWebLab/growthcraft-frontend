@@ -53,7 +53,7 @@ function generateEventDetail(
           : `${event.endDate}T18:00:00Z`,
         maxSeats: event.maxSeats || 50,
         enrolledCount: event.enrolledCount || 0,
-        status: event.status === "Open" ? "Active" : (event.status as any),
+        status: event.status || "Open",
         rating: 4.7 + Math.random() * 0.3,
         tools: event.keyTools || event.skillsCovered || [],
         mentorName:

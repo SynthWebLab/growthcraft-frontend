@@ -36,7 +36,8 @@ export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick, isProc
 
   const rawPrimaryCTA = workshop.primaryCTA || "Reserve Seat";
   const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
-  const secondaryCTA = isEnrolled ? null : (workshop.secondaryCTA || "Request Callback");
+  const rawSecondaryCTA = isEnrolled ? null : workshop.secondaryCTA;
+  const secondaryCTA = (rawSecondaryCTA === primaryCTA || primaryCTA === "Request Callback" || primaryCTA === "Seat Reserved") ? null : rawSecondaryCTA;
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = workshop.status === "Closed" || workshop.status === "Completed";
   const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? workshop.status : primaryCTA);

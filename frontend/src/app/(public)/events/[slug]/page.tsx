@@ -83,8 +83,6 @@ function mapEventDetailToEventData(response: any) {
   const type = event?.type || details?.type || rawData?.type || "Bootcamp";
   const price = event?.price ?? details?.price ?? rawData?.price ?? 0;
   const originalPrice = event?.originalPrice ?? details?.originalPrice ?? rawData?.originalPrice ?? 0;
-  const maxSeats = event?.maxSeats ?? details?.maxSeats ?? rawData?.maxSeats ?? 50;
-  const enrolledCount = event?.enrolledCount ?? details?.enrolledCount ?? rawData?.enrolledCount ?? 0;
   const status = event?.status || details?.status || rawData?.status || "Open";
   const mode = event?.mode || details?.venue?.mode || details?.mode || rawData?.mode || "Online";
   const startDate = event?.startDate || details?.startDate || rawData?.startDate;
@@ -102,13 +100,14 @@ function mapEventDetailToEventData(response: any) {
     mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ") ||
     event?.mentorName || details?.mentorName || "";
 
-  const availableSeats = event?.availableSeats ?? (maxSeats - enrolledCount);
-  const primaryCTA = event?.primaryCTA || details?.primaryCTA || (
-    status === "Open" && availableSeats > 0 ? "Reserve Seat" : "Request Callback"
-  );
-  const secondaryCTA = event?.secondaryCTA ?? details?.secondaryCTA ?? (
-    primaryCTA === "Reserve Seat" ? "Request Callback" : null
-  );
+  const maxSeats = Number(event?.maxSeats ?? event?.maxCapacity ?? details?.maxSeats ?? details?.capacity ?? 50);
+  const enrolledCount = Number(event?.enrolledCount ?? details?.enrolledCount ?? 0);
+  const availableSeats = (event?.availableSeats && Number(event.availableSeats) > 0) ? Number(event.availableSeats) : Math.max(0, maxSeats - enrolledCount);
+  const statusStr = String(status || "").toLowerCase().trim();
+  const isFinalized = statusStr === "closed" || statusStr === "completed";
+  const isSeatsOpen = !isFinalized && availableSeats > 0;
+  const primaryCTA = isSeatsOpen ? "Reserve Seat" : "Request Callback";
+  const secondaryCTA = isSeatsOpen ? "Request Callback" : null;
 
   const venue = details?.venue || event?.venue
     ? {
@@ -242,13 +241,19 @@ export default function EventDetailPage({
 
   const eventData = useMemo(
     () => {
-      // Prioritize API data over mock data
-      if (unifiedEventData && (unifiedEventData as any).data) return mapEventDetailToEventData(unifiedEventData as any);
-      if (workshopDetailData) return mapEventDetailToEventData(workshopDetailData);
-      if (hackathonDetailData) return mapEventDetailToEventData(hackathonDetailData);
-      if (bootcampDetailData) {
-        const bootcampObj = (bootcampDetailData as any).data || bootcampDetailData;
-        if (bootcampObj && bootcampObj.title) {
+      const isValidResponse = (res: any) => {
+        if (!res || res.success === false) return false;
+        const d = res.data || res;
+        return Boolean(d && (d.title || d._id || d.event || d.eventDetails));
+      };
+
+      if (isValidResponse(unifiedEventData)) return mapEventDetailToEventData(unifiedEventData as any);
+      if (isValidResponse(workshopDetailData)) return mapEventDetailToEventData(workshopDetailData);
+      if (isValidResponse(hackathonDetailData)) return mapEventDetailToEventData(hackathonDetailData);
+      if (isValidResponse(bootcampDetailData)) {
+        const d = (bootcampDetailData as any).data || bootcampDetailData;
+        const bootcampObj = d?.event || d?.eventDetails || d;
+        if (bootcampObj && (bootcampObj.title || bootcampObj._id)) {
           return mapEventDetailToEventData({
             success: true,
             message: "Bootcamp fetched",
@@ -294,9 +299,14 @@ export default function EventDetailPage({
     event.primaryCTA === "Interest Registered" ||
     event.primaryCTA === "Seat Reserved";
 
-  const rawPrimaryCTA = event.primaryCTA || "Reserve Seat";
-  const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
-  const secondaryCTA = isEnrolled ? null : (event.secondaryCTA || "Request Callback");
+  const maxSeats = Number(event.maxSeats ?? (event as any).maxCapacity ?? 50);
+  const enrolledCount = Number(event.enrolledCount ?? 0);
+  const seatsAvail = (event.availableSeats && Number(event.availableSeats) > 0) ? Number(event.availableSeats) : Math.max(0, maxSeats - enrolledCount);
+  const statusStr = String(event.status || "").toLowerCase().trim();
+  const isFinalized = statusStr === "closed" || statusStr === "completed";
+  const isSeatsOpen = !isFinalized && seatsAvail > 0;
+  const primaryCTA = isEnrolled ? "Seat Reserved" : (isSeatsOpen ? "Reserve Seat" : "Request Callback");
+  const secondaryCTA = isEnrolled ? null : (isSeatsOpen ? "Request Callback" : null);
   const displayRating = useMemo(() => event.rating.toFixed(1), [event.rating]);
 
   // Determine CTA behavior

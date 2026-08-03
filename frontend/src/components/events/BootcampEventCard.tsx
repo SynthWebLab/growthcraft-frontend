@@ -53,7 +53,8 @@ export function BootcampEventCard({
 
   const rawPrimaryCTA = bootcamp.primaryCTA || "Reserve Seat";
   const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
-  const secondaryCTA = isEnrolled ? null : (bootcamp.secondaryCTA || "Request Callback");
+  const rawSecondaryCTA = isEnrolled ? null : bootcamp.secondaryCTA;
+  const secondaryCTA = (rawSecondaryCTA === primaryCTA || primaryCTA === "Request Callback" || primaryCTA === "Seat Reserved") ? null : rawSecondaryCTA;
   const isFinalizedStatus = bootcamp.status === "Closed" || bootcamp.status === "Completed";
   const isPrimaryDisabled = Boolean(isProcessing) || isRestrictedRole || isEnrolled || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus));
   const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? bootcamp.status : primaryCTA);

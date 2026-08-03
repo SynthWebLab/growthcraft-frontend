@@ -32,7 +32,8 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick, isPr
 
   const rawPrimaryCTA = hackathon.primaryCTA || "Reserve Seat";
   const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
-  const secondaryCTA = isEnrolled ? null : (hackathon.secondaryCTA || "Request Callback");
+  const rawSecondaryCTA = isEnrolled ? null : hackathon.secondaryCTA;
+  const secondaryCTA = (rawSecondaryCTA === primaryCTA || primaryCTA === "Request Callback" || primaryCTA === "Seat Reserved") ? null : rawSecondaryCTA;
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
   const isFinalizedStatus = hackathon.status === "Closed" || hackathon.status === "Completed";
   const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? hackathon.status : primaryCTA);
