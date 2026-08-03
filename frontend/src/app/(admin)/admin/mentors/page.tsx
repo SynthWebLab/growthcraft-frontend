@@ -6,6 +6,7 @@ import {
   useAdminMentorDetails,
   useVerifyCheckIn,
   useRecordPayout,
+  useApprovePayout,
   useAdminBatches,
   useAssignMentorToBatch,
 } from "@/hooks/queries/useAdmin";
@@ -52,6 +53,7 @@ export default function AdminMentorsPage() {
   const { data: detailData, isLoading: detailLoading } = useAdminMentorDetails(selectedMentorId || "");
   const verifyCheckInMutation = useVerifyCheckIn(selectedMentorId || "");
   const recordPayoutMutation = useRecordPayout(selectedMentorId || "");
+  const approvePayoutMutation = useApprovePayout(selectedMentorId || "");
 
   // Batch Assignment States
   const [assignOpen, setAssignOpen] = useState(false);
@@ -352,16 +354,31 @@ export default function AdminMentorsPage() {
                       <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
                         {detailData?.data?.payouts?.length > 0 ? (
                           detailData.data.payouts.map((po: any) => (
-                            <div key={po._id} className="p-3 bg-muted/40 rounded-lg border border-border text-xs space-y-1">
+                            <div key={po._id} className="p-3 bg-muted/40 rounded-lg border border-border text-xs space-y-2">
                               <div className="flex items-center justify-between">
                                 <span className="font-semibold">{po.period}</span>
-                                <span className="text-muted-foreground font-medium">
+                                <span className="font-bold text-foreground">
                                   INR {po.amount.toLocaleString()}
                                 </span>
                               </div>
-                              <div className="text-muted-foreground text-[10px] flex justify-between">
+                              <div className="flex justify-between items-center text-muted-foreground text-[10px]">
                                 <span>Rate: INR {po.hourlyRate}/hr</span>
-                                <span>Date: {new Date(po.processedAt).toLocaleDateString()}</span>
+                                <span>Date: {new Date(po.processedAt || po.createdAt).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40">
+                                <Badge variant={po.status === "processed" || po.status === "completed" ? "default" : "secondary"}>
+                                  {po.status === "processed" || po.status === "completed" ? "Paid" : "Pending"}
+                                </Badge>
+                                {(po.status === "pending" || po.status === "requested") && (
+                                  <Button
+                                    size="sm"
+                                    className="h-6 text-[10px] px-2 py-0 bg-green-600 hover:bg-green-700 text-white"
+                                    onClick={() => approvePayoutMutation.mutate(po._id)}
+                                    disabled={approvePayoutMutation.isPending}
+                                  >
+                                    {approvePayoutMutation.isPending ? "Approving..." : "Approve Disbursal"}
+                                  </Button>
+                                )}
                               </div>
                               {po.notes && <p className="text-[10px] text-muted-foreground italic">Notes: {po.notes}</p>}
                             </div>

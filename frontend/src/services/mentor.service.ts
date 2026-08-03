@@ -71,8 +71,8 @@ export const mentorService = {
   },
 
   /** Submit a withdrawal request. */
-  withdrawEarnings: async (): Promise<ApiResponse<null>> => {
-    return apiClient.post<ApiResponse<null>>(API_ENDPOINTS.mentor.withdraw);
+  withdrawEarnings: async (data?: { amount?: number; paymentMethod?: string; paymentDetails?: string }): Promise<ApiResponse<any>> => {
+    return apiClient.post<ApiResponse<any>>(API_ENDPOINTS.mentor.withdraw, data);
   },
 
   /** Get mentor profile details. */

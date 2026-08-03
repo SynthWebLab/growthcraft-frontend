@@ -172,6 +172,23 @@ export function useRecordPayout(mentorId: string) {
   });
 }
 
+export function useApprovePayout(mentorId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payoutId: string) => adminService.approvePayout(payoutId),
+    onSuccess: () => {
+      toast.success("Payout request approved and marked as processed");
+      queryClient.invalidateQueries({ queryKey: adminKeys.mentorDetails(mentorId) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.mentorPayouts(mentorId) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.mentors() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.globalPayouts() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to approve payout request"));
+    },
+  });
+}
+
 export function useAdminPayoutHistory(mentorId: string) {
   return useQuery({
     queryKey: adminKeys.mentorPayouts(mentorId),
