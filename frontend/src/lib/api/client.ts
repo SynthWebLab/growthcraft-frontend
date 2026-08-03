@@ -6,7 +6,7 @@
 import { API_ENDPOINTS } from "./endpoints";
 import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5001/api/v1";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5002/api/v1";
 
 interface FetchOptions extends RequestInit {
   skipRefresh?: boolean; // Skip refresh retry for specific requests
@@ -188,7 +188,7 @@ export async function apiFetch<T = any>(
       throw new Error(
         "Cannot connect to backend. Please ensure:\n" +
         "1. Backend is running (npm run dev in backend folder)\n" +
-        "2. Backend is on http://localhost:5001\n" +
+        "2. Backend is on http://localhost:5002\n" +
         "3. CORS is configured to allow http://localhost:3000"
       );
     }

@@ -95,6 +95,10 @@ export const adminService = {
     return apiClient.patch<any>(`/admin/mentor-payouts/${payoutId}/approve`, data || {});
   },
 
+  confirmPayout: async (payoutId: string, razorpayPaymentId: string): Promise<any> => {
+    return apiClient.patch<any>(`/admin/mentor-payouts/${payoutId}/confirm`, { razorpayPaymentId });
+  },
+
   getGlobalPayouts: async (month?: string): Promise<any> => {
     const url = month ? `${API_ENDPOINTS.admin.globalPayouts}?month=${month}` : API_ENDPOINTS.admin.globalPayouts;
     return apiClient.get<any>(url);

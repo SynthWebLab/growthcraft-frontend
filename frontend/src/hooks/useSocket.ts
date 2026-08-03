@@ -66,21 +66,23 @@ export function useSocket() {
     let isRefreshing = false;
 
     socket.on("connect_error", async (err) => {
-      console.warn("Socket connection error:", err.message);
+      console.debug("Socket connection error:", err.message);
       if (err.message.includes("Authentication error") && !isRefreshing) {
         isRefreshing = true;
         try {
-          // Try to refresh token if socket failed due to missing/expired token
           await authService.refreshToken();
-          // Reconnect after a short delay to ensure cookies are updated
           setTimeout(() => {
             if (!socket.connected) socket.connect();
           }, 500);
         } catch (error) {
-          console.error("Socket token refresh failed:", error);
+          console.debug("Socket token refresh failed, disconnecting:", error);
+          socket.disconnect();
         } finally {
           isRefreshing = false;
         }
+      } else if (!err.message.includes("Authentication error")) {
+        // Non-auth errors (e.g. xhr poll error) — stop retrying
+        socket.disconnect();
       }
     });
 

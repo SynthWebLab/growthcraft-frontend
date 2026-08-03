@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import React, { useState } from "react";
 import {
   useAdminMentors,
@@ -7,6 +9,7 @@ import {
   useVerifyCheckIn,
   useRecordPayout,
   useApprovePayout,
+  useConfirmPayout,
   useAdminBatches,
   useAssignMentorToBatch,
 } from "@/hooks/queries/useAdmin";
@@ -29,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, CreditCard, Clock, CheckCircle, ShieldAlert, Award, FileText, Users, Link as LinkIcon, BookOpen } from "lucide-react";
+import { Calendar, CreditCard, Clock, CheckCircle, ShieldAlert, Award, FileText, Users, Link as LinkIcon, BookOpen, ExternalLink, AlertCircle, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -48,12 +51,25 @@ export default function AdminMentorsPage() {
   const [payoutPeriod, setPayoutPeriod] = useState("");
   const [payoutNotes, setPayoutNotes] = useState("");
 
+  // Razorpay disbursal modal state
+  const [razorpayModal, setRazorpayModal] = useState<{
+    open: boolean;
+    payoutId: string;
+    amount: number;
+    notes?: string;
+    razorpayLinkId?: string;
+    razorpayLinkUrl?: string;
+    expiresAt?: string;
+  } | null>(null);
+  const [confirmPaymentId, setConfirmPaymentId] = useState("");
+
   // Queries & Mutations
   const { data: mentorsData, isLoading: mentorsLoading } = useAdminMentors({ search, page, limit: 10 });
   const { data: detailData, isLoading: detailLoading } = useAdminMentorDetails(selectedMentorId || "");
   const verifyCheckInMutation = useVerifyCheckIn(selectedMentorId || "");
   const recordPayoutMutation = useRecordPayout(selectedMentorId || "");
   const approvePayoutMutation = useApprovePayout(selectedMentorId || "");
+  const confirmPayoutMutation = useConfirmPayout(selectedMentorId || "");
 
   // Batch Assignment States
   const [assignOpen, setAssignOpen] = useState(false);
@@ -108,11 +124,22 @@ export default function AdminMentorsPage() {
         notes: payoutNotes,
       },
       {
-        onSuccess: () => {
+        onSuccess: (res: any) => {
           setPayoutOpen(false);
           setPayoutAmount("");
           setPayoutPeriod("");
           setPayoutNotes("");
+
+          setRazorpayModal({
+            open: true,
+            payoutId: res.data?.payout?._id || "",
+            amount: res.data?.payout?.amount || parseFloat(payoutAmount),
+            notes: res.data?.payout?.notes || payoutNotes,
+            razorpayLinkId: res.data?.razorpayLinkId || "",
+            razorpayLinkUrl: res.data?.razorpayLinkUrl || "",
+            expiresAt: res.data?.expiresAt,
+          });
+          setConfirmPaymentId("");
         },
       }
     );
@@ -243,9 +270,9 @@ export default function AdminMentorsPage() {
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Process Mentor Payout</DialogTitle>
-                        <DialogDescription>
-                          Record an offline payout for {detailData?.data?.user?.fullName}. This reduces their pending balance.
-                        </DialogDescription>
+                         <DialogDescription>
+                           Generate a Razorpay Payment Link to pay {detailData?.data?.user?.fullName}.
+                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
@@ -318,7 +345,10 @@ export default function AdminMentorsPage() {
                                 </span>
                               </div>
                               <div className="flex justify-between items-center text-muted-foreground">
-                                <span>Hours: {ci.hoursWorked} hrs</span>
+                                <span>
+                                  Hours: {ci.hoursWorked} hrs
+                                  {ci.verifiedBy && ` | Payout: INR ${(ci.hoursWorked * (detailData?.data?.profile?.hourlyRate || 1500)).toLocaleString()}`}
+                                </span>
                                 {ci.verifiedBy ? (
                                   <Badge variant="outline" className="text-green-600 bg-green-50/50 border-green-200">
                                     Verified
@@ -358,26 +388,92 @@ export default function AdminMentorsPage() {
                               <div className="flex items-center justify-between">
                                 <span className="font-semibold">{po.period}</span>
                                 <span className="font-bold text-foreground">
-                                  INR {po.amount.toLocaleString()}
+                                  ₹{po.amount.toLocaleString()}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center text-muted-foreground text-[10px]">
-                                <span>Rate: INR {po.hourlyRate}/hr</span>
+                                <span>Rate: ₹{po.hourlyRate}/hr</span>
                                 <span>Date: {new Date(po.processedAt || po.createdAt).toLocaleDateString()}</span>
                               </div>
+
+                              {/* Razorpay payment ID if confirmed */}
+                              {po.razorpayPaymentId && (
+                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-green-500/10 rounded px-2 py-1">
+                                  <CheckCircle className="h-3 w-3 text-green-500 shrink-0" />
+                                  <span className="font-mono">{po.razorpayPaymentId}</span>
+                                </div>
+                              )}
+
                               <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40">
-                                <Badge variant={po.status === "processed" || po.status === "completed" ? "default" : "secondary"}>
-                                  {po.status === "processed" || po.status === "completed" ? "Paid" : "Pending"}
+                                <Badge
+                                  variant={
+                                    po.status === "processed" ? "default"
+                                    : po.status === "processing" ? "outline"
+                                    : "secondary"
+                                  }
+                                  className={po.status === "processing" ? "border-yellow-500 text-yellow-600" : ""}
+                                >
+                                  {po.status === "processed" ? "Paid"
+                                    : po.status === "processing" ? "Processing…"
+                                    : "Pending"}
                                 </Badge>
-                                {(po.status === "pending" || po.status === "requested") && (
+
+                                {/* Pending → Generate Razorpay link */}
+                                {po.status === "pending" && (
                                   <Button
                                     size="sm"
-                                    className="h-6 text-[10px] px-2 py-0 bg-green-600 hover:bg-green-700 text-white"
-                                    onClick={() => approvePayoutMutation.mutate(po._id)}
+                                    className="h-6 text-[10px] px-2 py-0 bg-blue-600 hover:bg-blue-700 text-white gap-1"
+                                    onClick={() =>
+                                      approvePayoutMutation.mutate(po._id, {
+                                        onSuccess: (res: any) => {
+                                          setRazorpayModal({
+                                            open: true,
+                                            payoutId: po._id,
+                                            amount: po.amount,
+                                            notes: po.notes,
+                                            razorpayLinkId: res.data?.razorpayLinkId || "",
+                                            razorpayLinkUrl: res.data?.razorpayLinkUrl || "",
+                                            expiresAt: res.data?.expiresAt,
+                                          });
+                                          setConfirmPaymentId("");
+                                        },
+                                      })
+                                    }
                                     disabled={approvePayoutMutation.isPending}
                                   >
-                                    {approvePayoutMutation.isPending ? "Approving..." : "Approve Disbursal"}
+                                    {approvePayoutMutation.isPending ? "Generating…" : "Pay via Razorpay"}
                                   </Button>
+                                )}
+
+                                {/* Processing → Reopen link or confirm */}
+                                {po.status === "processing" && po.razorpayLinkUrl && (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-6 text-[10px] px-2 py-0 gap-0.5"
+                                      onClick={() => window.open(po.razorpayLinkUrl, "_blank")}
+                                    >
+                                      <ExternalLink className="h-3 w-3" /> Open Link
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="h-6 text-[10px] px-2 py-0 bg-green-600 hover:bg-green-700 text-white"
+                                      onClick={() => {
+                                        setRazorpayModal({
+                                          open: true,
+                                          payoutId: po._id,
+                                          amount: po.amount,
+                                          notes: po.notes,
+                                          razorpayLinkId: po.razorpayLinkId || "",
+                                          razorpayLinkUrl: po.razorpayLinkUrl || "",
+                                        });
+                                        setConfirmPaymentId("");
+                                      }}
+                                    >
+                                      Confirm Paid
+                                    </Button>
+                                  </div>
                                 )}
                               </div>
                               {po.notes && <p className="text-[10px] text-muted-foreground italic">Notes: {po.notes}</p>}
@@ -555,6 +651,130 @@ export default function AdminMentorsPage() {
           )}
         </div>
       </div>
+
+      {/* ── Mentor Payout Disbursal Modal ── */}
+      <Dialog open={!!razorpayModal?.open} onOpenChange={(open) => { if (!open) setRazorpayModal(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-blue-500" />
+              Process Mentor Disbursal
+            </DialogTitle>
+            <DialogDescription>
+              Disburse ₹{razorpayModal?.amount?.toLocaleString()} to {detailData?.data?.user?.fullName || selectedMentor?.name}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Beneficiary Details Box */}
+            {(() => {
+              const notesText = razorpayModal?.notes || "";
+              const match = notesText.match(/([a-zA-Z0-9.\-_]+@[a-zA-Z0-9.\-_]+)/);
+              const upiAddress = match ? match[1] : "";
+              const mentorName = detailData?.data?.user?.fullName || selectedMentor?.name || "Mentor";
+              const amount = razorpayModal?.amount || 0;
+              const upiUri = upiAddress
+                ? `upi://pay?pa=${encodeURIComponent(upiAddress)}&pn=${encodeURIComponent(mentorName)}&am=${amount}&cu=INR&tn=${encodeURIComponent("GrowthCraft Mentor Payout")}`
+                : "";
+
+              return (
+                <>
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5 space-y-2.5">
+                    <div className="text-xs font-semibold text-primary uppercase tracking-wider">
+                      Beneficiary Payout Details
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground">Mentor Name:</span>
+                      <span className="font-medium text-foreground">{mentorName}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground">Amount to Disburse:</span>
+                      <span className="font-bold text-foreground">₹{amount.toLocaleString()}</span>
+                    </div>
+                    {notesText && (
+                      <div className="flex justify-between items-center text-xs pt-1.5 border-t border-border/50">
+                        <span className="text-muted-foreground">UPI / Bank Details:</span>
+                        <div className="flex items-center gap-1 font-mono text-foreground font-semibold bg-background px-2 py-0.5 rounded border text-[11px]">
+                          {notesText}
+                          {upiAddress && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-5 w-5 text-muted-foreground hover:text-foreground ml-1"
+                              onClick={() => {
+                                navigator.clipboard.writeText(upiAddress);
+                                toast.success("UPI ID copied to clipboard!");
+                              }}
+                              title="Copy UPI ID"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {upiUri && (
+                    <Button
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white gap-2 text-xs py-2"
+                      onClick={() => window.open(upiUri, "_self")}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Pay via UPI App (GPay / PhonePe / Paytm)
+                    </Button>
+                  )}
+                </>
+              );
+            })()}
+
+            {/* Info Banner */}
+            <div className="flex items-start gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 text-xs text-blue-700 dark:text-blue-300">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>
+                Disburse <strong>₹{razorpayModal?.amount?.toLocaleString()}</strong> to the mentor's UPI ID via Razorpay X API, NetBanking, or UPI app, then paste the UTR / Ref ID below to confirm.
+              </span>
+            </div>
+
+            {/* Payment ID input */}
+            <div className="space-y-1.5">
+              <Label htmlFor="rzpPaymentId" className="text-sm font-medium">
+                Razorpay X / UTR Transaction Ref ID
+              </Label>
+              <Input
+                id="rzpPaymentId"
+                placeholder="pay_xxx... or UTR / Ref Number"
+                value={confirmPaymentId}
+                onChange={(e) => setConfirmPaymentId(e.target.value)}
+                className="font-mono text-sm"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Enter the Razorpay X Payout ID or bank UTR reference code to confirm payment.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 flex-row">
+            <Button variant="outline" className="flex-1" onClick={() => setRazorpayModal(null)}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-2"
+              disabled={confirmPayoutMutation.isPending}
+              onClick={() => {
+                if (!razorpayModal?.payoutId) return;
+                confirmPayoutMutation.mutate(
+                  { payoutId: razorpayModal.payoutId, razorpayPaymentId: confirmPaymentId.trim() },
+                  { onSuccess: () => setRazorpayModal(null) }
+                );
+              }}
+            >
+              <CheckCircle className="h-4 w-4" />
+              {confirmPayoutMutation.isPending ? "Confirming…" : "Confirm Paid"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

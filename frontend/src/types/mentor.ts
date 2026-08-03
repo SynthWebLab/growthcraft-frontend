@@ -88,6 +88,7 @@ export type MentorStudentsResponse = ApiResponse<{ students: MentorStudent[] }>;
 export interface MentorEarningsSummary {
   thisMonth: number;
   pendingPayout: number;
+  withdrawablePayout: number;
   lifetime: number;
 }
 
@@ -102,8 +103,9 @@ export interface MentorMonthlyEarningsData {
 export interface MentorPayoutHistoryItem {
   date: string;
   amount: number;
-  status: "completed" | "pending" | "failed";
+  status: "completed" | "pending" | "failed" | "processing";
   txnId: string;
+  razorpayLinkUrl?: string;
 }
 
 export interface MentorEarningsData {

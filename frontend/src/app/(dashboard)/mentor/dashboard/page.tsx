@@ -86,10 +86,10 @@ export default function MentorDashboard() {
 
   // Live Timer for Check-In duration
   useEffect(() => {
-    if (!activeCheckIn?.checkedInAt) return;
+    if (!activeCheckIn?.checkInTime) return;
     
     const interval = setInterval(() => {
-      const start = new Date(activeCheckIn.checkedInAt).getTime();
+      const start = new Date(activeCheckIn.checkInTime).getTime();
       const now = new Date().getTime();
       const diff = Math.max(0, now - start);
 
@@ -112,10 +112,9 @@ export default function MentorDashboard() {
   };
 
   const handleCheckOut = () => {
-    if (!activeCheckInBatchId) return;
     checkOutMutation.mutate(
       {
-        batchId: activeCheckInBatchId,
+        batchId: activeCheckInBatchId || "",
         notes: checkOutNotes.trim() || undefined,
       },
       {
@@ -159,7 +158,7 @@ export default function MentorDashboard() {
                     Elapsed: {elapsedTime}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    Started at: {new Date(activeCheckIn.checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    Started at: {new Date(activeCheckIn.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               )}

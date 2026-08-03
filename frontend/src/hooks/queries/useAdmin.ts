@@ -17,23 +17,50 @@ function extractApiError(error: any, fallback: string): string {
 
 export const adminKeys = {
   all: ["admin"] as const,
-  mentors: (search?: string, page?: number) => [...adminKeys.all, "mentors", { search, page }] as const,
+  mentors: (search?: string, page?: number) =>
+    search !== undefined || page !== undefined
+      ? ([...adminKeys.all, "mentors", { search, page }] as const)
+      : ([...adminKeys.all, "mentors"] as const),
   mentorDetails: (id: string) => [...adminKeys.all, "mentor-details", id] as const,
-  mentorCheckIns: (id: string, filters?: any) => [...adminKeys.all, "mentor-check-ins", id, filters] as const,
+  mentorCheckIns: (id: string, filters?: any) =>
+    filters !== undefined
+      ? ([...adminKeys.all, "mentor-check-ins", id, filters] as const)
+      : ([...adminKeys.all, "mentor-check-ins", id] as const),
   mentorPayouts: (id: string) => [...adminKeys.all, "mentor-payouts", id] as const,
-  globalPayouts: (month?: string) => [...adminKeys.all, "global-payouts", month ?? "current"] as const,
+  globalPayouts: (month?: string) =>
+    month !== undefined
+      ? ([...adminKeys.all, "global-payouts", month] as const)
+      : ([...adminKeys.all, "global-payouts"] as const),
   mentorAvailability: (id: string) => [...adminKeys.all, "mentor-availability", id] as const,
-  availableMentors: (filters: any) => [...adminKeys.all, "available-mentors", filters] as const,
-  attendanceList: (filters?: any) => [...adminKeys.all, "attendance-list", filters] as const,
+  availableMentors: (filters?: any) =>
+    filters !== undefined
+      ? ([...adminKeys.all, "available-mentors", filters] as const)
+      : ([...adminKeys.all, "available-mentors"] as const),
+  attendanceList: (filters?: any) =>
+    filters !== undefined
+      ? ([...adminKeys.all, "attendance-list", filters] as const)
+      : ([...adminKeys.all, "attendance-list"] as const),
   attendanceSummary: (batchId: string) => [...adminKeys.all, "attendance-summary", batchId] as const,
-  revenue: (filters?: any) => [...adminKeys.all, "revenue", filters] as const,
+  revenue: (filters?: any) =>
+    filters !== undefined
+      ? ([...adminKeys.all, "revenue", filters] as const)
+      : ([...adminKeys.all, "revenue"] as const),
   analytics: () => [...adminKeys.all, "analytics"] as const,
-  auditLogs: (filters?: any) => [...adminKeys.all, "audit-logs", filters] as const,
+  auditLogs: (filters?: any) =>
+    filters !== undefined
+      ? ([...adminKeys.all, "audit-logs", filters] as const)
+      : ([...adminKeys.all, "audit-logs"] as const),
   courses: () => [...adminKeys.all, "courses"] as const,
   trainingPrograms: () => [...adminKeys.all, "training-programs"] as const,
   events: () => [...adminKeys.all, "events"] as const,
-  batches: (filters?: any) => [...adminKeys.all, "batches", filters] as const,
-  users: (filters?: any) => [...adminKeys.all, "users", filters] as const,
+  batches: (filters?: any) =>
+    filters !== undefined
+      ? ([...adminKeys.all, "batches", filters] as const)
+      : ([...adminKeys.all, "batches"] as const),
+  users: (filters?: any) =>
+    filters !== undefined
+      ? ([...adminKeys.all, "users", filters] as const)
+      : ([...adminKeys.all, "users"] as const),
   userById: (id: string) => [...adminKeys.all, "user", id] as const,
   colleges: () => [...adminKeys.all, "colleges"] as const,
   employers: () => [...adminKeys.all, "employers"] as const,
@@ -146,7 +173,7 @@ export function useVerifyCheckIn(mentorId: string) {
       toast.success("Check-in verified successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.mentorDetails(mentorId) });
       queryClient.invalidateQueries({ queryKey: adminKeys.mentorCheckIns(mentorId) });
-      queryClient.invalidateQueries({ queryKey: adminKeys.mentors() });
+      queryClient.invalidateQueries({ queryKey: ["admin", "mentors"] });
     },
     onError: (err) => {
       toast.error(extractApiError(err, "Failed to verify check-in"));
@@ -163,7 +190,7 @@ export function useRecordPayout(mentorId: string) {
       toast.success("Payout processed and recorded successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.mentorDetails(mentorId) });
       queryClient.invalidateQueries({ queryKey: adminKeys.mentorPayouts(mentorId) });
-      queryClient.invalidateQueries({ queryKey: adminKeys.mentors() });
+      queryClient.invalidateQueries({ queryKey: ["admin", "mentors"] });
       queryClient.invalidateQueries({ queryKey: adminKeys.globalPayouts() });
     },
     onError: (err) => {
@@ -177,14 +204,31 @@ export function useApprovePayout(mentorId: string) {
   return useMutation({
     mutationFn: (payoutId: string) => adminService.approvePayout(payoutId),
     onSuccess: () => {
-      toast.success("Payout request approved and marked as processed");
       queryClient.invalidateQueries({ queryKey: adminKeys.mentorDetails(mentorId) });
       queryClient.invalidateQueries({ queryKey: adminKeys.mentorPayouts(mentorId) });
-      queryClient.invalidateQueries({ queryKey: adminKeys.mentors() });
+      queryClient.invalidateQueries({ queryKey: ["admin", "mentors"] });
       queryClient.invalidateQueries({ queryKey: adminKeys.globalPayouts() });
     },
     onError: (err) => {
-      toast.error(extractApiError(err, "Failed to approve payout request"));
+      toast.error(extractApiError(err, "Failed to generate Razorpay payment link"));
+    },
+  });
+}
+
+export function useConfirmPayout(mentorId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ payoutId, razorpayPaymentId }: { payoutId: string; razorpayPaymentId: string }) =>
+      adminService.confirmPayout(payoutId, razorpayPaymentId),
+    onSuccess: () => {
+      toast.success("Payout confirmed and marked as Paid");
+      queryClient.invalidateQueries({ queryKey: adminKeys.mentorDetails(mentorId) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.mentorPayouts(mentorId) });
+      queryClient.invalidateQueries({ queryKey: ["admin", "mentors"] });
+      queryClient.invalidateQueries({ queryKey: adminKeys.globalPayouts() });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to confirm payout"));
     },
   });
 }

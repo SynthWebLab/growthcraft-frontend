@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign, CreditCard, Building2, Send } from "lucide-react";
+import { DollarSign, CreditCard, Building2, Send, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import DataCard from "@/components/ui/data-card";
@@ -47,7 +47,15 @@ const payoutCols: Column<MentorPayoutHistoryItem>[] = [
   {
     key: "status",
     label: "Status",
-    render: (r) => <StatusPill variant={r.status === "completed" ? "completed" : "pending"} />,
+    render: (r) => {
+      if (r.status === "completed") {
+        return <StatusPill variant="completed" />;
+      }
+      if (r.status === "processing") {
+        return <StatusPill variant="pending" label="Processing" />;
+      }
+      return <StatusPill variant="pending" label="Pending" />;
+    },
   },
   {
     key: "txnId",
@@ -97,12 +105,12 @@ const MentorEarnings = () => {
   }
 
   const earnings = earningsResponse?.data;
-  const summary = earnings?.summary || { thisMonth: 0, pendingPayout: 0, lifetime: 0 };
+  const summary = earnings?.summary || { thisMonth: 0, pendingPayout: 0, withdrawablePayout: 0, lifetime: 0 };
   const monthlyData = earnings?.monthlyData || [];
   const payouts = earnings?.payouts || [];
 
   const handleOpenWithdraw = () => {
-    setAmount(summary.pendingPayout.toString());
+    setAmount("");
     setPaymentMethod("UPI");
     setPaymentDetails("");
     setWithdrawOpen(true);
@@ -115,8 +123,8 @@ const MentorEarnings = () => {
       return;
     }
 
-    if (numAmount > summary.pendingPayout) {
-      toast.error(`Amount cannot exceed pending balance of ₹${summary.pendingPayout.toLocaleString()}`);
+    if (numAmount > (summary.withdrawablePayout ?? summary.pendingPayout)) {
+      toast.error(`Amount cannot exceed withdrawable balance of ₹${(summary.withdrawablePayout ?? summary.pendingPayout).toLocaleString()}`);
       return;
     }
 
@@ -148,7 +156,7 @@ const MentorEarnings = () => {
           <Button
             className="bg-magenta hover:bg-magenta/90 text-white gap-1.5"
             onClick={handleOpenWithdraw}
-            disabled={isWithdrawing || summary.pendingPayout === 0}
+            disabled={isWithdrawing || (summary.withdrawablePayout ?? summary.pendingPayout) === 0}
           >
             <DollarSign className="h-4 w-4" /> Withdraw
           </Button>
@@ -194,19 +202,23 @@ const MentorEarnings = () => {
 
           <div className="space-y-4 py-3">
             <div className="p-3 bg-muted/40 rounded-lg border border-border flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Available Pending Balance</span>
-              <span className="font-bold text-warning text-base">₹{summary.pendingPayout.toLocaleString()}</span>
+              <span className="text-muted-foreground">Available to Withdraw</span>
+              <span className="font-bold text-warning text-base">₹{(summary.withdrawablePayout ?? summary.pendingPayout).toLocaleString()}</span>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="withdraw-amount">Amount to Withdraw (₹)</Label>
               <Input
                 id="withdraw-amount"
-                type="number"
+                type="text"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*\.?\d*$/.test(val)) {
+                    setAmount(val);
+                  }
+                }}
                 placeholder="Enter amount"
-                max={summary.pendingPayout}
               />
             </div>
 

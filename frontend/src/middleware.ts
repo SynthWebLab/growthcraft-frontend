@@ -50,7 +50,7 @@ async function checkAuth(request: NextRequest): Promise<{ isAuthenticated: boole
     }
 
     // Try to get user profile from backend
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001/api/v1';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5002/api/v1';
     const cookies = request.cookies.toString();
     
     const response = await fetch(`${backendUrl}${API_ENDPOINTS.auth.profile}`, {
