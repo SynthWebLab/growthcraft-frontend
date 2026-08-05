@@ -16,6 +16,7 @@ export interface CreateOrderResponse {
   currency: string;
   keyId: string;
   transactionId: string;
+  isMock?: boolean;
 }
 
 export interface VerifyPaymentPayload {
