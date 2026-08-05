@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
 import type { Hackathon } from "@/types/hackathon";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserEnrollments } from "@/hooks/useUserEnrollments";
 
 interface HackathonCardProps {
   hackathon: Hackathon;
@@ -19,19 +20,25 @@ const formatEventDate = (date: string) =>
 
 export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick, isProcessing }: HackathonCardProps) {
   const { data: user } = useCurrentUser();
+  const { isStudent, isEventEnrolled } = useUserEnrollments();
   const isMentor = user?.role === "mentor";
   const isEmployer = user?.role === "employer";
   const isRestrictedRole = isMentor || isEmployer;
   const toneStyles = getEventCardToneStyles("orange");
   
   // Get CTAs from hackathon data
-  const isEnrolled = (hackathon as any).isEnrolled || 
-    hackathon.primaryCTA === "Already Enrolled" || 
-    hackathon.primaryCTA === "Interest Registered" ||
-    hackathon.primaryCTA === "Seat Reserved";
+  const enrolledFromUser = isEventEnrolled(hackathon.id) || isEventEnrolled(hackathon.slug) || isEventEnrolled((hackathon as any)._id);
+  const isEnrolled = isStudent
+    ? enrolledFromUser
+    : Boolean(
+        (hackathon as any).isEnrolled ||
+        hackathon.primaryCTA === "Already Enrolled" ||
+        hackathon.primaryCTA === "Interest Registered" ||
+        hackathon.primaryCTA === "Seat Reserved"
+      );
 
   const rawPrimaryCTA = hackathon.primaryCTA || "Reserve Seat";
-  const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
+  const primaryCTA = isEnrolled ? "Seat Reserved" : (rawPrimaryCTA === "Seat Reserved" || rawPrimaryCTA === "Already Enrolled" ? "Reserve Seat" : rawPrimaryCTA);
   const rawSecondaryCTA = isEnrolled ? null : hackathon.secondaryCTA;
   const secondaryCTA = (rawSecondaryCTA === primaryCTA || primaryCTA === "Request Callback" || primaryCTA === "Seat Reserved") ? null : rawSecondaryCTA;
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");

@@ -31,6 +31,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserEnrollments } from "@/hooks/useUserEnrollments";
 import { useWorkshopDetails } from "@/hooks/queries/useWorkshops";
 import { useHackathonDetails } from "@/hooks/queries/useHackathons";
 import { useEventBySlug } from "@/hooks/queries/useEvents";
@@ -106,8 +107,19 @@ function mapEventDetailToEventData(response: any) {
   const statusStr = String(status || "").toLowerCase().trim();
   const isFinalized = statusStr === "closed" || statusStr === "completed";
   const isSeatsOpen = !isFinalized && availableSeats > 0;
-  const primaryCTA = isSeatsOpen ? "Reserve Seat" : "Request Callback";
-  const secondaryCTA = isSeatsOpen ? "Request Callback" : null;
+
+  const isBackendEnrolled = Boolean(
+    response?.isEnrolled || 
+    response?.data?.isEnrolled || 
+    details?.isEnrolled || 
+    event?.isEnrolled ||
+    rawData?.isEnrolled
+  );
+
+  const primaryCTA = isBackendEnrolled
+    ? "Already Enrolled"
+    : (rawData?.primaryCTA || details?.primaryCTA || (isSeatsOpen ? "Reserve Seat" : "Request Callback"));
+  const secondaryCTA = isBackendEnrolled ? null : (rawData?.secondaryCTA || details?.secondaryCTA || (isSeatsOpen ? "Request Callback" : null));
 
   const venue = details?.venue || event?.venue
     ? {
@@ -150,6 +162,7 @@ function mapEventDetailToEventData(response: any) {
         thumbnail: event?.banner || event?.thumbnail || details?.banner || "",
         primaryCTA,
         secondaryCTA,
+        isEnrolled: isBackendEnrolled,
         isFeatured: Boolean(event?.isFeatured || event?.is_featured || details?.isFeatured),
         mentors,
         createdAt: event?.createdAt || new Date().toISOString(),
@@ -211,6 +224,7 @@ export default function EventDetailPage({
   const { isOpen, formType, formTitle, courseId, courseTitle, price, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
+  const { isEventEnrolled } = useUserEnrollments();
   const { checkout, isProcessing: isDirectCheckoutProcessing } = useDirectCheckout();
   const [isMounted, setIsMounted] = useState(false);
   const [hasJustEnrolled, setHasJustEnrolled] = useState(false);
@@ -294,12 +308,19 @@ export default function EventDetailPage({
   const isCollege = isMounted && user?.role === "college";
   const isRestrictedRole = isMounted && (user?.role === "mentor" || user?.role === "employer");
 
-  // Use backend-provided CTAs
-  const isEnrolled = hasJustEnrolled ||
-    (event as any).isEnrolled || 
-    event.primaryCTA === "Already Enrolled" || 
-    event.primaryCTA === "Interest Registered" ||
-    event.primaryCTA === "Seat Reserved";
+  const enrolledFromUser = isEventEnrolled(normalizedSlug) || isEventEnrolled(slug) || (event?._id ? isEventEnrolled(event._id) : false);
+
+  // Use backend-provided CTAs or student enrollment cache
+  const isEnrolled = isStudent
+    ? (hasJustEnrolled || enrolledFromUser)
+    : Boolean(
+        hasJustEnrolled ||
+        enrolledFromUser ||
+        (event as any).isEnrolled || 
+        event.primaryCTA === "Already Enrolled" || 
+        event.primaryCTA === "Interest Registered" ||
+        event.primaryCTA === "Seat Reserved"
+      );
 
   const maxSeats = Number(event.maxSeats ?? (event as any).maxCapacity ?? 50);
   const enrolledCount = Number(event.enrolledCount ?? 0);
@@ -614,10 +635,10 @@ export default function EventDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">What you&apos;ll learn</h2>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {overview?.whatYouWillLearn?.map((item: any) => (
-                      <div key={item._id} className="flex items-start gap-2">
+                    {overview?.whatYouWillLearn?.map((item: any, idx: number) => (
+                      <div key={item._id || item.id || `learn-${idx}`} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-magenta mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-foreground">{item.text}</span>
+                        <span className="text-sm text-foreground">{typeof item === "string" ? item : item.text}</span>
                       </div>
                     ))}
                   </div>
@@ -640,10 +661,10 @@ export default function EventDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">Prerequisites</h2>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    {overview?.prerequisites?.map((item: any) => (
-                      <li key={item._id} className="flex items-start gap-2">
+                    {overview?.prerequisites?.map((item: any, idx: number) => (
+                      <li key={item._id || item.id || `prereq-${idx}`} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-lavender mt-0.5" />
-                        {item.text}
+                        {typeof item === "string" ? item : item.text}
                       </li>
                     ))}
                   </ul>
@@ -653,12 +674,12 @@ export default function EventDetailPage({
               <TabsContent value="agenda" className="pt-6">
                 <h2 className="text-xl font-bold mb-4">Event Agenda</h2>
                 <div className="space-y-3">
-                  {agenda.map((session: any) => (
-                    <DataCard key={session._id}>
+                  {agenda.map((session: any, idx: number) => (
+                    <DataCard key={session._id || session.id || `session-${idx}`}>
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-magenta/10 flex items-center justify-center">
                           <span className="text-lg font-bold text-magenta">
-                            {session.sessionNumber}
+                            {session.sessionNumber || idx + 1}
                           </span>
                         </div>
                         <div className="flex-1">
@@ -668,13 +689,13 @@ export default function EventDetailPage({
                             {session.duration}
                           </p>
                           <ul className="space-y-1">
-                            {session.topics.map((topic: { _id: string; text: string }) => (
+                            {session.topics?.map((topic: any, tIdx: number) => (
                               <li
-                                key={topic._id}
+                                key={topic._id || topic.id || `topic-${idx}-${tIdx}`}
                                 className="flex items-start gap-2 text-sm"
                               >
                                 <Check className="h-3 w-3 text-magenta mt-0.5 flex-shrink-0" />
-                                <span className="text-muted-foreground">{topic.text}</span>
+                                <span className="text-muted-foreground">{typeof topic === "string" ? topic : topic.text}</span>
                               </li>
                             ))}
                           </ul>
@@ -841,20 +862,23 @@ export default function EventDetailPage({
 
               <TabsContent value="faq" className="pt-6">
                 <Accordion type="single" collapsible className="space-y-2">
-                  {faqs.map((item: any) => (
-                    <AccordionItem
-                      key={item._id}
-                      value={`faq-${item._id}`}
-                      className="border rounded-lg px-4"
-                    >
-                      <AccordionTrigger className="text-sm font-semibold">
-                        {item.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-sm text-muted-foreground">
-                        {item.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
+                  {faqs.map((item: any, idx: number) => {
+                    const itemId = item._id || item.id || idx;
+                    return (
+                      <AccordionItem
+                        key={itemId}
+                        value={`faq-${itemId}`}
+                        className="border rounded-lg px-4"
+                      >
+                        <AccordionTrigger className="text-sm font-semibold">
+                          {item.question}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-sm text-muted-foreground">
+                          {item.answer}
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
                 </Accordion>
               </TabsContent>
             </Tabs>
@@ -906,13 +930,13 @@ export default function EventDetailPage({
 
                 <div className="mt-6 space-y-3 text-sm">
                   <h4 className="font-semibold">What&apos;s included</h4>
-                  {overview?.whatsIncluded?.map((item: any) => (
+                  {overview?.whatsIncluded?.map((item: any, idx: number) => (
                     <div
-                      key={item._id}
+                      key={item._id || item.id || `inc-${idx}`}
                       className="flex items-center gap-2 text-muted-foreground"
                     >
                       <Check className="h-4 w-4 text-magenta flex-shrink-0" />
-                      <span>{item.text}</span>
+                      <span>{typeof item === "string" ? item : item.text}</span>
                     </div>
                   ))}
                 </div>

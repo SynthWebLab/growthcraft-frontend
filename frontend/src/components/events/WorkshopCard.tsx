@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
 import type { Workshop } from "@/types/workshop";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserEnrollments } from "@/hooks/useUserEnrollments";
 
 interface WorkshopCardProps {
   workshop: Workshop;
@@ -25,17 +26,24 @@ const formatEventTime = (date: string) =>
 
 export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick, isProcessing }: WorkshopCardProps) {
   const { data: user } = useCurrentUser();
+  const { isStudent, isEventEnrolled } = useUserEnrollments();
   const isMentor = user?.role === "mentor";
   const isEmployer = user?.role === "employer";
   const isRestrictedRole = isMentor || isEmployer;
   const toneStyles = getEventCardToneStyles("purple");
-  const isEnrolled = (workshop as any).isEnrolled || 
-    workshop.primaryCTA === "Already Enrolled" || 
-    workshop.primaryCTA === "Interest Registered" ||
-    workshop.primaryCTA === "Seat Reserved";
+
+  const enrolledFromUser = isEventEnrolled(workshop.id) || isEventEnrolled(workshop.slug) || isEventEnrolled((workshop as any)._id);
+  const isEnrolled = isStudent
+    ? enrolledFromUser
+    : Boolean(
+        (workshop as any).isEnrolled ||
+        workshop.primaryCTA === "Already Enrolled" ||
+        workshop.primaryCTA === "Interest Registered" ||
+        workshop.primaryCTA === "Seat Reserved"
+      );
 
   const rawPrimaryCTA = workshop.primaryCTA || "Reserve Seat";
-  const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
+  const primaryCTA = isEnrolled ? "Seat Reserved" : (rawPrimaryCTA === "Seat Reserved" || rawPrimaryCTA === "Already Enrolled" ? "Reserve Seat" : rawPrimaryCTA);
   const rawSecondaryCTA = isEnrolled ? null : workshop.secondaryCTA;
   const secondaryCTA = (rawSecondaryCTA === primaryCTA || primaryCTA === "Request Callback" || primaryCTA === "Seat Reserved") ? null : rawSecondaryCTA;
   const isCallbackAction = primaryCTA.toLowerCase().includes("callback");

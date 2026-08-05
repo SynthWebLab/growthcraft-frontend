@@ -79,8 +79,11 @@ export function useRegisterBootcamp() {
       bootcampId: string;
       data: BootcampActionData;
     }) => bootcampService.register(bootcampId, data),
-    onSuccess: (data) => {
-      toast.success(data.message || "Bootcamp registration successful!");
+    onSuccess: (data: any) => {
+      const isConfirmed = data?.data?.enrollment?.status === "confirmed" || data?.data?.enrollment?.paymentStatus === "completed";
+      if (isConfirmed) {
+        toast.success(data.message || "Bootcamp registration successful!");
+      }
       queryClient.invalidateQueries({ queryKey: bootcampKeys.all });
     },
     onError: (error) => {

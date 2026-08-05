@@ -94,6 +94,7 @@ export function useDirectCheckout() {
   const queryClient = useQueryClient();
 
   const invalidateQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["student"] });
     queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
     queryClient.invalidateQueries({ queryKey: ["workshops"] });
     queryClient.invalidateQueries({ queryKey: ["hackathons"] });
@@ -185,22 +186,13 @@ export function useDirectCheckout() {
       }
 
       // 6. Open Razorpay checkout for paid events
-      const enrollment = enrollRes?.data?.enrollment;
-      if (!enrollment?._id) {
-        // Enrollment succeeded but no enrollment ID returned — still success
-        triggerConfetti();
-        toast.success("Seat Reserved!", {
-          description: "Check your email for next steps.",
-        });
-        setIsProcessing(false);
-        setProcessingItemId(null);
-        return;
-      }
+      const enrollmentObj = enrollRes?.data?.enrollment || enrollRes?.data || enrollRes;
+      const enrollmentId = enrollmentObj?._id || enrollmentObj?.id || itemId;
 
       openCheckout({
         amount: price,
         itemType: itemType as any,
-        itemId: enrollment._id,
+        itemId: enrollmentId,
         title: itemTitle || "GrowthCraft",
         description: `Payment for ${itemTitle}`,
         prefill: {
@@ -209,20 +201,20 @@ export function useDirectCheckout() {
           contact: phone,
         },
         onSuccess: (_paymentId) => {
-          invalidateQueries();
+          setIsProcessing(false);
+          setProcessingItemId(null);
           triggerConfetti();
           onEnrolled?.();
           toast.success("Payment completed successfully!", {
             description: "Your seat is confirmed. Check your email for details.",
           });
-          setIsProcessing(false);
-          setProcessingItemId(null);
+          invalidateQueries();
         },
         onError: (err) => {
-          invalidateQueries();
-          toast.error(err || "Payment cancelled or failed.");
           setIsProcessing(false);
           setProcessingItemId(null);
+          toast.error(err || "Payment cancelled or failed.");
+          invalidateQueries();
         },
       });
     } catch (err: any) {
@@ -243,6 +235,7 @@ export function useDirectCheckout() {
       );
 
       if (isAlreadyEnrolled) {
+        invalidateQueries();
         onEnrolled?.();
         toast.info("You're already registered!", {
           description: "You have already reserved a seat for this event.",

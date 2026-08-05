@@ -113,6 +113,9 @@ export function useRazorpayCheckout() {
         modal: {
           ondismiss: () => {
             setIsLoading(false);
+            if (options.onError) {
+              options.onError("Payment was cancelled or closed.");
+            }
           },
         },
       };

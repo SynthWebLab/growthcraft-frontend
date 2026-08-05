@@ -61,8 +61,11 @@ export function useRegisterForEvent() {
       eventId: string;
       data: { fullName: string; email: string; phone: string };
     }) => registerForEvent(eventId, data),
-    onSuccess: (data, variables) => {
-      toast.success(data.message || "Successfully registered for event!");
+    onSuccess: (data: any, variables) => {
+      const isConfirmed = data?.data?.enrollment?.status === "confirmed" || data?.data?.enrollment?.paymentStatus === "completed";
+      if (isConfirmed) {
+        toast.success(data.message || "Successfully registered for event!");
+      }
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["event", variables.eventId] });
       queryClient.invalidateQueries({ queryKey: ["events"] });

@@ -67,8 +67,11 @@ export function useRegisterHackathon() {
       hackathonId: string;
       data: HackathonActionData;
     }) => hackathonService.register(hackathonId, data),
-    onSuccess: (data) => {
-      toast.success(data.message || "Hackathon registration successful!");
+    onSuccess: (data: any) => {
+      const isConfirmed = data?.data?.enrollment?.status === "confirmed" || data?.data?.enrollment?.paymentStatus === "completed";
+      if (isConfirmed) {
+        toast.success(data.message || "Hackathon registration successful!");
+      }
       queryClient.invalidateQueries({ queryKey: hackathonKeys.all });
     },
     onError: (error) => {

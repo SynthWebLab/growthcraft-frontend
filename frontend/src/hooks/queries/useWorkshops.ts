@@ -67,8 +67,11 @@ export function useRegisterWorkshop() {
       workshopId: string;
       data: WorkshopActionData;
     }) => workshopService.register(workshopId, data),
-    onSuccess: (data) => {
-      toast.success(data.message || "Workshop registration successful!");
+    onSuccess: (data: any) => {
+      const isConfirmed = data?.data?.enrollment?.status === "confirmed" || data?.data?.enrollment?.paymentStatus === "completed";
+      if (isConfirmed) {
+        toast.success(data.message || "Workshop registration successful!");
+      }
       queryClient.invalidateQueries({ queryKey: workshopKeys.all });
     },
     onError: (error) => {

@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import type { Bootcamp } from "@/types/bootcamp";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserEnrollments } from "@/hooks/useUserEnrollments";
 
 interface BootcampEventCardProps {
   bootcamp: Bootcamp;
@@ -43,16 +44,23 @@ export function BootcampEventCard({
   }, []);
 
   const { data: user } = useCurrentUser();
+  const { isStudent, isEventEnrolled } = useUserEnrollments();
   const isMentor = isMounted && user?.role === "mentor";
   const isEmployer = isMounted && user?.role === "employer";
   const isRestrictedRole = isMentor || isEmployer;
-  const isEnrolled = (bootcamp as any).isEnrolled || 
-    bootcamp.primaryCTA === "Already Enrolled" || 
-    bootcamp.primaryCTA === "Interest Registered" ||
-    bootcamp.primaryCTA === "Seat Reserved";
+
+  const enrolledFromUser = isEventEnrolled(bootcamp.id) || isEventEnrolled(bootcamp.slug) || isEventEnrolled((bootcamp as any)._id);
+  const isEnrolled = isStudent
+    ? enrolledFromUser
+    : Boolean(
+        (bootcamp as any).isEnrolled ||
+        bootcamp.primaryCTA === "Already Enrolled" ||
+        bootcamp.primaryCTA === "Interest Registered" ||
+        bootcamp.primaryCTA === "Seat Reserved"
+      );
 
   const rawPrimaryCTA = bootcamp.primaryCTA || "Reserve Seat";
-  const primaryCTA = isEnrolled ? "Seat Reserved" : rawPrimaryCTA;
+  const primaryCTA = isEnrolled ? "Seat Reserved" : (rawPrimaryCTA === "Seat Reserved" || rawPrimaryCTA === "Already Enrolled" ? "Reserve Seat" : rawPrimaryCTA);
   const rawSecondaryCTA = isEnrolled ? null : bootcamp.secondaryCTA;
   const secondaryCTA = (rawSecondaryCTA === primaryCTA || primaryCTA === "Request Callback" || primaryCTA === "Seat Reserved") ? null : rawSecondaryCTA;
   const isFinalizedStatus = bootcamp.status === "Closed" || bootcamp.status === "Completed";
