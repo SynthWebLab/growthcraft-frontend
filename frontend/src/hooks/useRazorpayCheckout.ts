@@ -63,6 +63,25 @@ export function useRazorpayCheckout() {
       });
 
       const keyId = order.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      const isMockMode = order.isMock || !keyId || keyId === "rzp_test_GrowthCraftKey" || !keyId.startsWith("rzp_");
+
+      if (isMockMode) {
+        // Fallback mode: auto-verify simulated payment without attempting to load Razorpay iframe with invalid key
+        const simulatedPaymentId = `pay_sim_${Date.now()}`;
+        const verifyResult = await verifyPaymentMutation.mutateAsync({
+          razorpayOrderId: order.orderId,
+          razorpayPaymentId: simulatedPaymentId,
+          razorpaySignature: "simulated_signature",
+        });
+
+        if (verifyResult?.success) {
+          options.onSuccess?.(simulatedPaymentId);
+        } else {
+          options.onError?.("Payment verification failed in mock mode.");
+        }
+        setIsLoading(false);
+        return;
+      }
 
       // 3. Configure Razorpay modal options
       const razorpayOptions: any = {
