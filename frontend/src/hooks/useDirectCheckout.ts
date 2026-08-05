@@ -173,8 +173,12 @@ export function useDirectCheckout() {
 
       invalidateQueries();
 
-      // 5. If price is 0 (free event), confirm directly
-      if (price === 0) {
+      const enrollmentObj = enrollRes?.data?.enrollment || enrollRes?.data || enrollRes;
+      const status = enrollmentObj?.status || enrollmentObj?.paymentStatus;
+      const isConfirmedFreeEvent = (price === 0 || !price) && (status === "confirmed" || status === "completed");
+
+      // 5. If free event AND confirmed, confirm directly
+      if (isConfirmedFreeEvent) {
         triggerConfetti();
         toast.success("Seat Reserved!", {
           description: "Your seat has been reserved. Check your email for details.",
@@ -185,8 +189,7 @@ export function useDirectCheckout() {
         return;
       }
 
-      // 6. Open Razorpay checkout for paid events
-      const enrollmentObj = enrollRes?.data?.enrollment || enrollRes?.data || enrollRes;
+      // 6. Open Razorpay checkout for paid/pending events
       const enrollmentId = enrollmentObj?._id || enrollmentObj?.id || itemId;
 
       openCheckout({

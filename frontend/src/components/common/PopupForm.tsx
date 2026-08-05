@@ -296,8 +296,7 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
       },
       onError: (err) => {
         toast.error(err || "Payment cancelled or failed.");
-        setEnrollmentResult(enrollRes);
-        setStep(3);
+        onClose();
       },
     });
   };

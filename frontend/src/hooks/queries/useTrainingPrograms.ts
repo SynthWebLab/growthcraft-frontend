@@ -75,8 +75,12 @@ export function useEnrollInTrainingProgram() {
       data: { fullName: string; email: string; phone: string; cohortId?: string };
     }) => enrollInTrainingProgram(programId, data),
     onSuccess: (data, variables) => {
-      // Only show success toast if enrollment is not pending payment
-      if (data.data?.enrollment?.status !== "pending") {
+      const enrollment = data.data?.enrollment || data.data;
+      const status = enrollment?.status || enrollment?.paymentStatus;
+      const isConfirmed = status === "confirmed" || status === "completed" || status === "Completed" || status === "Active";
+
+      // Only show success toast if enrollment is actually confirmed/completed
+      if (isConfirmed) {
         toast.success(data.message || "Successfully enrolled in training program!");
       }
       // Invalidate queries
