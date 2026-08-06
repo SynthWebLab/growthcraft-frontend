@@ -40,7 +40,9 @@ export function useCollegeDashboard() {
   return useQuery({
     queryKey: collegeKeys.dashboard(),
     queryFn: () => collegeService.getDashboard(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -49,7 +51,9 @@ export function useCollegeCohort() {
   return useQuery({
     queryKey: collegeKeys.cohort(),
     queryFn: () => collegeService.getCohort(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -58,7 +62,9 @@ export function useCollegeStudents(query: CollegeStudentsQuery = {}) {
   return useQuery({
     queryKey: collegeKeys.students(query),
     queryFn: () => collegeService.getStudents(query),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -85,7 +91,9 @@ export function useCollegeReports() {
   return useQuery({
     queryKey: collegeKeys.reports(),
     queryFn: () => collegeService.getReports(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time automatic background sync every 5 seconds
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -256,6 +264,9 @@ export function useEventAccessStudents(eventId: string) {
     queryKey: collegeKeys.eventAccess(eventId),
     queryFn: () => collegeService.getEventAccessStudents(eventId),
     enabled: !!eventId,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -272,6 +283,11 @@ export function useUpdateEventAccess() {
     onSuccess: (response, variables) => {
       if (response.success) {
         queryClient.invalidateQueries({ queryKey: collegeKeys.eventAccess(variables.eventId) });
+        queryClient.invalidateQueries({ queryKey: collegeKeys.all });
+        queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+        queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+        queryClient.invalidateQueries({ queryKey: ["workshops"] });
+        queryClient.invalidateQueries({ queryKey: ["events"] });
       }
     },
     onError: (error: any) => {
@@ -291,6 +307,9 @@ export function useCollegeAttendance(params?: {
   return useQuery({
     queryKey: [...collegeKeys.all, "attendance", params],
     queryFn: () => collegeService.getAttendance(params),
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time automatic background sync every 5 seconds
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -298,6 +317,9 @@ export function useCollegeAttendanceSummary() {
   return useQuery({
     queryKey: [...collegeKeys.all, "attendance", "summary"],
     queryFn: () => collegeService.getAttendanceSummary(),
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time automatic background sync every 5 seconds
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -314,9 +336,8 @@ export function useActivateCollegeAmbassadors() {
     mutationFn: (studentUserIds: string[]) => collegeService.activateAmbassadors(studentUserIds),
     onSuccess: (response) => {
       if (response.success) {
-        toast.success("Ambassadors activated", { description: response.message || "Students successfully promoted." });
-        queryClient.invalidateQueries({ queryKey: collegeKeys.students() });
-        queryClient.invalidateQueries({ queryKey: [...collegeKeys.all, "ambassadors"] });
+        toast.success("Ambassador activated", { description: response.message || "Student promoted to Campus Ambassador." });
+        queryClient.invalidateQueries({ queryKey: collegeKeys.all });
       } else {
         toast.error("Failed to activate", { description: response.message || "Please try again." });
       }
@@ -334,8 +355,7 @@ export function useDeactivateCollegeAmbassador() {
     onSuccess: (response) => {
       if (response.success) {
         toast.success("Ambassador deactivated", { description: response.message || "Student ambassador status removed." });
-        queryClient.invalidateQueries({ queryKey: collegeKeys.students() });
-        queryClient.invalidateQueries({ queryKey: [...collegeKeys.all, "ambassadors"] });
+        queryClient.invalidateQueries({ queryKey: collegeKeys.all });
       } else {
         toast.error("Failed to deactivate", { description: response.message || "Please try again." });
       }

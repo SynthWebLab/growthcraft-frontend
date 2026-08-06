@@ -23,6 +23,8 @@ import {
   useMarkAllNotificationsRead,
 } from "@/hooks/queries/useNotifications";
 
+import DynamicSearchBar from "@/components/dashboard/DynamicSearchBar";
+
 interface AdminHeaderProps {
   user: {
     email: string;
@@ -74,14 +76,7 @@ export const AdminHeader = ({ user, onLogout, onMenuClick }: AdminHeaderProps) =
         </Button>
       )}
       <div className="flex flex-1 items-center gap-2 sm:gap-4 min-w-0">
-        <div className="relative flex-1 min-w-0 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search..."
-            className="pl-10"
-          />
-        </div>
+        <DynamicSearchBar roleOverride="admin" basePath="/admin" />
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">

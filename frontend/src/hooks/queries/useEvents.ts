@@ -20,7 +20,9 @@ export function useEvents(filters?: EventFilters) {
   return useQuery({
     queryKey: ["events", filters],
     queryFn: () => getEvents(filters),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
   });
 }
 

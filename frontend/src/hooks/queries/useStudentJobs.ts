@@ -22,7 +22,9 @@ export function useStudentJobs() {
   return useQuery({
     queryKey: studentJobsKeys.jobs(),
     queryFn: () => studentService.getJobs().then((res) => res.data),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -31,7 +33,9 @@ export function useStudentApplications() {
   return useQuery({
     queryKey: studentJobsKeys.applications(),
     queryFn: () => studentService.getApplications().then((res) => res.data),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }

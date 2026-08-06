@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import PanelDataTable, { Column } from "@/components/panel/PanelDataTable";
 import { useHackathons } from "@/hooks/queries/useHackathons";
+import { useCollegeDashboard } from "@/hooks/queries/useCollege";
 import { Button } from "@/components/ui/button";
-import { Trophy, AlertCircle } from "lucide-react";
+import { Trophy, AlertCircle, CheckCircle2 } from "lucide-react";
 import { ManageAccessDialog } from "@/components/college/ManageAccessDialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -13,9 +15,18 @@ type HackathonRow = any;
 
 export default function CollegeHackathonsPage() {
   const { data: response, isLoading, isError } = useHackathons({ limit: 100 });
+  const { data: dashboardRes } = useCollegeDashboard();
+
   const [selectedHackathon, setSelectedHackathon] = useState<{ id: string; title: string } | null>(null);
 
-  const hackathons = response?.items ?? [];
+  const allHackathons = response?.items ?? [];
+  const dashboardData = (dashboardRes as any)?.data ?? dashboardRes;
+  const activeEventIds: string[] = dashboardData?.activeEventIds ?? [];
+
+  // Filter: ONLY show hackathons enrolled by this college
+  const hackathons = allHackathons.filter((row: any) =>
+    activeEventIds.includes(String(row.id || row._id)) || row.isEnrolled
+  );
 
   const columns: Column<HackathonRow>[] = [
     {
@@ -54,42 +65,12 @@ export default function CollegeHackathonsPage() {
       ),
     },
     {
-      key: "capacity",
-      label: "Enrollments",
-      render: (row) => (
-        <div className="flex flex-col gap-1 w-24">
-          <div className="flex justify-between text-xs font-medium text-muted-foreground">
-            <span>{row.enrolledCount ?? 0} enrolled</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-            <div
-              className="bg-magenta rounded-full h-1.5 transition-all duration-300"
-              style={{
-                width: `${Math.min(
-                  100,
-                  (((row.enrolledCount ?? 0) / (row.maxSeats || 100)) * 100)
-                )}%`,
-              }}
-            />
-          </div>
-        </div>
-      ),
-    },
-    {
       key: "status",
-      label: "Status",
+      label: "Campus Access Status",
       sortable: true,
-      render: (row) => (
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold select-none capitalize ${
-            row.status === "Open"
-              ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-              : row.status === "Closed"
-              ? "bg-amber-50 text-amber-700 border border-amber-100"
-              : "bg-muted text-muted-foreground border border-border"
-          }`}
-        >
-          {row.status}
+      render: () => (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+          <CheckCircle2 className="h-3 w-3" /> Campus Enrolled
         </span>
       ),
     },
@@ -113,8 +94,8 @@ export default function CollegeHackathonsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Hackathons"
-        description="View all hackathons and authorize cohort students to join them"
+        title="Enrolled Hackathons"
+        description="View hackathons enrolled by your campus cohort and manage student access"
       />
 
       {isError && (
@@ -126,6 +107,19 @@ export default function CollegeHackathonsPage() {
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground py-8">Loading hackathons…</div>
+      ) : hackathons.length === 0 ? (
+        <div className="rounded-xl border border-border bg-white p-8 text-center space-y-3">
+          <Trophy className="h-10 w-10 text-muted-foreground mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">No Enrolled Hackathons</h3>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Your college has not enrolled in any hackathons yet. Explore public hackathons to enroll your campus cohort.
+          </p>
+          <Link href="/events?tab=hackathons">
+            <Button variant="default" size="sm" className="bg-magenta hover:bg-magenta/90 text-white text-xs">
+              Explore All Hackathons
+            </Button>
+          </Link>
+        </div>
       ) : (
         <PanelDataTable
           columns={columns}

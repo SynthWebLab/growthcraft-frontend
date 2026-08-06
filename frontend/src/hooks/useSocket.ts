@@ -10,6 +10,10 @@ import { authService } from "@/services/auth.service";
 const getNotificationToastMessage = (notification: any): string => {
   const data = notification.data || {};
   switch (notification.type) {
+    case "ambassador.activated":
+      return `🎉 Great news! You have been activated as a Campus Ambassador!`;
+    case "ambassador.deactivated":
+      return `Your Campus Ambassador status has been updated.`;
     case "enrollment.created":
       return `Successfully enrolled in batch ${data.batchCode || ""}`;
     case "batch.assigned":
@@ -56,9 +60,15 @@ export function useSocket() {
         }
       });
 
-      // Invalidate queries to refresh notifications
+      // Invalidate queries to refresh notifications and active dashboards in real time
       void queryClient.invalidateQueries({ queryKey: notificationsKeys.unread() });
       void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ["college"] });
+      void queryClient.invalidateQueries({ queryKey: ["student"] });
+      void queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      void queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+      void queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      void queryClient.invalidateQueries({ queryKey: ["events"] });
     };
 
     socket.on("notification", handleNotification);

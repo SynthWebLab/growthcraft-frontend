@@ -42,7 +42,9 @@ export function useHackathons(params?: HackathonQueryParams) {
   return useQuery({
     queryKey: hackathonKeys.list(params),
     queryFn: () => hackathonService.getHackathons(params),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
   });
 }
 

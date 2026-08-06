@@ -51,7 +51,9 @@ export function useBootcamps(params?: BootcampQueryParams, enabled: boolean = tr
     queryKey: bootcampKeys.list(params),
     queryFn: () => bootcampService.getBootcamps(params),
     enabled: enabled, // Only fetch when enabled is true
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
     refetchOnMount: "always",
   });
 }
