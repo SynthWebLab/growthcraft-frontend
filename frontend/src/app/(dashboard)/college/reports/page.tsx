@@ -282,26 +282,17 @@ const CollegeReports = () => {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Campus Insights"
-        description="Monitor student progress, monthly program reports, and attendance summaries in real-time."
+        description="Monitor student progress, monthly program reports, and attendance summaries."
         action={
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              Live Real-Time Data
-            </div>
-            {activeTab === "monthly" ? (
-              <Button onClick={() => setModalOpen(true)} className="bg-magenta hover:bg-magenta/90 text-white">
-                <Plus className="h-4 w-4 mr-2" /> Generate Custom Report
-              </Button>
-            ) : (
-              <Button onClick={handleExportCSV} className="bg-magenta hover:bg-magenta/90 text-white">
-                <Download className="h-4 w-4 mr-2" /> Export CSV Ledger
-              </Button>
-            )}
-          </div>
+          activeTab === "monthly" ? (
+            <Button onClick={() => setModalOpen(true)} className="bg-magenta hover:bg-magenta/90 text-white">
+              <Plus className="h-4 w-4 mr-2" /> Generate Custom Report
+            </Button>
+          ) : (
+            <Button onClick={handleExportCSV} className="bg-magenta hover:bg-magenta/90 text-white">
+              <Download className="h-4 w-4 mr-2" /> Export CSV Ledger
+            </Button>
+          )
         }
       />
 
