@@ -314,9 +314,8 @@ export function useActivateCollegeAmbassadors() {
     mutationFn: (studentUserIds: string[]) => collegeService.activateAmbassadors(studentUserIds),
     onSuccess: (response) => {
       if (response.success) {
-        toast.success("Ambassadors activated", { description: response.message || "Students successfully promoted." });
-        queryClient.invalidateQueries({ queryKey: collegeKeys.students() });
-        queryClient.invalidateQueries({ queryKey: [...collegeKeys.all, "ambassadors"] });
+        toast.success("Ambassador activated", { description: response.message || "Student promoted to Campus Ambassador." });
+        queryClient.invalidateQueries({ queryKey: collegeKeys.all });
       } else {
         toast.error("Failed to activate", { description: response.message || "Please try again." });
       }
@@ -334,8 +333,7 @@ export function useDeactivateCollegeAmbassador() {
     onSuccess: (response) => {
       if (response.success) {
         toast.success("Ambassador deactivated", { description: response.message || "Student ambassador status removed." });
-        queryClient.invalidateQueries({ queryKey: collegeKeys.students() });
-        queryClient.invalidateQueries({ queryKey: [...collegeKeys.all, "ambassadors"] });
+        queryClient.invalidateQueries({ queryKey: collegeKeys.all });
       } else {
         toast.error("Failed to deactivate", { description: response.message || "Please try again." });
       }
