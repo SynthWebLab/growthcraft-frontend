@@ -90,7 +90,13 @@ const CollegeStudents = () => {
       label: "Status",
       render: (row) => (
         <StatusPill
-          variant={row.status === "completed" ? "completed" : row.status === "pending" ? "pending" : "active"}
+          variant={
+            row.status === "completed"
+              ? "completed"
+              : (row.status === "active" || row.isAmbassador)
+              ? "active"
+              : "pending"
+          }
         />
       ),
     },
@@ -132,12 +138,19 @@ const CollegeStudents = () => {
   const cohort = cohortRes?.data;
   const subscribed = cohort?.subscribed ?? true;
 
-  const filtered = filter === "all" ? students : students.filter((s) => s.status === filter);
+  const filtered = filter === "all"
+    ? students
+    : students.filter((s) => {
+        if (filter === "active") return s.status === "active" || s.isAmbassador;
+        if (filter === "pending") return s.status === "pending" && !s.isAmbassador;
+        return s.status === filter;
+      });
+
   const chips = [
     { key: "all", label: "All", count: students.length },
-    { key: "active", label: "Active", count: students.filter((s) => s.status === "active").length },
+    { key: "active", label: "Active", count: students.filter((s) => s.status === "active" || s.isAmbassador).length },
     { key: "completed", label: "Completed", count: students.filter((s) => s.status === "completed").length },
-    { key: "pending", label: "Pending", count: students.filter((s) => s.status === "pending").length },
+    { key: "pending", label: "Pending", count: students.filter((s) => s.status === "pending" && !s.isAmbassador).length },
   ];
 
   const requireSubscription = () => {
