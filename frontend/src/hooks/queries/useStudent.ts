@@ -39,7 +39,9 @@ export function useStudentDashboard() {
   return useQuery({
     queryKey: studentKeys.dashboard(),
     queryFn: () => studentService.getDashboard(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -48,7 +50,9 @@ export function useStudentProfile() {
   return useQuery({
     queryKey: studentKeys.profile(),
     queryFn: () => studentService.getProfile(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -57,7 +61,9 @@ export function useStudentCourses() {
   return useQuery({
     queryKey: studentKeys.courses(),
     queryFn: () => studentService.getCourses(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -66,7 +72,9 @@ export function useStudentBootcamps() {
   return useQuery({
     queryKey: studentKeys.bootcamps(),
     queryFn: () => studentService.getBootcamps(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -75,7 +83,9 @@ export function useStudentWorkshops() {
   return useQuery({
     queryKey: studentKeys.workshops(),
     queryFn: () => studentService.getWorkshops(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -84,7 +94,9 @@ export function useStudentHackathons() {
   return useQuery({
     queryKey: studentKeys.hackathons(),
     queryFn: () => studentService.getHackathons(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -93,7 +105,9 @@ export function useStudentTrainingPrograms() {
   return useQuery({
     queryKey: studentKeys.trainingPrograms(),
     queryFn: () => studentService.getTrainingPrograms(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -102,7 +116,9 @@ export function useStudentCertificates() {
   return useQuery({
     queryKey: studentKeys.certificates(),
     queryFn: () => studentService.getCertificates(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -249,7 +265,9 @@ export function useStudentBatches() {
   return useQuery({
     queryKey: ["student", "batches"],
     queryFn: () => studentService.getBatches(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -260,7 +278,9 @@ export function useStudentHackathonWorkspace(slug: string) {
     queryKey: ["student", "hackathons", "workspace", slug],
     queryFn: () => studentService.getHackathonWorkspace(slug),
     enabled: !!slug,
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -278,6 +298,7 @@ export function useSubmitHackathonProject(slug: string) {
           description: "Your submission has been updated for mentor evaluation.",
         });
         queryClient.invalidateQueries({ queryKey: ["student", "hackathons", "workspace", slug] });
+        queryClient.invalidateQueries({ queryKey: studentKeys.all });
       }
     },
     onError: (error: any) => {
@@ -292,7 +313,9 @@ export function useStudentWorkshopWorkspace(slug: string) {
     queryKey: ["student", "workshops", "workspace", slug],
     queryFn: () => studentService.getWorkshopWorkspace(slug),
     enabled: !!slug,
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -310,6 +333,7 @@ export function useSubmitWorkshopAssignment(slug: string) {
           description: "Your workshop exercise submission has been saved.",
         });
         queryClient.invalidateQueries({ queryKey: ["student", "workshops", "workspace", slug] });
+        queryClient.invalidateQueries({ queryKey: studentKeys.all });
       }
     },
     onError: (error: any) => {
@@ -324,7 +348,9 @@ export function useStudentBootcampWorkspace(slug: string) {
     queryKey: ["student", "bootcamps", "workspace", slug],
     queryFn: () => studentService.getBootcampWorkspace(slug),
     enabled: !!slug,
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -342,6 +368,7 @@ export function useSubmitBootcampProject(slug: string) {
           description: "Your bootcamp capstone project submission has been saved.",
         });
         queryClient.invalidateQueries({ queryKey: ["student", "bootcamps", "workspace", slug] });
+        queryClient.invalidateQueries({ queryKey: studentKeys.all });
       }
     },
     onError: (error: any) => {
@@ -356,7 +383,9 @@ export function useStudentCourseWorkspace(slug: string) {
     queryKey: ["student", "courses", "workspace", slug],
     queryFn: () => studentService.getCourseWorkspace(slug),
     enabled: !!slug,
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }

@@ -25,7 +25,14 @@ export function useUserEnrollments() {
       if (!item) return false;
 
       // Unpaid pending checkouts are NOT active enrollments
-      const isConfirmed = item.status === "confirmed" || item.paymentStatus === "completed" || item.status === "Completed" || item.status === "Active";
+      const isConfirmed =
+        item.status === "confirmed" ||
+        item.status === "active" ||
+        item.status === "pending" ||
+        item.status === "enrolled" ||
+        item.paymentStatus === "completed" ||
+        item.status === "Completed" ||
+        item.status === "Active";
       if (!isConfirmed) return false;
 
       const id = (

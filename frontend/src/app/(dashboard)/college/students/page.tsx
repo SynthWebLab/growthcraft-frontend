@@ -1,24 +1,35 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import PanelDataTable, { Column } from "@/components/panel/PanelDataTable";
 import { StatusPill } from "@/components/panel";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, Loader2 } from "lucide-react";
+import { Download, Upload, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-import { useCollegeStudents, useCollegeCohort, useImportStudents, useActivateCollegeAmbassadors, useDeactivateCollegeAmbassador } from "@/hooks/queries/useCollege";
+import {
+  useCollegeStudents,
+  useCollegeCohort,
+  useActivateCollegeAmbassadors,
+  useDeactivateCollegeAmbassador,
+} from "@/hooks/queries/useCollege";
 import type { CollegeStudentRow } from "@/types/college";
+import { ImportStudentsModal, downloadSampleCsv } from "@/components/college/ImportStudentsModal";
 
 type Student = CollegeStudentRow;
 
 const exportColumns: { key: keyof Student; label: string }[] = [
-  { key: "name", label: "Name" },
-  { key: "email", label: "Email" },
-  { key: "courses", label: "Enrolled Courses/Events" },
-  { key: "avgProgress", label: "Avg Progress (%)" },
-  { key: "status", label: "Status" },
-  { key: "lastActive", label: "Last Active" },
+  { key: "name", label: "fullName" },
+  { key: "email", label: "email" },
+  { key: "phone", label: "phone" },
+  { key: "enrollmentNumber", label: "enrollmentNumber" },
+  { key: "degree", label: "degree" },
+  { key: "branch", label: "branch" },
+  { key: "yearOfStudy", label: "yearOfStudy" },
+  { key: "courses", label: "enrolledCourses" },
+  { key: "avgProgress", label: "avgProgressPercent" },
+  { key: "status", label: "status" },
+  { key: "lastActive", label: "lastActive" },
 ];
 
 const toCsvValue = (value: any) => {
@@ -33,11 +44,11 @@ const downloadCsv = (rows: Student[]) => {
     .join("\n");
   const csv = `${header}\n${body}`;
 
-  const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "students.csv";
+  link.download = "growthcraft_campus_students.csv";
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -46,11 +57,10 @@ const downloadCsv = (rows: Student[]) => {
 
 const CollegeStudents = () => {
   const [filter, setFilter] = useState<string>("all");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
 
   const { data, isLoading } = useCollegeStudents({ limit: 1000 });
   const { data: cohortRes } = useCollegeCohort();
-  const importStudents = useImportStudents();
   const activateAmbassadors = useActivateCollegeAmbassadors();
   const deactivateAmbassador = useDeactivateCollegeAmbassador();
 
@@ -69,6 +79,27 @@ const CollegeStudents = () => {
             <p className="text-xs text-muted-foreground">{row.email}</p>
           </div>
         </div>
+      ),
+    },
+    {
+      key: "enrollmentNumber",
+      label: "Roll / Reg No",
+      sortable: true,
+      render: (row) => (
+        <span className="text-xs font-mono text-foreground">
+          {row.enrollmentNumber || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "degree",
+      label: "Degree & Branch",
+      sortable: true,
+      render: (row) => (
+        <span className="text-xs text-muted-foreground">
+          {row.degree || row.branch ? `${row.degree || ""} ${row.branch || ""}`.trim() : "—"}
+          {row.yearOfStudy ? ` (Yr ${row.yearOfStudy})` : ""}
+        </span>
       ),
     },
     { key: "courses", label: "Enrolled Courses/Events", sortable: true },
@@ -166,15 +197,7 @@ const CollegeStudents = () => {
 
   const handleImportClick = () => {
     if (!subscribed) return requireSubscription();
-    fileInputRef.current?.click();
-  };
-
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-selecting the same file
-    if (!file) return;
-    const csv = await file.text();
-    importStudents.mutate({ csv });
+    setIsImportModalOpen(true);
   };
 
   return (
@@ -183,32 +206,28 @@ const CollegeStudents = () => {
         title="Students"
         description="Track students enrolled in GrowthCraft programs from your campus"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {cohort && (
               <span className="text-xs text-muted-foreground mr-1">
                 {cohort.used}
                 {cohort.unlimited ? "" : ` / ${cohort.limit}`} students
               </span>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={handleFile}
-            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadSampleCsv}
+              className="text-xs text-muted-foreground border-border hover:text-foreground"
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" /> Download Sample CSV
+            </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleImportClick}
-              disabled={importStudents.isPending}
+              className="bg-magenta/5 border-magenta/20 text-magenta hover:bg-magenta/10"
             >
-              {importStudents.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4 mr-2" />
-              )}
-              Import CSV
+              <Upload className="h-4 w-4 mr-2" /> Import CSV
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" /> Export CSV
@@ -244,6 +263,11 @@ const CollegeStudents = () => {
       ) : (
         <PanelDataTable columns={columns} data={filtered} searchKey="name" pageSize={10} />
       )}
+
+      <ImportStudentsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+      />
     </div>
   );
 };

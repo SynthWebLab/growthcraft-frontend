@@ -1,21 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import PanelDataTable, { Column } from "@/components/panel/PanelDataTable";
 import { useWorkshops } from "@/hooks/queries/useWorkshops";
+import { useCollegeDashboard } from "@/hooks/queries/useCollege";
 import { Button } from "@/components/ui/button";
-import { Users, AlertCircle } from "lucide-react";
+import { Users, AlertCircle, CheckCircle2 } from "lucide-react";
 import { ManageAccessDialog } from "@/components/college/ManageAccessDialog";
 import { Badge } from "@/components/ui/badge";
 
-type WorkshopRow = any; // We can use the Workshop type or any for list mapping
+type WorkshopRow = any;
 
 export default function CollegeWorkshopsPage() {
   const { data: response, isLoading, isError } = useWorkshops({ limit: 100 });
+  const { data: dashboardRes } = useCollegeDashboard();
+
   const [selectedWorkshop, setSelectedWorkshop] = useState<{ id: string; title: string } | null>(null);
 
-  const workshops = response?.items ?? [];
+  const allWorkshops = response?.items ?? [];
+  const dashboardData = (dashboardRes as any)?.data ?? dashboardRes;
+  const activeEventIds: string[] = dashboardData?.activeEventIds ?? [];
+
+  // Filter: ONLY show workshops enrolled by this college
+  const workshops = allWorkshops.filter((row: any) =>
+    activeEventIds.includes(String(row.id || row._id)) || row.isEnrolled
+  );
 
   const columns: Column<WorkshopRow>[] = [
     {
@@ -54,42 +65,12 @@ export default function CollegeWorkshopsPage() {
       ),
     },
     {
-      key: "capacity",
-      label: "Enrollments",
-      render: (row) => (
-        <div className="flex flex-col gap-1 w-24">
-          <div className="flex justify-between text-xs font-medium text-muted-foreground">
-            <span>{row.enrolledCount ?? 0} enrolled</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-            <div
-              className="bg-magenta rounded-full h-1.5 transition-all duration-300"
-              style={{
-                width: `${Math.min(
-                  100,
-                  (((row.enrolledCount ?? 0) / (row.maxSeats || 100)) * 100)
-                )}%`,
-              }}
-            />
-          </div>
-        </div>
-      ),
-    },
-    {
       key: "status",
-      label: "Status",
+      label: "Campus Access Status",
       sortable: true,
-      render: (row) => (
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold select-none capitalize ${
-            row.status === "Open"
-              ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-              : row.status === "Closed"
-              ? "bg-amber-50 text-amber-700 border border-amber-100"
-              : "bg-muted text-muted-foreground border border-border"
-          }`}
-        >
-          {row.status}
+      render: () => (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+          <CheckCircle2 className="h-3 w-3" /> Campus Enrolled
         </span>
       ),
     },
@@ -113,8 +94,8 @@ export default function CollegeWorkshopsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Workshops"
-        description="View all workshops and authorize cohort students to join them"
+        title="Enrolled Workshops"
+        description="View workshops enrolled by your campus cohort and manage student access"
       />
 
       {isError && (
@@ -126,6 +107,19 @@ export default function CollegeWorkshopsPage() {
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground py-8">Loading workshops…</div>
+      ) : workshops.length === 0 ? (
+        <div className="rounded-xl border border-border bg-white p-8 text-center space-y-3">
+          <Users className="h-10 w-10 text-muted-foreground mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">No Enrolled Workshops</h3>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Your college has not enrolled in any workshops yet. Explore public workshops to enroll your campus cohort.
+          </p>
+          <Link href="/events?tab=workshops">
+            <Button variant="default" size="sm" className="bg-magenta hover:bg-magenta/90 text-white text-xs">
+              Explore All Workshops
+            </Button>
+          </Link>
+        </div>
       ) : (
         <PanelDataTable
           columns={columns}
