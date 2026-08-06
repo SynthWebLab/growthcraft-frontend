@@ -85,7 +85,9 @@ export function useCollegeReports() {
   return useQuery({
     queryKey: collegeKeys.reports(),
     queryFn: () => collegeService.getReports(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time automatic background sync every 5 seconds
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -291,6 +293,9 @@ export function useCollegeAttendance(params?: {
   return useQuery({
     queryKey: [...collegeKeys.all, "attendance", params],
     queryFn: () => collegeService.getAttendance(params),
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time automatic background sync every 5 seconds
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -298,6 +303,9 @@ export function useCollegeAttendanceSummary() {
   return useQuery({
     queryKey: [...collegeKeys.all, "attendance", "summary"],
     queryFn: () => collegeService.getAttendanceSummary(),
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time automatic background sync every 5 seconds
+    refetchOnWindowFocus: true,
   });
 }
 
