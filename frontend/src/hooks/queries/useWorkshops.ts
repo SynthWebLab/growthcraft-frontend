@@ -42,7 +42,9 @@ export function useWorkshops(params?: WorkshopQueryParams) {
   return useQuery({
     queryKey: workshopKeys.list(params),
     queryFn: () => workshopService.getWorkshops(params),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
   });
 }
 

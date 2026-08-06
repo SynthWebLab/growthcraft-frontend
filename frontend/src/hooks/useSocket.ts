@@ -65,6 +65,10 @@ export function useSocket() {
       void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
       void queryClient.invalidateQueries({ queryKey: ["college"] });
       void queryClient.invalidateQueries({ queryKey: ["student"] });
+      void queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      void queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+      void queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      void queryClient.invalidateQueries({ queryKey: ["events"] });
     };
 
     socket.on("notification", handleNotification);

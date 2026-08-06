@@ -40,7 +40,9 @@ export function useCollegeDashboard() {
   return useQuery({
     queryKey: collegeKeys.dashboard(),
     queryFn: () => collegeService.getDashboard(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -49,7 +51,9 @@ export function useCollegeCohort() {
   return useQuery({
     queryKey: collegeKeys.cohort(),
     queryFn: () => collegeService.getCohort(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -58,7 +62,9 @@ export function useCollegeStudents(query: CollegeStudentsQuery = {}) {
   return useQuery({
     queryKey: collegeKeys.students(query),
     queryFn: () => collegeService.getStudents(query),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -258,6 +264,9 @@ export function useEventAccessStudents(eventId: string) {
     queryKey: collegeKeys.eventAccess(eventId),
     queryFn: () => collegeService.getEventAccessStudents(eventId),
     enabled: !!eventId,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -274,6 +283,11 @@ export function useUpdateEventAccess() {
     onSuccess: (response, variables) => {
       if (response.success) {
         queryClient.invalidateQueries({ queryKey: collegeKeys.eventAccess(variables.eventId) });
+        queryClient.invalidateQueries({ queryKey: collegeKeys.all });
+        queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+        queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+        queryClient.invalidateQueries({ queryKey: ["workshops"] });
+        queryClient.invalidateQueries({ queryKey: ["events"] });
       }
     },
     onError: (error: any) => {
