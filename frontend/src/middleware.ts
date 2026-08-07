@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
+import { LAUNCH_CONFIG } from '@/config/launch.config';
 
 // Define public routes that don't require authentication
 const publicRoutes = [
   '/',
+  '/coming-soon',
   '/about',
   '/courses',
   '/bootcamps',
@@ -89,6 +91,17 @@ function getTargetRoleFromPath(pathname: string): string | null {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Coming Soon Strict Mode: Redirect all public & auth pages to /coming-soon
+  if (
+    LAUNCH_CONFIG.IS_COMING_SOON_MODE &&
+    pathname !== '/coming-soon' &&
+    !pathname.startsWith('/_next') &&
+    !pathname.startsWith('/api') &&
+    !pathname.includes('.')
+  ) {
+    return NextResponse.redirect(new URL('/coming-soon', request.url));
+  }
 
   // Check authentication status
   const { isAuthenticated, user } = await checkAuth(request);

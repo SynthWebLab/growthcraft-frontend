@@ -19,6 +19,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useCourses } from "@/hooks/queries/useCourses";
 import logoMain from "@/assets/logo-main.png";
 
+import { LAUNCH_CONFIG } from "@/config/launch.config";
+
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,6 +30,8 @@ export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { data: user, isLoading } = useCurrentUser();
+
+  const isComingSoon = LAUNCH_CONFIG.IS_COMING_SOON_MODE;
 
   // Debounce search query
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -76,7 +80,7 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center">
+          <Link href={isComingSoon ? "/coming-soon" : "/"} className="flex items-center">
             <Image
               src={logoMain}
               alt="GrowthCraft"
@@ -88,88 +92,93 @@ export const Navbar = () => {
             />
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5">
-            {NAV_ROUTES.map((link) => (
-              <Link
-                key={link.path}
-                href={link.path}
-                className={`px-1.5 2xl:px-2.5 py-2 rounded-lg text-xs 2xl:text-sm font-medium transition-colors whitespace-nowrap ${
-                  pathname === link.path
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-              >
-                {link.name}
-              </Link>
-            ))}
-          </div>
-
-          {/* CTA Buttons — rendered only after mount to avoid SSR/client hydration mismatch */}
-          <div className="hidden xl:flex items-center gap-2">
-            {!mounted ? (
-              // Skeleton placeholder matching the size of the buttons — avoids layout shift
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-16 rounded-md bg-muted animate-pulse" />
-                <div className="h-8 w-20 rounded-md bg-muted animate-pulse" />
+          {/* If Coming Soon Mode is ACTIVE, hide all main menu links, CTA buttons & mobile trigger */}
+          {!isComingSoon && (
+            <>
+              {/* Desktop Navigation */}
+              <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5">
+                {NAV_ROUTES.map((link) => (
+                  <Link
+                    key={link.path}
+                    href={link.path}
+                    className={`px-1.5 2xl:px-2.5 py-2 rounded-lg text-xs 2xl:text-sm font-medium transition-colors whitespace-nowrap ${
+                      pathname === link.path
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
               </div>
-            ) : user && user.isEmailVerified ? (
-              // Logged in and verified - Show Dashboard button
-              <Button asChild size="sm">
-                <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'}>
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  Dashboard
-                </Link>
-              </Button>
-            ) : (
-              // Not logged in or not verified - Show Login/Register
-              <>
-                {/* Login Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      Login <ChevronDown className="ml-1 h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {LOGIN_ROUTES.map((opt) => (
-                      <DropdownMenuItem key={opt.path} asChild>
-                        <Link href={opt.path}>{opt.label}</Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
 
-                {/* Get Started Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm">
-                      Sign Up <ChevronDown className="ml-1 h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {REGISTER_ROUTES.map((opt) => (
-                      <DropdownMenuItem key={opt.path} asChild>
-                        <Link href={opt.path}>{opt.label}</Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            )}
-          </div>
+              {/* CTA Buttons — rendered only after mount to avoid SSR/client hydration mismatch */}
+              <div className="hidden xl:flex items-center gap-2">
+                {!mounted ? (
+                  // Skeleton placeholder matching the size of the buttons — avoids layout shift
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-16 rounded-md bg-muted animate-pulse" />
+                    <div className="h-8 w-20 rounded-md bg-muted animate-pulse" />
+                  </div>
+                ) : user && user.isEmailVerified ? (
+                  // Logged in and verified - Show Dashboard button
+                  <Button asChild size="sm">
+                    <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </Button>
+                ) : (
+                  // Not logged in or not verified - Show Login/Register
+                  <>
+                    {/* Login Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          Login <ChevronDown className="ml-1 h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {LOGIN_ROUTES.map((opt) => (
+                          <DropdownMenuItem key={opt.path} asChild>
+                            <Link href={opt.path}>{opt.label}</Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="xl:hidden p-2 rounded-lg hover:bg-muted"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+                    {/* Get Started Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm">
+                          Sign Up <ChevronDown className="ml-1 h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {REGISTER_ROUTES.map((opt) => (
+                          <DropdownMenuItem key={opt.path} asChild>
+                            <Link href={opt.path}>{opt.label}</Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                )}
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                className="xl:hidden p-2 rounded-lg hover:bg-muted"
+                onClick={() => setIsOpen(!isOpen)}
+              >
+                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu */}
-        {isOpen && (
+        {!isComingSoon && isOpen && (
           <div className="xl:hidden py-4 border-t border-border animate-fade-in max-h-[calc(100vh-5rem)] overflow-y-auto">
             <div className="flex flex-col gap-2">
               {NAV_ROUTES.map((link) => (
