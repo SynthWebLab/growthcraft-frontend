@@ -297,6 +297,10 @@ export const adminService = {
     return apiClient.patch<any>(API_ENDPOINTS.admin.eventPublish(id), {});
   },
 
+  toggleEventStatus: async (id: string, status?: string): Promise<any> => {
+    return apiClient.patch<any>(`${API_ENDPOINTS.admin.events}/${id}/status`, { status });
+  },
+
   deleteEvent: async (id: string): Promise<any> => {
     return apiClient.delete<any>(API_ENDPOINTS.admin.eventDetail(id));
   },

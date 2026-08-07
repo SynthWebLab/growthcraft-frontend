@@ -44,7 +44,7 @@ export function useSocket() {
 
     const handleNotification = (notification: any) => {
       const msg = getNotificationToastMessage(notification);
-      
+
       toast.info(msg, {
         duration: 5000,
         action: {
@@ -73,6 +73,17 @@ export function useSocket() {
 
     socket.on("notification", handleNotification);
 
+    const handleEventUpdate = (data: any) => {
+      console.log("Real-time event update received:", data);
+      void queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      void queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+      void queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      void queryClient.invalidateQueries({ queryKey: ["events"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+    };
+
+    socket.on("event.updated", handleEventUpdate);
+
     let isRefreshing = false;
 
     socket.on("connect_error", async (err) => {
@@ -98,6 +109,7 @@ export function useSocket() {
 
     return () => {
       socket.off("notification", handleNotification);
+      socket.off("event.updated", handleEventUpdate);
       socket.disconnect();
     };
   }, [user, isAuthenticated, queryClient]);

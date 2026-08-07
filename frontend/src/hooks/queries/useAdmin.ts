@@ -601,7 +601,7 @@ export function usePublishEvent() {
   return useMutation({
     mutationFn: (id: string) => adminService.publishEvent(id),
     onSuccess: (res: any) => {
-      toast.success(res?.message || "Event status updated");
+      toast.success(res?.message || "Event publish status updated");
       queryClient.invalidateQueries({ queryKey: adminKeys.events() });
       queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -610,6 +610,25 @@ export function usePublishEvent() {
     },
     onError: (err) => {
       toast.error(extractApiError(err, "Failed to update event status"));
+    },
+  });
+}
+
+export function useToggleEventStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status?: string }) =>
+      adminService.toggleEventStatus(id, status),
+    onSuccess: (res: any) => {
+      toast.success(res?.message || "Event registration status updated");
+      queryClient.invalidateQueries({ queryKey: adminKeys.events() });
+      queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+    },
+    onError: (err) => {
+      toast.error(extractApiError(err, "Failed to toggle event registration status"));
     },
   });
 }

@@ -8,6 +8,7 @@ import {
   useUpdateEvent,
   useDeleteEvent,
   usePublishEvent,
+  useToggleEventStatus,
   useAdminMentors,
 } from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
@@ -36,6 +37,8 @@ import { Check, Flame, Plus } from "lucide-react";
 
 const EVENT_TYPES = ["Workshop", "Bootcamp", "Hackathon"];
 
+const STATUS_OPTIONS = ["Open", "Closed", "Completed", "Draft"];
+
 const DOMAINS = [
   "Full Stack Development",
   "Data Science & AI",
@@ -55,6 +58,7 @@ const EMPTY_FORM = {
   type: "Bootcamp",
   domain: "Full Stack Development",
   mode: "Online",
+  status: "Open",
   durationDays: "30",
   price: "0",
   maxSeats: "50",
@@ -84,6 +88,7 @@ function AdminEventsContent() {
   const updateMutation = useUpdateEvent();
   const deleteMutation = useDeleteEvent();
   const publishMutation = usePublishEvent();
+  const toggleStatusMutation = useToggleEventStatus();
 
   /* Derive data */
   const rawEvents =
@@ -131,6 +136,7 @@ function AdminEventsContent() {
       type: event.type || "Bootcamp",
       domain: event.domain || "Full Stack Development",
       mode: event.mode || "Online",
+      status: event.status || (event.isPublished ? "Open" : "Draft"),
       durationDays: (event.durationDays || event.duration || "30").toString(),
       price: (event.price ?? "0").toString(),
       maxSeats: (event.maxSeats ?? "50").toString(),
@@ -155,6 +161,13 @@ function AdminEventsContent() {
     publishMutation.mutate(id);
   };
 
+  const handleStatusToggle = (event: any) => {
+    const id = event._id || event.id;
+    const currentStatus = event.status || (event.isPublished ? "Open" : "Closed");
+    const nextStatus = currentStatus === "Open" ? "Closed" : "Open";
+    toggleStatusMutation.mutate({ id, status: nextStatus });
+  };
+
   const handleFeatureToggle = (event: any) => {
     const id = event._id || event.id;
     updateMutation.mutate({
@@ -172,6 +185,7 @@ function AdminEventsContent() {
       type: formData.type,
       domain: formData.domain,
       mode: formData.mode,
+      status: formData.status,
       durationDays: formData.durationDays ? parseInt(formData.durationDays) : 30,
       price: formData.price ? parseFloat(formData.price) : 0,
       maxSeats: formData.maxSeats ? parseInt(formData.maxSeats) : 50,
@@ -204,7 +218,7 @@ function AdminEventsContent() {
     },
     {
       key: "isPublished",
-      label: "Status",
+      label: "Visibility",
       render: (v: boolean, row: any) => (
         <button
           onClick={(e) => { e.stopPropagation(); handlePublishToggle(row); }}
@@ -217,6 +231,28 @@ function AdminEventsContent() {
           {v ? "Published" : "Draft"}
         </button>
       ),
+    },
+    {
+      key: "status",
+      label: "Reg Status",
+      render: (v: string, row: any) => {
+        const statusVal = v || row.status || (row.isPublished ? "Open" : "Closed");
+        const isOpen = statusVal === "Open";
+        return (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleStatusToggle(row); }}
+            title="Click to toggle Open/Closed seat registration"
+            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+              isOpen
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20"
+                : "bg-rose-500/10 text-rose-600 border-rose-500/30 hover:bg-rose-500/20"
+            }`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${isOpen ? "bg-emerald-500" : "bg-rose-500"}`} />
+            {isOpen ? "Open" : statusVal}
+          </button>
+        );
+      },
     },
     {
       key: "isFeatured",
@@ -334,6 +370,17 @@ function AdminEventsContent() {
                   <SelectTrigger><SelectValue placeholder="Select mode" /></SelectTrigger>
                   <SelectContent>
                     {MODES.map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Registration Status */}
+              <div className="space-y-2">
+                <Label>Registration Status <span className="text-red-500">*</span></Label>
+                <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
