@@ -92,15 +92,15 @@ function getTargetRoleFromPath(pathname: string): string | null {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Coming Soon Strict Mode: Redirect all public & auth pages to /coming-soon
+  // Coming Soon Strict Mode: Redirect all pages to / when in coming-soon mode
   if (
     LAUNCH_CONFIG.IS_COMING_SOON_MODE &&
-    pathname !== '/coming-soon' &&
+    pathname !== '/' &&
     !pathname.startsWith('/_next') &&
     !pathname.startsWith('/api') &&
     !pathname.includes('.')
   ) {
-    return NextResponse.redirect(new URL('/coming-soon', request.url));
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   // Check authentication status
