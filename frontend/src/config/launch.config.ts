@@ -1,6 +1,6 @@
 export const LAUNCH_CONFIG = {
   // Feature flag: Toggle Coming Soon mode on homepage. Set to true to redirect to /coming-soon by default.
-  IS_COMING_SOON_MODE: true,
+  IS_COMING_SOON_MODE: false,
 
   event: {
     badge: "1ST EDITION. FOUNDING YEAR",
