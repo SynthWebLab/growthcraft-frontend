@@ -80,7 +80,7 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <Link href={isComingSoon ? "/coming-soon" : "/"} className="flex items-center">
+          <Link href="/" className="flex items-center">
             <Image
               src={logoMain}
               alt="GrowthCraft"
