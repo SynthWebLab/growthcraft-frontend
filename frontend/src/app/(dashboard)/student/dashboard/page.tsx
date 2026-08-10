@@ -116,7 +116,7 @@ const StudentDashboard = () => {
   };
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-6 sm:space-y-8 p-4 sm:p-0">
       <PageHeader
         title={title}
         description="Track your enrollments and recent activity"
@@ -124,7 +124,7 @@ const StudentDashboard = () => {
       />
 
       {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {isLoading ? (
           [0, 1, 2, 3].map((i) => (
             <div
@@ -143,9 +143,9 @@ const StudentDashboard = () => {
       </div>
 
       {/* Recent Courses */}
-      <DataCard>
+      <DataCard className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-foreground font-display">Recent Courses</h2>
+          <h2 className="text-base sm:text-lg font-bold text-foreground font-display">Recent Courses</h2>
           <Link href="/student/courses">
             <Button variant="ghost" size="sm" className="text-xs">
               View all <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -153,13 +153,13 @@ const StudentDashboard = () => {
           </Link>
         </div>
         {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <div key={i} className="h-28 rounded-xl border border-border bg-white animate-pulse" />
             ))}
           </div>
         ) : recentCourses.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             No course enrollments yet.{" "}
             <Link href="/courses" className="text-magenta font-medium">
               Browse courses
@@ -167,7 +167,7 @@ const StudentDashboard = () => {
             .
           </p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {recentCourses.map((enrollment) => {
               const course = resolveRef(enrollment.courseId);
               const badge = statusBadge(enrollment.status);
@@ -180,14 +180,14 @@ const StudentDashboard = () => {
                   <div>
                     <div className="flex items-start justify-between mb-3">
                       <span className="text-3xl">📘</span>
-                      <Badge variant="secondary" className={badge.className}>
+                      <Badge variant="secondary" className={`text-[10px] sm:text-xs ${badge.className}`}>
                         {badge.label}
                       </Badge>
                     </div>
-                    <h3 className="font-semibold text-foreground text-sm mb-1">
+                    <h3 className="font-semibold text-foreground text-xs sm:text-sm mb-1 leading-snug truncate">
                       {course?.title ?? enrollment.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
                       Enrolled {formatDate(enrollment.enrollmentDate)}
                     </p>
                   </div>
@@ -223,9 +223,9 @@ const StudentDashboard = () => {
       </DataCard>
 
       {/* Recent Events */}
-      <DataCard>
+      <DataCard className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-foreground font-display">Recent Events</h2>
+          <h2 className="text-base sm:text-lg font-bold text-foreground font-display">Recent Events</h2>
           <Link href="/student/bootcamps">
             <Button variant="ghost" size="sm" className="text-xs">
               View all <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -239,7 +239,7 @@ const StudentDashboard = () => {
             ))}
           </div>
         ) : recentEvents.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             No event registrations yet.{" "}
             <Link href="/events" className="text-magenta font-medium">
               Explore events
@@ -259,37 +259,39 @@ const StudentDashboard = () => {
               const eventStartDate = enrollment.status === "confirmed" && (event as any)?.startDate
                 ? new Date((event as any).startDate)
                 : null;
-
+ 
               return (
                 <div
                   key={enrollment._id}
-                  className="flex items-center gap-4 rounded-lg border border-border bg-white p-4"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border bg-white p-4"
                 >
-                  <CalendarDays className="h-5 w-5 text-magenta shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-foreground truncate">
-                      {event?.title ?? enrollment.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      {enrollment.eventType} · Enrolled {formatDate(enrollment.enrollmentDate)}
-                    </p>
-                    {expiryDate && (
-                      <div className="flex flex-wrap items-center gap-3 mt-1">
-                        <CountdownTimer targetDate={expiryDate} labelPrefix="Hold expires in" />
-                        <button
-                          type="button"
-                          className="bg-magenta text-white hover:bg-magenta/90 text-[10px] px-3 py-1 rounded-md font-bold transition-colors"
-                          onClick={() => handlePayNow(enrollment, event?.title ?? enrollment.title, enrollment.eventType.toLowerCase() as any)}
-                        >
-                          Pay Now
-                        </button>
-                      </div>
-                    )}
-                    {eventStartDate && eventStartDate.getTime() > Date.now() && (
-                      <CountdownTimer targetDate={eventStartDate} labelPrefix="Starts in" />
-                    )}
+                  <div className="flex items-start sm:items-center gap-3 min-w-0">
+                    <CalendarDays className="h-5 w-5 text-magenta shrink-0 mt-0.5 sm:mt-0" />
+                    <div className="min-w-0">
+                      <h4 className="text-xs sm:text-sm font-semibold text-foreground truncate">
+                        {event?.title ?? enrollment.title}
+                      </h4>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                        {enrollment.eventType} · Enrolled {formatDate(enrollment.enrollmentDate)}
+                      </p>
+                      {expiryDate && (
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          <CountdownTimer targetDate={expiryDate} labelPrefix="Hold expires in" />
+                          <button
+                            type="button"
+                            className="bg-magenta text-white hover:bg-magenta/90 text-[10px] px-2.5 py-1 rounded-md font-bold transition-colors"
+                            onClick={() => handlePayNow(enrollment, event?.title ?? enrollment.title, enrollment.eventType.toLowerCase() as any)}
+                          >
+                            Pay Now
+                          </button>
+                        </div>
+                      )}
+                      {eventStartDate && eventStartDate.getTime() > Date.now() && (
+                        <CountdownTimer targetDate={eventStartDate} labelPrefix="Starts in" />
+                      )}
+                    </div>
                   </div>
-                  <Badge variant="secondary" className={badge.className}>
+                  <Badge variant="secondary" className={`w-fit text-[10px] sm:text-xs shrink-0 ${badge.className}`}>
                     {badge.label}
                   </Badge>
                 </div>
