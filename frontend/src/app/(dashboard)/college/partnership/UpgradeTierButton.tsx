@@ -20,7 +20,7 @@ const UpgradeTierButton = ({ currentTier, nextTier }: UpgradeTierButtonProps) =>
 
   if (!nextTier) {
     return (
-      <Button size="sm" variant="outline" disabled>
+      <Button size="sm" variant="outline" disabled className="w-fit h-10 rounded-xl font-semibold px-5">
         <Sparkles className="h-4 w-4 mr-1" /> Highest Tier
       </Button>
     );
@@ -36,11 +36,11 @@ const UpgradeTierButton = ({ currentTier, nextTier }: UpgradeTierButtonProps) =>
   return (
     <>
       <Button
-        className="bg-magenta hover:bg-magenta/90 text-white"
+        className="bg-magenta hover:bg-magenta/90 text-white w-fit h-10 rounded-xl font-semibold px-5"
         size="sm"
         onClick={() => setOpen(true)}
       >
-        <ArrowUpRight className="h-4 w-4 mr-1" /> Upgrade Tier
+        <ArrowUpRight className="h-4 w-4 mr-1.5" /> Upgrade Tier
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
