@@ -66,25 +66,25 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 p-4 sm:p-0">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Bell className="h-7 w-7 text-magenta" />
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Bell className="h-6 w-6 sm:h-7 sm:w-7 text-magenta shrink-0" />
             Notifications Inbox
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Manage your real-time alerts, system confirmations, and event updates.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={() => void refetch()}
             disabled={isLoading}
-            className="h-9 gap-1.5"
+            className="h-9 gap-1.5 flex-1 md:flex-none text-xs sm:text-sm"
           >
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
             Refresh
@@ -95,7 +95,7 @@ export default function NotificationsPage() {
               size="sm"
               onClick={handleMarkAllRead}
               disabled={markAllRead.isPending}
-              className="h-9 gap-1.5 bg-magenta hover:bg-magenta/90 text-white"
+              className="h-9 gap-1.5 bg-magenta hover:bg-magenta/90 text-white flex-1 md:flex-none text-xs sm:text-sm"
             >
               <CheckCircle2 className="h-4 w-4" />
               Mark All Read
@@ -104,21 +104,21 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Notifications</CardTitle>
-          <CardDescription>
+      <Card className="border-border/60">
+        <CardHeader className="p-4 sm:p-6 pb-2">
+          <CardTitle className="text-base sm:text-lg">All Notifications</CardTitle>
+          <CardDescription className="text-xs">
             Showing {notifications.length} of {pagination.total || 0} total logs.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-4 sm:p-6 space-y-4 pt-0">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-2">
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-magenta border-t-transparent" />
-              <span className="text-sm text-muted-foreground">Loading inbox...</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">Loading inbox...</span>
             </div>
           ) : notifications.length > 0 ? (
-            <div className="divide-y divide-border rounded-md border border-border">
+            <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
               {notifications.map((notif: any) => {
                 const details = getNotificationDetails(notif);
                 const isUnread = !notif.readAt;
@@ -131,22 +131,22 @@ export default function NotificationsPage() {
                       isUnread && "bg-magenta/[0.02]"
                     )}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={cn("mt-0.5 rounded-full p-2 border", details.color)}>
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className={cn("mt-0.5 rounded-full p-2 border shrink-0", details.color)}>
                         <Bell className="h-4 w-4" />
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className={cn("font-medium text-sm", isUnread && "font-bold text-foreground")}>
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={cn("font-medium text-xs sm:text-sm", isUnread && "font-bold text-foreground")}>
                             {details.title}
                           </span>
                           {isUnread && (
-                            <Badge variant="default" className="bg-magenta hover:bg-magenta text-[9px] px-1.5 py-0">
+                            <Badge variant="default" className="bg-magenta hover:bg-magenta text-[9px] px-1.5 py-0 font-semibold shadow-none border-none">
                               Unread
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground max-w-xl">
+                        <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
                           {details.description}
                         </p>
                         <p className="text-[10px] text-muted-foreground/80">
@@ -161,7 +161,7 @@ export default function NotificationsPage() {
                         variant="ghost"
                         onClick={() => handleMarkRead(notif._id)}
                         disabled={markRead.isPending}
-                        className="self-start sm:self-center text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+                        className="self-start sm:self-center text-xs text-muted-foreground hover:text-foreground hover:bg-muted w-full sm:w-auto shrink-0"
                       >
                         Mark as Read
                       </Button>
@@ -171,10 +171,10 @@ export default function NotificationsPage() {
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed rounded-lg border-border">
-              <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
-              <CardTitle className="text-lg font-medium">Inbox is empty</CardTitle>
-              <CardDescription className="max-w-xs mt-1">
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center border border-dashed rounded-xl border-border bg-muted/5">
+              <Inbox className="h-12 w-12 text-muted-foreground/40 mb-4" />
+              <CardTitle className="text-base sm:text-lg font-medium text-foreground">Inbox is empty</CardTitle>
+              <CardDescription className="max-w-xs mt-1 text-xs sm:text-sm">
                 You have no notifications or alerts logged at this time.
               </CardDescription>
             </div>
@@ -182,28 +182,32 @@ export default function NotificationsPage() {
 
           {/* Pagination controls */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-end space-x-2 pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Previous
-              </Button>
-              <div className="text-xs text-muted-foreground">
-                Page {page} of {pagination.totalPages}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border/50">
+              <div className="text-xs text-muted-foreground order-2 sm:order-1">
+                Page <strong>{page}</strong> of <strong>{pagination.totalPages}</strong>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                disabled={page === pagination.totalPages}
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end order-1 sm:order-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="text-xs h-8 flex-1 sm:flex-none"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                  disabled={page === pagination.totalPages}
+                  className="text-xs h-8 flex-1 sm:flex-none"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
