@@ -39,7 +39,7 @@ export function PageHeader({
             </p>
           )}
         </div>
-        {action && <div className="flex-shrink-0">{action}</div>}
+        {action && <div className="flex-shrink-0 w-full md:w-auto">{action}</div>}
       </div>
     </div>
   );

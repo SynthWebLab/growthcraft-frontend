@@ -17,20 +17,20 @@ export default function StudentMentorsPage() {
   );
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-6 sm:space-y-8 p-4 sm:p-0">
       <PageHeader
         title="Cohort Mentors"
         description="View the expert mentors assigned to your enrolled batches. All mentor sessions are conducted offline during scheduled batch timings."
       />
 
       {/* Available mentors */}
-      <DataCard>
-        <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+      <DataCard className="p-4 sm:p-6">
+        <h3 className="font-bold text-sm sm:text-base text-foreground mb-5 flex items-center gap-2">
           <Users className="h-5 w-5 text-magenta" /> Assigned Mentors
         </h3>
         
         {mentorsLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <div key={i} className="h-40 rounded-lg border border-border bg-white animate-pulse" />
             ))}
@@ -42,31 +42,31 @@ export default function StudentMentorsPage() {
             description="You will see assigned mentors once your cohorts start."
           />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {mentors.map((mentor: any) => {
               const name = mentor.userId?.fullName || "Mentor";
               const initials = name.split(" ").map((n: any) => n[0]).join("").slice(0, 2).toUpperCase();
 
               return (
-                <div key={mentor._id} className="rounded-lg border border-border bg-white p-5 flex flex-col justify-between h-full">
+                <div key={mentor._id} className="rounded-lg border border-border bg-white p-4 sm:p-5 flex flex-col justify-between h-full">
                   <div>
                     <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-full bg-magenta/10 flex items-center justify-center text-sm font-bold text-magenta shrink-0">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-magenta/10 flex items-center justify-center text-xs sm:text-sm font-bold text-magenta shrink-0">
                           {initials}
                         </div>
                         <div className="min-w-0">
-                          <h4 className="text-sm font-semibold text-foreground truncate">
+                          <h4 className="text-xs sm:text-sm font-semibold text-foreground truncate">
                             {name}
                           </h4>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                             {mentor.areaOfExpertise}
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 mb-3 text-[10px] sm:text-xs text-muted-foreground font-medium">
                       <span>{mentor.experienceYears}+ years exp</span>
                       {mentor.currentOrganization && (
                         <span className="truncate">· {mentor.currentOrganization}</span>
@@ -74,7 +74,7 @@ export default function StudentMentorsPage() {
                     </div>
 
                     {mentor.bio && (
-                      <p className="text-xs text-muted-foreground line-clamp-3 mb-4">
+                      <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-3 mb-4 leading-relaxed">
                         {mentor.bio}
                       </p>
                     )}
@@ -82,7 +82,7 @@ export default function StudentMentorsPage() {
                     {mentor.specializations && mentor.specializations.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-4">
                         {mentor.specializations.map((spec: string, index: number) => (
-                          <Badge key={index} variant="secondary" className="text-[10px] py-0 px-1.5">
+                          <Badge key={index} variant="secondary" className="text-[9px] sm:text-[10px] py-0.5 px-2 hover:bg-muted shadow-none bg-muted text-muted-foreground border-none font-medium">
                             {spec}
                           </Badge>
                         ))}
@@ -90,7 +90,7 @@ export default function StudentMentorsPage() {
                     )}
                   </div>
 
-                  <div className="flex gap-2 pt-3 border-t border-border/50 mt-auto">
+                  <div className="flex gap-2.5 pt-3 border-t border-border/50 mt-auto items-center">
                     {mentor.linkedinUrl && (
                       <a
                         href={mentor.linkedinUrl}

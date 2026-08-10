@@ -278,29 +278,110 @@ const CollegeReports = () => {
     toast.success("CSV Exported successfully!");
   };
 
+  const renderMobileMonthlyCard = (row: Report) => {
+    return (
+      <div className="space-y-3.5 text-xs">
+        {/* Top: Month Header */}
+        <div className="flex items-center gap-2 pb-2.5 border-b border-border/40 justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText className="h-4 w-4 text-magenta shrink-0" />
+            <span className="font-semibold text-sm text-foreground truncate">{row.month}</span>
+          </div>
+          <span className="font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2.5 py-0.5 rounded-full text-[10px]">Monthly Summary</span>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Enrollments</span>
+            <p className="text-sm font-bold text-foreground">{row.enrollments}</p>
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Completion Rate</span>
+            <p className="text-sm font-bold text-foreground">{row.completionRate}</p>
+          </div>
+        </div>
+
+        {/* Download Action */}
+        <div className="pt-2.5 border-t border-border/40 mt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadReportPdf(row)}
+            className="w-full h-9 text-xs font-semibold border-border hover:bg-magenta hover:text-white transition-colors rounded-xl flex items-center justify-center gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" /> Download PDF Report
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMobileAttendanceCard = (row: AttendanceSummaryRow) => {
+    return (
+      <div className="space-y-3.5 text-xs">
+        {/* Top: Student & Batch */}
+        <div className="pb-2.5 border-b border-border/40 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h4 className="text-sm font-semibold text-foreground truncate">{row.studentName}</h4>
+            <p className="text-[11px] text-muted-foreground truncate mt-0.5">{row.batchTitle}</p>
+          </div>
+          <span className={`shrink-0 font-bold px-2.5 py-0.5 rounded-full text-[11px] border ${
+            row.attendancePercent >= 75
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : "bg-amber-50 text-amber-700 border-amber-100"
+          }`}>
+            {row.attendancePercent}%
+          </span>
+        </div>
+
+        {/* Attendance summary items */}
+        <div className="grid grid-cols-4 gap-2 text-center bg-slate-50/50 p-2.5 rounded-xl border border-border/40">
+          <div>
+            <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Total</span>
+            <p className="font-bold text-foreground mt-0.5">{row.totalSessions}</p>
+          </div>
+          <div>
+            <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider text-emerald-600">Present</span>
+            <p className="font-bold text-emerald-600 mt-0.5">{row.present}</p>
+          </div>
+          <div>
+            <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider text-rose-500">Absent</span>
+            <p className="font-bold text-rose-500 mt-0.5">{row.absent}</p>
+          </div>
+          <div>
+            <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider text-amber-500">Late</span>
+            <p className="font-bold text-amber-500 mt-0.5">{row.late}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 sm:space-y-8 p-4 sm:p-0">
       <PageHeader
         title="Campus Insights"
         description="Monitor student progress, monthly program reports, and attendance summaries."
+        className="text-center md:text-left"
         action={
           activeTab === "monthly" ? (
-            <Button onClick={() => setModalOpen(true)} className="bg-magenta hover:bg-magenta/90 text-white">
-              <Plus className="h-4 w-4 mr-2" /> Generate Custom Report
+            <Button onClick={() => setModalOpen(true)} className="bg-magenta hover:bg-magenta/90 text-white w-full sm:w-auto h-10 rounded-xl font-semibold">
+              <Plus className="h-4 w-4 mr-2 inline" /> Generate Custom Report
             </Button>
           ) : (
-            <Button onClick={handleExportCSV} className="bg-magenta hover:bg-magenta/90 text-white">
-              <Download className="h-4 w-4 mr-2" /> Export CSV Ledger
+            <Button onClick={handleExportCSV} className="bg-magenta hover:bg-magenta/90 text-white w-full sm:w-auto h-10 rounded-xl font-semibold">
+              <Download className="h-4 w-4 mr-2 inline" /> Export CSV Ledger
             </Button>
           )
         }
       />
 
       {/* Tabs Switcher */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-slate-200 overflow-x-auto scrollbar-hide flex-nowrap w-full">
         <button
           onClick={() => setActiveTab("monthly")}
-          className={`py-3 px-6 text-sm font-semibold border-b-2 transition-all ${
+          className={`py-3 px-6 text-sm font-semibold border-b-2 transition-all shrink-0 ${
             activeTab === "monthly"
               ? "border-magenta text-magenta"
               : "border-transparent text-slate-500 hover:text-slate-800"
@@ -310,7 +391,7 @@ const CollegeReports = () => {
         </button>
         <button
           onClick={() => setActiveTab("attendance")}
-          className={`py-3 px-6 text-sm font-semibold border-b-2 transition-all ${
+          className={`py-3 px-6 text-sm font-semibold border-b-2 transition-all shrink-0 ${
             activeTab === "attendance"
               ? "border-magenta text-magenta"
               : "border-transparent text-slate-500 hover:text-slate-800"
@@ -322,14 +403,26 @@ const CollegeReports = () => {
 
       {activeTab === "monthly" ? (
         reportsLoading ? (
-          <p className="text-sm text-slate-500">Loading reports…</p>
+          <p className="text-xs sm:text-sm text-slate-500">Loading reports…</p>
         ) : (
-          <PanelDataTable columns={columns} data={reports} pageSize={10} />
+          <PanelDataTable
+            columns={columns}
+            data={reports}
+            pageSize={10}
+            className="border-border/60"
+            mobileRender={renderMobileMonthlyCard}
+          />
         )
       ) : attendanceLoading ? (
-        <p className="text-sm text-slate-500">Loading attendance summaries…</p>
+        <p className="text-xs sm:text-sm text-slate-500">Loading attendance summaries…</p>
       ) : (
-        <PanelDataTable columns={attendanceColumns} data={attendanceRows} pageSize={10} />
+        <PanelDataTable
+          columns={attendanceColumns}
+          data={attendanceRows}
+          pageSize={10}
+          className="border-border/60"
+          mobileRender={renderMobileAttendanceCard}
+        />
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>

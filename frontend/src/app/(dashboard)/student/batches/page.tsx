@@ -71,51 +71,53 @@ export default function StudentBatchesPage() {
   }
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-6 sm:space-y-8 p-4 sm:p-0">
       <PageHeader
         title="My Cohorts & Batches 📚"
         description="View your active offline classes, timetables, venues, and contact assigned mentors."
       />
 
       {batches.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-border rounded-xl bg-card">
+        <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed border-border rounded-xl bg-card">
           <Layers className="h-12 w-12 text-muted-foreground/30 mb-3" />
-          <h3 className="font-semibold text-lg text-foreground">No batches assigned yet</h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+          <h3 className="font-semibold text-base sm:text-lg text-foreground">No batches assigned yet</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm">
             Once you are placed into an operational cohort batch by the college admin, details will appear here.
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
           {batches.map((batch) => (
-            <DataCard key={batch.id} className="border-border/60 hover:shadow-md transition-shadow flex flex-col justify-between">
+            <DataCard key={batch.id} className="border-border/60 hover:shadow-md transition-shadow flex flex-col justify-between p-4 sm:p-6">
               <div>
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div>
-                    <span className="font-mono text-xs font-bold text-magenta bg-magenta/10 px-2 py-0.5 rounded">
+                <div className="flex flex-col xs:flex-row xs:items-start justify-between gap-3 mb-4">
+                  <div className="min-w-0">
+                    <span className="inline-block font-mono text-[10px] sm:text-xs font-bold text-magenta bg-magenta/10 px-2 py-0.5 rounded w-fit">
                       {batch.code}
                     </span>
-                    <h3 className="font-bold text-base text-foreground mt-2 leading-snug">
+                    <h3 className="font-bold text-sm sm:text-base text-foreground mt-2 leading-snug truncate">
                       {batch.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground uppercase mt-0.5 tracking-wide">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground uppercase mt-0.5 tracking-wide">
                       {batch.batchType === "TrainingProgram" ? "Training Program" : batch.batchType}
                     </p>
                   </div>
-                  {getStatusBadge(batch.status)}
+                  <div className="shrink-0 w-fit">
+                    {getStatusBadge(batch.status)}
+                  </div>
                 </div>
 
                 <div className="space-y-2.5 my-4 border-t border-b border-border/50 py-3">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <Calendar className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                     <span>
                       Timeline: {new Date(batch.startDate).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })} -{" "}
                       {new Date(batch.endDate).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                     <span>
                       Venue: {batch.mode} ({batch.venue})
                     </span>
@@ -124,8 +126,8 @@ export default function StudentBatchesPage() {
               </div>
 
               <div className="pt-2">
-                <p className="text-xs font-semibold text-muted-foreground mb-2">Assigned Mentor</p>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-marble/60 border border-border/50">
+                <p className="text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2">Assigned Mentor</p>
+                <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-marble/60 border border-border/50 gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
                       {batch.mentorName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
@@ -140,7 +142,7 @@ export default function StudentBatchesPage() {
                   {batch.mentorEmail && (
                     <a
                       href={`mailto:${batch.mentorEmail}`}
-                      className="h-8 w-8 rounded-full border border-border bg-white hover:text-magenta hover:border-magenta flex items-center justify-center text-muted-foreground transition-all shrink-0 ml-2"
+                      className="h-8 w-8 rounded-full border border-border bg-white hover:text-magenta hover:border-magenta flex items-center justify-center text-muted-foreground transition-all shrink-0"
                       title="Email Mentor"
                     >
                       <Mail className="h-3.5 w-3.5" />

@@ -52,64 +52,64 @@ const CollegeProfile = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8 p-4 sm:p-0">
       <PageHeader title="Institution Profile" description="Manage your college details" />
 
-      <form onSubmit={handleSave} className="grid lg:grid-cols-2 gap-6 items-start">
-        <DataCard>
-          <h3 className="text-base font-semibold font-display mb-4">Institution Details</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Institution Name</Label>
-              <Input value={form.collegeName} onChange={set("collegeName")} />
+      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <DataCard className="p-4 sm:p-6 border-border/60">
+          <h3 className="text-sm sm:text-base font-bold font-display text-foreground mb-4">Institution Details</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm text-slate-700 font-semibold">Institution Name</Label>
+              <Input value={form.collegeName} onChange={set("collegeName")} className="text-xs sm:text-sm h-10 focus-visible:ring-magenta rounded-xl" />
             </div>
-            <div className="space-y-2">
-              <Label>City</Label>
-              <Input value={form.city} onChange={set("city")} />
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm text-slate-700 font-semibold">City</Label>
+              <Input value={form.city} onChange={set("city")} className="text-xs sm:text-sm h-10 focus-visible:ring-magenta rounded-xl" />
             </div>
-            <div className="space-y-2">
-              <Label>State</Label>
-              <Input value={form.state} onChange={set("state")} />
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm text-slate-700 font-semibold">State</Label>
+              <Input value={form.state} onChange={set("state")} className="text-xs sm:text-sm h-10 focus-visible:ring-magenta rounded-xl" />
             </div>
-            <div className="space-y-2">
-              <Label>Website URL</Label>
-              <Input value={form.website} onChange={set("website")} />
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm text-slate-700 font-semibold">Website URL</Label>
+              <Input value={form.website} onChange={set("website")} className="text-xs sm:text-sm h-10 focus-visible:ring-magenta rounded-xl" />
             </div>
           </div>
           <div className="mt-6 flex justify-end">
             <Button
               type="submit"
               disabled={isPending}
-              className="bg-magenta hover:bg-magenta/90 text-white"
+              className="bg-magenta hover:bg-magenta/90 text-white w-full sm:w-auto h-10 rounded-xl font-semibold px-5"
             >
-              <Save className="h-4 w-4 mr-2" /> {isPending ? "Saving..." : "Save Changes"}
+              <Save className="h-4 w-4 mr-2 inline" /> {isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </DataCard>
 
-        <DataCard>
-          <h3 className="text-base font-semibold font-display mb-4">Point of Contact</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>POC Name</Label>
-              <Input value={form.pocName} onChange={set("pocName")} />
+        <DataCard className="p-4 sm:p-6 border-border/60">
+          <h3 className="text-sm sm:text-base font-bold font-display text-foreground mb-4">Point of Contact</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm text-slate-700 font-semibold">POC Name</Label>
+              <Input value={form.pocName} onChange={set("pocName")} className="text-xs sm:text-sm h-10 focus-visible:ring-magenta rounded-xl" />
             </div>
-            <div className="space-y-2">
-              <Label>POC Phone</Label>
-              <Input value={form.pocPhone} onChange={set("pocPhone")} />
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm text-slate-700 font-semibold">POC Phone</Label>
+              <Input value={form.pocPhone} onChange={set("pocPhone")} className="text-xs sm:text-sm h-10 focus-visible:ring-magenta rounded-xl" />
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label>SPOC Email</Label>
-              <Input type="email" value={form.pocEmail} onChange={set("pocEmail")} />
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-xs sm:text-sm text-slate-700 font-semibold">SPOC Email</Label>
+              <Input type="email" value={form.pocEmail} onChange={set("pocEmail")} className="text-xs sm:text-sm h-10 focus-visible:ring-magenta rounded-xl" />
             </div>
           </div>
           <div className="mt-6 flex justify-end">
             <Button
               type="submit"
               disabled={isPending}
-              className="bg-magenta hover:bg-magenta/90 text-white"
+              className="bg-magenta hover:bg-magenta/90 text-white w-full sm:w-auto h-10 rounded-xl font-semibold px-5"
             >
-              <Save className="h-4 w-4 mr-2" /> {isPending ? "Saving..." : "Save Changes"}
+              <Save className="h-4 w-4 mr-2 inline" /> {isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </DataCard>

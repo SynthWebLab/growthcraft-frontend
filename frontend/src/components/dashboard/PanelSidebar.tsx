@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { type LucideIcon } from "lucide-react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 export interface NavSection {
   label: string;
@@ -100,6 +100,7 @@ const PanelSidebar = (props: PanelSidebarProps) => {
       {/* Mobile drawer */}
       <Sheet open={mobileOpen} onOpenChange={onMobileClose}>
         <SheetContent side="left" className="p-0 w-64 border-none">
+          <SheetTitle className="sr-only">Sidebar Navigation Menu</SheetTitle>
           <SidebarInner {...rest} collapsed={false} />
         </SheetContent>
       </Sheet>

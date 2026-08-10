@@ -56,23 +56,23 @@ export default function AmbassadorInvitePage() {
   const trainingPrograms = programsData?.data || [];
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in p-4 sm:p-0">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 font-display">Invite Friends</h1>
-        <p className="text-muted-foreground mt-1">Send invites to college friends and earn rewards when they join.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-display">Invite Friends</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">Send invites to college friends and earn rewards when they join.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Left Form Card */}
-        <DataCard className="lg:col-span-2 space-y-6">
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+        <DataCard className="lg:col-span-2 space-y-6 p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
             <Mail className="h-5 w-5 text-magenta" /> Send Email Invites
           </h2>
 
           <form onSubmit={handleSendInvites} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-2">
                 Friend's Email Addresses
               </label>
               <textarea
@@ -81,13 +81,13 @@ export default function AmbassadorInvitePage() {
                 placeholder="friend1@college.edu, friend2@gmail.com (Separate with commas or newlines)"
                 rows={5}
                 disabled={isPending}
-                className="w-full rounded-xl border border-slate-200 p-4 text-sm focus:outline-none focus:border-magenta focus:ring-1 focus:ring-magenta font-mono resize-none transition-all"
+                className="w-full rounded-xl border border-slate-200 p-3 sm:p-4 text-xs sm:text-sm focus:outline-none focus:border-magenta focus:ring-1 focus:ring-magenta font-mono resize-none transition-all"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-2">
                   Recommend Program Type (Optional)
                 </label>
                 <select
@@ -97,7 +97,7 @@ export default function AmbassadorInvitePage() {
                     setProgramId("");
                   }}
                   disabled={isPending}
-                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:outline-none focus:border-magenta transition-all bg-white"
+                  className="w-full rounded-xl border border-slate-200 p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:border-magenta transition-all bg-white"
                 >
                   <option value="">Any Course/Program/Event</option>
                   <option value="Course">Course</option>
@@ -109,14 +109,14 @@ export default function AmbassadorInvitePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-2">
                   Select Program Name (Optional)
                 </label>
                 <select
                   value={programId}
                   onChange={(e) => setProgramId(e.target.value)}
                   disabled={isPending || !programType}
-                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:outline-none focus:border-magenta transition-all bg-white disabled:opacity-50"
+                  className="w-full rounded-xl border border-slate-200 p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:border-magenta transition-all bg-white disabled:opacity-50"
                 >
                   <option value="">Select recommended program</option>
                   {programType === "Course" &&
@@ -146,7 +146,7 @@ export default function AmbassadorInvitePage() {
             <button
               type="submit"
               disabled={isPending}
-              className="bg-magenta hover:bg-magenta/90 text-white rounded-xl px-6 py-3 font-semibold transition-all flex items-center justify-center gap-2 hover:scale-[1.01] disabled:opacity-50 w-full sm:w-auto"
+              className="bg-magenta hover:bg-magenta/90 text-white rounded-xl px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 hover:scale-[1.01] disabled:opacity-50 w-full sm:w-auto"
             >
               {isPending ? (
                 <>
@@ -160,29 +160,29 @@ export default function AmbassadorInvitePage() {
         </DataCard>
 
         {/* Right Info Box */}
-        <DataCard variant="dark" className="relative overflow-hidden flex flex-col justify-between">
+        <DataCard variant="dark" className="relative overflow-hidden flex flex-col justify-between p-5 sm:p-6 min-h-[300px] lg:min-h-0">
           <div className="absolute right-0 top-0 w-32 h-32 bg-magenta/10 rounded-full blur-2xl -z-10" />
           
           <div className="space-y-6">
-            <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+            <h3 className="text-base sm:text-lg font-bold flex items-center gap-2 text-white">
               <Megaphone className="h-5 w-5 text-magenta" /> How it Works
             </h3>
             
-            <ul className="space-y-4 text-sm text-slate-300">
+            <ul className="space-y-4 text-xs sm:text-sm text-slate-300">
               <li className="flex gap-3">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-magenta/20 text-magenta font-bold shrink-0 text-xs">
+                <span className="flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-magenta/20 text-magenta font-bold shrink-0 text-[10px] sm:text-xs">
                   1
                 </span>
                 <span>Enter your friends' emails and send them a customized link.</span>
               </li>
               <li className="flex gap-3">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-magenta/20 text-magenta font-bold shrink-0 text-xs">
+                <span className="flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-magenta/20 text-magenta font-bold shrink-0 text-[10px] sm:text-xs">
                   2
                 </span>
                 <span>Your friends register for free and join their college cohort.</span>
               </li>
               <li className="flex gap-3">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-magenta/20 text-magenta font-bold shrink-0 text-xs">
+                <span className="flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-magenta/20 text-magenta font-bold shrink-0 text-[10px] sm:text-xs">
                   3
                 </span>
                 <span>Once they enroll in any program, you get a <strong>5% cash commission</strong> directly!</span>
@@ -190,7 +190,7 @@ export default function AmbassadorInvitePage() {
             </ul>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-white/10 flex items-center gap-2 text-xs text-slate-400">
+          <div className="mt-8 pt-6 border-t border-white/10 flex items-center gap-2 text-[10px] sm:text-xs text-slate-400">
             <HelpCircle className="h-4 w-4 text-magenta" /> Need support? Contact campus admin.
           </div>
         </DataCard>

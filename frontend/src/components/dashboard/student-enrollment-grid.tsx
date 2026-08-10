@@ -63,7 +63,7 @@ function StudentEnrollmentGridContent({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-0">
       <PageHeader title={pageTitle} description={pageDescription} />
 
       {/* Payment Gateway Modal */}
@@ -74,7 +74,7 @@ function StudentEnrollmentGridContent({
       />
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
           {[0, 1].map((i) => (
             <div
               key={i}
@@ -94,7 +94,7 @@ function StudentEnrollmentGridContent({
           action={
             browseHref ? (
               <Link href={browseHref}>
-                <Button className="bg-magenta text-white hover:bg-magenta/90">
+                <Button className="bg-magenta text-white hover:bg-magenta/90 text-xs sm:text-sm px-4 py-2">
                   {browseLabel}
                 </Button>
               </Link>
@@ -102,7 +102,7 @@ function StudentEnrollmentGridContent({
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
           {filteredItems.map((item) => {
             const isUnpaid = item.paymentStatus === "pending" || item.status === "pending";
             const badge = isUnpaid 
@@ -110,29 +110,31 @@ function StudentEnrollmentGridContent({
               : statusBadge(item.status);
 
             return (
-              <DataCard key={item.id}>
-                <div className="flex items-start gap-4 mb-4">
-                  <span className="text-4xl">{item.emoji ?? "🎓"}</span>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-foreground">{item.title}</h3>
+              <DataCard key={item.id} className="p-4 sm:p-6 border-border/60 hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-3 sm:gap-4 mb-4">
+                  <span className="text-3xl sm:text-4xl shrink-0">{item.emoji ?? "🎓"}</span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm sm:text-base text-foreground truncate">{item.title}</h3>
                     {item.subtitle && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">
                         {item.subtitle}
                       </p>
                     )}
-                    <Badge variant="secondary" className={`mt-2 ${badge.className}`}>
+                    <Badge variant="secondary" className={`mt-2 text-[10px] sm:text-xs ${badge.className}`}>
                       {badge.label}
                     </Badge>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-marble border border-border">
-                  <Calendar className="h-4 w-4 text-magenta" />
-                  <p className="text-sm text-foreground">
-                    Enrolled {formatDate(item.enrollmentDate)}
-                  </p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg bg-marble border border-border">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-magenta shrink-0" />
+                    <p className="text-xs sm:text-sm text-foreground">
+                      Enrolled {formatDate(item.enrollmentDate)}
+                    </p>
+                  </div>
                   {(item.workspaceHref || item.href) && (
-                    <div className="ml-auto">
+                    <div className="w-full sm:w-auto shrink-0">
                       {isUnpaid ? (
                         <Button 
                           size="sm" 
@@ -142,14 +144,14 @@ function StudentEnrollmentGridContent({
                             subtitle: item.subtitle,
                             type: item.type || "bootcamp",
                           })}
-                          className="bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-lg shadow-sm flex items-center gap-1.5"
+                          className="bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-lg shadow-sm flex items-center justify-center gap-1.5 w-full sm:w-auto h-8 px-3"
                         >
                           <CreditCard className="h-3.5 w-3.5" />
                           Pending Payment
                         </Button>
                       ) : (
-                        <Link href={item.workspaceHref || item.href || "#"}>
-                          <Button size="sm" variant="outline" className="border-magenta/40 text-magenta hover:bg-magenta/10 text-xs rounded-lg">
+                        <Link href={item.workspaceHref || item.href || "#"} className="w-full sm:w-auto block">
+                          <Button size="sm" variant="outline" className="border-magenta/40 text-magenta hover:bg-magenta/10 text-xs rounded-lg w-full sm:w-auto h-8 px-3 flex justify-center items-center">
                             View Workspace
                           </Button>
                         </Link>
@@ -170,9 +172,9 @@ export function StudentEnrollmentGrid(props: StudentEnrollmentGridProps) {
   return (
     <Suspense
       fallback={
-        <div className="space-y-6">
+        <div className="space-y-6 p-4 sm:p-0">
           <PageHeader title={props.pageTitle} description={props.pageDescription} />
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {[0, 1].map((i) => (
               <div
                 key={i}
