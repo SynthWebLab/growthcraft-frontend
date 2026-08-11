@@ -237,20 +237,63 @@ function AdminEventsContent() {
       label: "Reg Status",
       render: (v: string, row: any) => {
         const statusVal = v || row.status || (row.isPublished ? "Open" : "Closed");
-        const isOpen = statusVal === "Open";
+        const id = row._id || row.id;
+
+        const getStatusStyles = (status: string) => {
+          switch (status) {
+            case "Open":
+              return "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20";
+            case "Closed":
+              return "bg-rose-500/10 text-rose-600 border-rose-500/30 hover:bg-rose-500/20";
+            case "Completed":
+              return "bg-slate-500/10 text-slate-600 border-slate-500/30 hover:bg-slate-500/20";
+            case "Draft":
+              return "bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20";
+            default:
+              return "bg-muted text-muted-foreground border-border hover:bg-muted/80";
+          }
+        };
+
+        const getStatusDotColor = (status: string) => {
+          switch (status) {
+            case "Open":
+              return "bg-emerald-500";
+            case "Closed":
+              return "bg-rose-500";
+            case "Completed":
+              return "bg-slate-500";
+            case "Draft":
+              return "bg-amber-500";
+            default:
+              return "bg-muted-foreground";
+          }
+        };
+
         return (
-          <button
-            onClick={(e) => { e.stopPropagation(); handleStatusToggle(row); }}
-            title="Click to toggle Open/Closed seat registration"
-            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
-              isOpen
-                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20"
-                : "bg-rose-500/10 text-rose-600 border-rose-500/30 hover:bg-rose-500/20"
-            }`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${isOpen ? "bg-emerald-500" : "bg-rose-500"}`} />
-            {isOpen ? "Open" : statusVal}
-          </button>
+          <div onClick={(e) => e.stopPropagation()}>
+            <Select
+              value={statusVal}
+              onValueChange={(newStatus) => {
+                updateMutation.mutate({ id, data: { status: newStatus } });
+              }}
+            >
+              <SelectTrigger
+                className={`h-7 w-[104px] rounded-full text-xs font-semibold border transition-all cursor-pointer flex items-center justify-between gap-1.5 px-2.5 py-1 ${getStatusStyles(statusVal)} focus:ring-0 focus:ring-offset-0`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-1.5 w-1.5 rounded-full ${getStatusDotColor(statusVal)}`} />
+                  <span>{statusVal}</span>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt} className="text-xs">
+                    {opt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         );
       },
     },
