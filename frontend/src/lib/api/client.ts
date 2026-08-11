@@ -1,8 +1,9 @@
 /**
  * API Client with automatic token refresh
- * Handles 401 errors and refreshes tokens automatically
+ * Handles 401 errors and refreshes tokens automatically using Axios interceptors
  */
 
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { API_ENDPOINTS } from "./endpoints";
 import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
 
@@ -12,8 +13,32 @@ interface FetchOptions extends RequestInit {
   skipRefresh?: boolean; // Skip refresh retry for specific requests
 }
 
+// Create Axios Instance
+export const axiosInstance: AxiosInstance = axios.create({
+  baseURL: BACKEND_URL,
+  withCredentials: true, // CRITICAL: Send cookies automatically
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
 let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: Error | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
+    }
+  });
+
+  failedQueue = [];
+};
 
 /**
  * Refresh the access token using the refresh token cookie
@@ -28,53 +53,33 @@ async function refreshToken(): Promise<boolean> {
       },
     });
 
-    if (response.ok) {
-      return true;
-    }
-
-    return false;
+    return response.ok;
   } catch (error) {
     return false;
   }
 }
 
-/**
- * Enhanced fetch with automatic token refresh
- * 
- * Features:
- * - Automatically includes credentials (cookies)
- * - Retries failed requests after refreshing token
- * - Handles token reuse detection
- * - Prevents multiple simultaneous refresh attempts
- */
-export async function apiFetch<T = any>(
-  endpoint: string,
-  options: FetchOptions = {}
-): Promise<T> {
-  const { skipRefresh = false, ...fetchOptions } = options;
+// Response interceptor for automatic token refresh
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
-  const isFormData = fetchOptions.body instanceof FormData;
+    if (!originalRequest) {
+      console.warn("[Axios Interceptor] No original request configuration found.");
+      return Promise.reject(error);
+    }
 
-  // Ensure credentials are included for cookie-based auth
-  const config: RequestInit = {
-    ...fetchOptions,
-    credentials: "include",
-    headers: isFormData 
-      ? { ...fetchOptions.headers }
-      : {
-          "Content-Type": "application/json",
-          ...fetchOptions.headers,
-        },
-  };
+    const endpoint = originalRequest.url || "";
+    console.log(`[Axios Interceptor] Intercepted error for request: ${originalRequest.method?.toUpperCase()} ${endpoint}`, {
+      status: error.response?.status,
+      _retry: originalRequest._retry,
+    });
 
-  // Build full URL
-  const url = endpoint.startsWith("http") ? endpoint : `${BACKEND_URL}${endpoint}`;
-
-  try {
-    const response = await fetch(url, config);
-
-    // Do not attempt token refresh for public auth endpoints (login, register, forgot-password, reset-password, verify-email, resend-verification) or the refresh endpoint itself
-    const isAuthRequest = 
+    // Do not attempt token refresh for public auth endpoints or the refresh/logout endpoints
+    const isAuthRequest =
       endpoint.includes(API_ENDPOINTS.auth.login) ||
       endpoint.includes(API_ENDPOINTS.auth.register) ||
       endpoint.includes(API_ENDPOINTS.auth.refresh) ||
@@ -85,106 +90,155 @@ export async function apiFetch<T = any>(
       endpoint.includes(API_ENDPOINTS.auth.verifyEmail) ||
       endpoint.includes(API_ENDPOINTS.auth.resendVerification);
 
-    // If 401 and we haven't tried refreshing yet
-    if (response.status === 401 && !skipRefresh && !isAuthRequest) {
-      // Peek at the body to check for terminal error codes before attempting refresh.
-      // We clone so the body stream can still be read later if needed.
-      let errorCode: string | undefined;
-      try {
-        const cloned = response.clone();
-        const body = await cloned.json();
-        errorCode = body?.error?.code;
-      } catch {
-        // Ignore parse errors — proceed with normal refresh logic
-      }
-
-      // TOKEN_REVOKED: backend blacklisted this token on logout.
-      // The session was explicitly terminated — redirect to the correct portal login.
-      if (errorCode === "TOKEN_REVOKED") {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("gc_user");
-          const path = window.location.pathname;
-          const portalMatch = path.match(/^\/(student|college|mentor|employer|admin)/);
-          const loginPath = portalMatch ? `/login/${portalMatch[1]}` : "/login/student";
-          window.location.href = loginPath;
-        }
-        const revokedError: any = new Error("Your session has been revoked. Please login again.");
-        revokedError.code = "SESSION_REVOKED";
-        throw revokedError;
-      }
-
-      // NO_TOKEN: no token exists at all (unauthenticated request).
-      // Skip the pointless refresh attempt but do NOT redirect here —
-      // this code is also called from the login page (useCurrentUser) where
-      // NO_TOKEN is completely normal and redirecting would cause an infinite reload.
-      // The middleware and dashboard layouts handle unauthenticated routing.
-      if (errorCode === "NO_TOKEN") {
-        const noTokenError: any = new Error("Authentication required. Please login.");
-        noTokenError.code = "NO_TOKEN";
-        noTokenError.response = { status: 401, data: null };
-        throw noTokenError;
-      }
-
-
-      // If already refreshing, wait for that to complete
-      if (isRefreshing && refreshPromise) {
-        const refreshSuccess = await refreshPromise;
-        if (refreshSuccess) {
-          return apiFetch(endpoint, { ...options, skipRefresh: true });
-        } else {
-          throw new Error("Token refresh failed");
-        }
-      }
-
-      // Start refresh process
-      isRefreshing = true;
-      refreshPromise = refreshToken();
-
-      const refreshSuccess = await refreshPromise;
-      isRefreshing = false;
-      refreshPromise = null;
-
-      if (refreshSuccess) {
-        // Retry original request with new token
-        return apiFetch(endpoint, { ...options, skipRefresh: true });
-      } else {
-        // Refresh failed - just throw error, don't redirect
-        // Let the calling code (components/hooks) decide what to do
-        throw new Error("Authentication failed");
-      }
+    // If error is not 401, or is an auth request, or already retried
+    if (error.response?.status !== 401 || originalRequest._retry || isAuthRequest) {
+      console.log(
+        `[Axios Interceptor] Skipping refresh token call for ${endpoint}. Reason: ` +
+        (error.response?.status !== 401 ? `Status is not 401 (status: ${error.response?.status})` : "") +
+        (originalRequest._retry ? "Already retried once (_retry is true) " : "") +
+        (isAuthRequest ? "Endpoint is an auth request " : "")
+      );
+      return Promise.reject(error);
     }
 
+    // Extract error code from response body
+    const responseData = error.response.data as any;
+    const errorCode = responseData?.error?.code || responseData?.code;
+    console.log(`[Axios Interceptor] Extracted error code: "${errorCode}" for ${endpoint}`);
 
-    // Parse response
-    let data;
+    // TOKEN_REVOKED: backend blacklisted this token on logout.
+    // The session was explicitly terminated — redirect to the correct portal login.
+    if (errorCode === "TOKEN_REVOKED") {
+      console.log("[Axios Interceptor] Session revoked (TOKEN_REVOKED). Redirecting user to login page...");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("gc_user");
+        const path = window.location.pathname;
+        const portalMatch = path.match(/^\/(student|college|mentor|employer|admin)/);
+        const loginPath = portalMatch ? `/login/${portalMatch[1]}` : "/login/student";
+        console.log(`[Axios Interceptor] Redirecting window.location.href to: ${loginPath}`);
+        window.location.href = loginPath;
+      }
+      const revokedError: any = new Error("Your session has been revoked. Please login again.");
+      revokedError.code = "SESSION_REVOKED";
+      return Promise.reject(revokedError);
+    }
+
+    // NO_TOKEN: no token exists at all (unauthenticated request).
+    // Skip refresh attempt to avoid infinite reload loop
+    if (errorCode === "NO_TOKEN") {
+      console.log("[Axios Interceptor] No token exists (NO_TOKEN). Skipping refresh call to prevent infinite loop. Rejecting request.");
+      const noTokenError: any = new Error("Authentication required. Please login.");
+      noTokenError.code = "NO_TOKEN";
+      noTokenError.response = error.response;
+      return Promise.reject(noTokenError);
+    }
+
+    // If already refreshing, queue this request
+    if (isRefreshing) {
+      console.log(`[Axios Interceptor] Token refresh is already in progress. Queuing request for ${endpoint}`);
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then(() => {
+          console.log(`[Axios Interceptor] Retrying queued request for ${endpoint}`);
+          return axiosInstance(originalRequest);
+        })
+        .catch((err) => {
+          console.error(`[Axios Interceptor] Queued request failed for ${endpoint}:`, err);
+          return Promise.reject(err);
+        });
+    }
+
+    console.log(`[Axios Interceptor] Initiating refresh token flow for request: ${endpoint}`);
+    originalRequest._retry = true;
+    isRefreshing = true;
+
     try {
-      data = await response.json();
-    } catch (parseError) {
-      const text = await response.text();
+      const refreshSuccess = await refreshToken();
+      console.log(`[Axios Interceptor] Refresh token request completed. Success: ${refreshSuccess}`);
       
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}: ${text || 'No response body'}`);
+      if (refreshSuccess) {
+        console.log(`[Axios Interceptor] Refresh succeeded. Retrying original request: ${endpoint}`);
+        processQueue();
+        return axiosInstance(originalRequest);
+      } else {
+        console.warn("[Axios Interceptor] Refresh failed. Rejecting request.");
+        const authError = new Error("Authentication failed");
+        processQueue(authError);
+        return Promise.reject(authError);
       }
-      
-      return {} as T;
+    } catch (refreshError: any) {
+      console.error("[Axios Interceptor] Error during token refresh:", refreshError);
+      processQueue(refreshError);
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
     }
+  }
+);
 
-    // Check for errors
-    if (!response.ok) {
-      // Create an error object that mimics axios error structure
-      // This allows error handlers to access error.response.data.error.code
-      const error: any = new Error(data?.error?.message || data?.message || `Request failed with status ${response.status}`);
-      error.response = {
-        status: response.status,
-        statusText: response.statusText,
-        data: data,
-      };
+/**
+ * Enhanced fetch with automatic token refresh (Axios under the hood)
+ */
+export async function apiFetch<T = any>(
+  endpoint: string,
+  options: FetchOptions = {}
+): Promise<T> {
+  const { skipRefresh = false, ...fetchOptions } = options;
+
+  // Convert headers
+  const headers: Record<string, string> = {};
+  if (fetchOptions.headers) {
+    if (fetchOptions.headers instanceof Headers) {
+      fetchOptions.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else if (Array.isArray(fetchOptions.headers)) {
+      fetchOptions.headers.forEach(([key, value]) => {
+        headers[key] = value;
+      });
+    } else {
+      Object.assign(headers, fetchOptions.headers);
+    }
+  }
+
+  const config: any = {
+    method: fetchOptions.method || "GET",
+    url: endpoint,
+    headers,
+    data: fetchOptions.body,
+    signal: fetchOptions.signal,
+    withCredentials: true,
+  };
+
+  if (skipRefresh) {
+    config._retry = true;
+  }
+
+  try {
+    const response = await axiosInstance(config);
+    return response.data;
+  } catch (error: any) {
+    // If it's a parsed session revocation or no token error, rethrow it directly
+    if (error.code === "SESSION_REVOKED" || error.code === "NO_TOKEN") {
       throw error;
     }
 
-    return data;
-  } catch (error: any) {
-    if (error.message === "Failed to fetch") {
+    if (error.isAxiosError && error.response) {
+      const data = error.response.data;
+      const apiError: any = new Error(
+        data?.error?.message || data?.message || `Request failed with status ${error.response.status}`
+      );
+      // Mimic the expected response object format
+      apiError.response = {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: data,
+      };
+      throw apiError;
+    }
+
+    if (error.message === "Network Error" || error.code === "ERR_NETWORK") {
       throw new Error(
         "Cannot connect to backend. Please ensure:\n" +
         "1. Backend is running (npm run dev in backend folder)\n" +
@@ -192,7 +246,7 @@ export async function apiFetch<T = any>(
         "3. CORS is configured to allow http://localhost:3000"
       );
     }
-    
+
     throw error;
   }
 }
@@ -208,21 +262,21 @@ export const apiClient = {
     apiFetch<T>(endpoint, {
       ...options,
       method: "POST",
-      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
+      body: data,
     }),
 
   put: <T = any>(endpoint: string, data?: any, options?: FetchOptions) =>
     apiFetch<T>(endpoint, {
       ...options,
       method: "PUT",
-      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
+      body: data,
     }),
 
   patch: <T = any>(endpoint: string, data?: any, options?: FetchOptions) =>
     apiFetch<T>(endpoint, {
       ...options,
       method: "PATCH",
-      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
+      body: data,
     }),
 
   delete: <T = any>(endpoint: string, options?: FetchOptions) =>
