@@ -177,19 +177,19 @@ export default function MentorCohortsPage() {
                   <button
                     key={b.id || b._id || b.code}
                     onClick={() => handleSelectBatch(b.id || b._id)}
-                    className={`w-full text-left p-3 rounded-lg border text-sm transition-all flex justify-between items-center ${
+                    className={`w-full text-left p-3 rounded-lg border text-sm transition-all flex justify-between items-center gap-2 min-w-0 ${
                       activeBatchId === b.id
                         ? "bg-magenta/5 border-magenta text-magenta font-semibold"
                         : "border-border bg-white hover:bg-marble text-foreground"
                     }`}
                   >
-                    <div>
-                      <p className="truncate max-w-[180px] font-semibold">{b.code}</p>
-                      <p className="text-xs text-muted-foreground font-normal mt-0.5 truncate max-w-[180px]">
+                    <div className="min-w-0 flex-1 pr-1">
+                      <p className="truncate font-semibold">{b.code}</p>
+                      <p className="text-xs text-muted-foreground font-normal mt-0.5 truncate">
                         {b.title || b.batchName || "Program"}
                       </p>
                     </div>
-                    <Badge variant={activeBatchId === b.id ? "default" : "outline"} className={activeBatchId === b.id ? "bg-magenta hover:bg-magenta" : ""}>
+                    <Badge variant={activeBatchId === b.id ? "default" : "outline"} className={`shrink-0 ${activeBatchId === b.id ? "bg-magenta hover:bg-magenta" : ""}`}>
                       {b.studentCount || b.studentsCount || 0} stds
                     </Badge>
                   </button>
@@ -244,15 +244,15 @@ export default function MentorCohortsPage() {
               </DataCard>
 
               {/* Functional tabs */}
-              <Tabs defaultValue="students">
-                <TabsList className="w-full justify-start border-b border-border bg-transparent p-0 gap-4">
-                  <TabsTrigger value="students" className="border-b-2 border-transparent data-[state=active]:border-magenta data-[state=active]:text-magenta rounded-none px-4 py-2 text-sm font-semibold bg-transparent">
+              <Tabs defaultValue="students" className="w-full">
+                <TabsList className="w-full flex justify-start border-b border-border bg-transparent p-0 gap-1 md:gap-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                  <TabsTrigger value="students" className="border-b-2 border-transparent data-[state=active]:border-magenta data-[state=active]:text-magenta rounded-none px-4 py-2 text-sm font-semibold bg-transparent shrink-0">
                     <ClipboardList className="h-4 w-4 mr-2" /> Students & Grading
                   </TabsTrigger>
-                  <TabsTrigger value="attendance" className="border-b-2 border-transparent data-[state=active]:border-magenta data-[state=active]:text-magenta rounded-none px-4 py-2 text-sm font-semibold bg-transparent">
+                  <TabsTrigger value="attendance" className="border-b-2 border-transparent data-[state=active]:border-magenta data-[state=active]:text-magenta rounded-none px-4 py-2 text-sm font-semibold bg-transparent shrink-0">
                     <CheckSquare className="h-4 w-4 mr-2" /> Daily Attendance
                   </TabsTrigger>
-                  <TabsTrigger value="checkins" className="border-b-2 border-transparent data-[state=active]:border-magenta data-[state=active]:text-magenta rounded-none px-4 py-2 text-sm font-semibold bg-transparent">
+                  <TabsTrigger value="checkins" className="border-b-2 border-transparent data-[state=active]:border-magenta data-[state=active]:text-magenta rounded-none px-4 py-2 text-sm font-semibold bg-transparent shrink-0">
                     <Clock className="h-4 w-4 mr-2" /> Check-in logs
                   </TabsTrigger>
                 </TabsList>
@@ -270,14 +270,14 @@ export default function MentorCohortsPage() {
                           const studentEmail = student.email || student.userId?.email || "";
                           
                           return (
-                            <div key={studentId || `student-${idx}`} className="flex items-center justify-between p-4 hover:bg-marble/40 transition-colors">
-                              <div>
-                                <p className="font-semibold text-sm text-foreground">
+                            <div key={studentId || `student-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-marble/40 transition-colors gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-sm text-foreground truncate">
                                   {studentName}
                                 </p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{studentEmail} · Branch: {student.branch || "N/A"}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5 truncate">{studentEmail} · Branch: {student.branch || "N/A"}</p>
                               </div>
-                              <Button size="sm" variant="outline" className="text-xs text-magenta hover:bg-magenta/5 border-magenta/30 hover:border-magenta" onClick={() => handleOpenNoteDialog(student)}>
+                              <Button size="sm" variant="outline" className="text-xs text-magenta hover:bg-magenta/5 border-magenta/30 hover:border-magenta w-full sm:w-auto shrink-0" onClick={() => handleOpenNoteDialog(student)}>
                                 <Star className="h-3.5 w-3.5 mr-1" /> Log Rubric
                               </Button>
                             </div>
@@ -319,21 +319,21 @@ export default function MentorCohortsPage() {
                           const currentRecord = attendanceRecords[studentId] || { status: "Present", remarks: "" };
 
                           return (
-                            <div key={studentId || `att-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2">
-                              <div className="min-w-[180px]">
-                                <p className="text-sm font-medium text-foreground">
+                            <div key={studentId || `att-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-foreground truncate">
                                   {studentName}
                                 </p>
-                                <p className="text-[10px] text-muted-foreground">{studentEmail}</p>
+                                <p className="text-[10px] text-muted-foreground truncate">{studentEmail}</p>
                               </div>
 
-                              <div className="flex items-center gap-3">
-                                <div className="flex rounded-md border border-border overflow-hidden bg-marble">
+                              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
+                                <div className="flex rounded-md border border-border overflow-hidden bg-marble shrink-0">
                                   {["Present", "Absent", "Late", "Excused"].map((status) => (
                                     <button
                                       key={status}
                                       onClick={() => handleStatusChange(studentId, status)}
-                                      className={`text-xs px-2.5 py-1.5 font-medium border-r border-border last:border-0 transition-colors ${
+                                      className={`text-[11px] px-2.5 py-1.5 font-medium border-r border-border last:border-0 transition-colors ${
                                         currentRecord.status === status
                                           ? "bg-magenta text-white"
                                           : "text-muted-foreground hover:bg-marble-dark"
@@ -347,7 +347,7 @@ export default function MentorCohortsPage() {
                                   placeholder="Remarks..."
                                   value={currentRecord.remarks}
                                   onChange={(e) => handleRemarksChange(studentId, e.target.value)}
-                                  className="h-8 text-xs max-w-[120px]"
+                                  className="h-8 text-xs flex-1 sm:flex-initial min-w-[90px] max-w-[120px]"
                                 />
                               </div>
                             </div>

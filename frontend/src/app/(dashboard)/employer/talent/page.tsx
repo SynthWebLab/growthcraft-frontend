@@ -85,11 +85,11 @@ const EmployerTalent = () => {
 
       <div className="grid lg:grid-cols-[260px_1fr] gap-6">
         {/* Filters sidebar */}
-        <DataCard className="h-fit space-y-6">
+        <DataCard className="h-fit">
           {isLoading ? (
             <p className="text-xs text-muted-foreground">Loading filters...</p>
           ) : (
-            <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-6">
               <FilterGroup
                 title="Skills"
                 options={allSkills.length > 0 ? allSkills : ["React", "Node.js", "Python"]}
@@ -108,7 +108,7 @@ const EmployerTalent = () => {
                 selected={selectedAvailability}
                 onToggle={(v) => toggle(selectedAvailability, setSelectedAvailability, v)}
               />
-            </>
+            </div>
           )}
         </DataCard>
 
@@ -134,17 +134,19 @@ const EmployerTalent = () => {
                 const isShortlisted = shortlisted.includes(c.id);
                 return (
                   <DataCard key={c.id} className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-full bg-magenta/10 text-magenta flex items-center justify-center font-bold text-sm shrink-0">
-                        {c.name.split(" ").map((n: string) => n[0]).join("")}
+                    <div className="flex items-start gap-3 justify-between">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <div className="h-9 w-9 rounded-full bg-magenta/10 text-magenta flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                          {c.name.split(" ").map((n: string) => n[0]).join("")}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm text-foreground truncate" title={c.name}>{c.name}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate" title={`${c.location} · ${c.course}`}>
+                            <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground/75" /> {c.location} · {c.course}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-foreground">{c.name}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" /> {c.location} · {c.course}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="text-[10px]">{c.availability}</Badge>
+                      <Badge variant="outline" className="text-[10px] shrink-0">{c.availability}</Badge>
                     </div>
 
                     <div className="flex flex-wrap gap-1">

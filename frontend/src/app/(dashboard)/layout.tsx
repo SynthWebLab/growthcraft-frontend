@@ -242,14 +242,14 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
       />
 
       <div className={cn(
-        "flex-1 flex flex-col min-h-screen transition-all duration-300",
+        "flex-1 flex flex-col min-h-screen transition-all duration-300 overflow-x-hidden",
         !isMobile && (collapsed ? "ml-16" : "ml-64")
       )}>
         <PanelTopbar
           onMenuClick={handleMenuClick}
           basePath={config.basePath}
         />
-        <main className="flex-1 bg-marble p-4 md:p-8">
+        <main className="flex-1 bg-marble p-4 md:p-8 overflow-x-hidden">
           {children}
         </main>
       </div>

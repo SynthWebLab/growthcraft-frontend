@@ -147,6 +147,61 @@ const MentorEarnings = () => {
     );
   };
 
+  const mobileRenderMonth = (row: MentorMonthlyEarningsData) => {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-sm text-foreground">{row.month}</span>
+          <span className="font-bold text-sm text-magenta">₹{row.total.toLocaleString()}</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-border/40 text-muted-foreground">
+          <div>
+            <span className="text-[10px] uppercase block">Sessions</span>
+            <span className="font-semibold text-foreground">{row.sessions}</span>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase block">Base</span>
+            <span className="font-medium text-foreground">₹{row.amount.toLocaleString()}</span>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase block">Bonus</span>
+            <span className="font-medium text-foreground">
+              {row.bonus > 0 ? `₹${row.bonus.toLocaleString()}` : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const mobileRenderPayout = (row: MentorPayoutHistoryItem) => {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground font-medium">{row.date}</span>
+          <span className="font-bold text-sm text-foreground">₹{row.amount.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4 pt-1.5 border-t border-border/40 text-xs">
+          <div className="min-w-0">
+            <span className="text-[10px] uppercase text-muted-foreground block">Transaction ID</span>
+            <code className="text-[10px] font-mono text-muted-foreground block truncate max-w-[150px]" title={row.txnId}>
+              {row.txnId}
+            </code>
+          </div>
+          <div className="shrink-0">
+            {row.status === "completed" ? (
+              <StatusPill variant="completed" />
+            ) : row.status === "processing" ? (
+              <StatusPill variant="pending" label="Processing" />
+            ) : (
+              <StatusPill variant="pending" label="Pending" />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -154,7 +209,7 @@ const MentorEarnings = () => {
         description="Track your monthly earnings and payouts"
         action={
           <Button
-            className="bg-magenta hover:bg-magenta/90 text-white gap-1.5"
+            className="bg-magenta hover:bg-magenta/90 text-white gap-1.5 w-full md:w-auto"
             onClick={handleOpenWithdraw}
             disabled={isWithdrawing || (summary.withdrawablePayout ?? summary.pendingPayout) === 0}
           >
@@ -180,12 +235,20 @@ const MentorEarnings = () => {
 
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-3">Monthly Breakdown</h2>
-        <PanelDataTable columns={monthCols} data={monthlyData} />
+        <PanelDataTable
+          columns={monthCols}
+          data={monthlyData}
+          mobileRender={mobileRenderMonth}
+        />
       </div>
 
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-3">Payout History</h2>
-        <PanelDataTable columns={payoutCols} data={payouts} />
+        <PanelDataTable
+          columns={payoutCols}
+          data={payouts}
+          mobileRender={mobileRenderPayout}
+        />
       </div>
 
       {/* WITHDRAWAL DIALOG */}

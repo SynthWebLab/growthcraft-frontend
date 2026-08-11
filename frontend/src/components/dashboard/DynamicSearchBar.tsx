@@ -708,7 +708,7 @@ export const DynamicSearchBar: React.FC<DynamicSearchBarProps> = ({
   };
 
   return (
-    <div ref={containerRef} className={cn("relative w-full max-w-md", className)}>
+    <div ref={containerRef} className={cn("relative w-full max-w-xs sm:max-w-sm md:max-w-md", className)}>
       <form
         onSubmit={(e) => {
           e.preventDefault();

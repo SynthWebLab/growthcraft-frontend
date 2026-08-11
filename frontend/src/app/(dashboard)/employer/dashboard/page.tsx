@@ -34,7 +34,7 @@ const EmployerDashboard = () => {
         <p className="text-sm text-destructive">Couldn&apos;t load dashboard. Please try again.</p>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Active Job Postings" value={isLoading ? 0 : dashboard?.kpis.activeJobs ?? 0} />
         <KpiCard label="Applications Received" value={isLoading ? 0 : dashboard?.kpis.applicationsReceived ?? 0} />
         <KpiCard label="Candidates Shortlisted" value={isLoading ? 0 : dashboard?.kpis.candidatesShortlisted ?? 0} />
@@ -44,10 +44,10 @@ const EmployerDashboard = () => {
       <div className="grid lg:grid-cols-3 gap-4">
         <ChartCard title="Application Funnel" className="lg:col-span-2">
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={funnelData} layout="vertical" margin={{ left: 20 }}>
+            <BarChart data={funnelData} layout="vertical" margin={{ left: 0, right: 10, top: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-              <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis dataKey="stage" type="category" stroke="hsl(var(--muted-foreground))" fontSize={12} width={90} />
+              <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+              <YAxis dataKey="stage" type="category" stroke="hsl(var(--muted-foreground))" fontSize={11} width={75} />
               <Tooltip
                 contentStyle={{
                   background: "hsl(var(--background))",
@@ -116,7 +116,9 @@ const EmployerDashboard = () => {
                       <div className="h-7 w-7 rounded-full bg-magenta/10 text-magenta flex items-center justify-center text-[10px] font-bold">
                         {app.name.split(" ").map((n) => n[0]).join("")}
                       </div>
-                      <span className="font-medium text-foreground">{app.name}</span>
+                      <span className="font-medium text-foreground truncate max-w-[120px] sm:max-w-none" title={app.name}>
+                        {app.name}
+                      </span>
                     </td>
                     <td className="py-3 text-muted-foreground">{app.role}</td>
                     <td className="py-3 text-muted-foreground">{app.date}</td>

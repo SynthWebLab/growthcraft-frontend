@@ -56,25 +56,25 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border bg-white px-4 md:px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 md:gap-4 border-b border-border bg-white px-3 md:px-8 w-full min-w-0">
       {/* Left */}
       <button
         onClick={onMenuClick}
-        className="text-muted-foreground hover:text-magenta transition-colors"
+        className="text-muted-foreground hover:text-magenta transition-colors shrink-0"
       >
         <Menu className="h-5 w-5" />
       </button>
       {breadcrumb && (
-        <span className="hidden md:block text-sm font-afacad text-muted-foreground">{breadcrumb}</span>
+        <span className="hidden md:block text-sm font-afacad text-muted-foreground shrink-0">{breadcrumb}</span>
       )}
 
       {/* Center — search */}
-      <div className="flex-1 flex justify-center">
+      <div className="flex-1 flex justify-center min-w-0">
         <DynamicSearchBar basePath={basePath} roleOverride={profile?.role} />
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 md:gap-2 shrink-0">
         {profile?.role === "student" && profile?.isAmbassador && (
           <button
             onClick={() => {

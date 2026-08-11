@@ -12,7 +12,7 @@ interface KpiCardProps {
 }
 
 export const KpiCard = ({ label, value, prefix, suffix, delta, className }: KpiCardProps) => (
-  <div className={cn("rounded-xl border border-border bg-white p-6", className)}>
+  <div className={cn("rounded-xl border border-border bg-white p-4 md:p-6 min-w-0", className)}>
     <StatCounter value={value} prefix={prefix} suffix={suffix} label={label} className="text-left" />
     {delta !== undefined && (
       <div className={cn(

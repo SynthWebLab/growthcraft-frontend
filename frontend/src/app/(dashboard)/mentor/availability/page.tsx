@@ -204,8 +204,8 @@ const MentorAvailability = () => {
       </DataCard>
 
       <DataCard>
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-          <div className="flex-1 max-w-xs">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-4 w-full">
+          <div className="w-full sm:max-w-xs">
             <Label htmlFor="rate" className="text-sm font-medium">
               Session Rate (₹ per hour)
             </Label>
@@ -214,14 +214,14 @@ const MentorAvailability = () => {
               type="number"
               value={rate}
               onChange={(e) => setRate(e.target.value)}
-              className="mt-1.5"
+              className="mt-1.5 w-full"
               placeholder="e.g. 1500"
             />
           </div>
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="bg-magenta hover:bg-magenta/90 text-white"
+            className="bg-magenta hover:bg-magenta/90 text-white w-full sm:w-auto shrink-0"
           >
             {isSaving ? "Saving..." : "Save Availability"}
           </Button>
