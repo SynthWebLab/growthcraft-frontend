@@ -287,7 +287,7 @@ const CollegeReports = () => {
             <FileText className="h-4 w-4 text-magenta shrink-0" />
             <span className="font-semibold text-sm text-foreground truncate">{row.month}</span>
           </div>
-          <span className="font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2.5 py-0.5 rounded-full text-[10px]">Monthly Summary</span>
+          <span className="font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2.5 py-0.5 rounded-full text-[10px] whitespace-nowrap shrink-0">Monthly Summary</span>
         </div>
 
         {/* Stats Grid */}
@@ -431,7 +431,7 @@ const CollegeReports = () => {
             <DialogTitle>Generate Custom Report</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>From</Label>
                 <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
