@@ -211,7 +211,7 @@ export default function AdminBootcamps() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Bootcamps</h1>
         <p className="text-muted-foreground mt-1">Manage bootcamps and workshop events</p>

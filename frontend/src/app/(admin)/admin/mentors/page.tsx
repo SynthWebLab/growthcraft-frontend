@@ -186,7 +186,7 @@ export default function AdminMentorsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Mentor Payout Management</h1>
         <p className="text-muted-foreground">
@@ -242,7 +242,7 @@ export default function AdminMentorsPage() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-6 space-y-6">
+                <CardContent className="pt-6 space-y-4 md:space-y-6">
                   {/* Quick stats grid */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-muted/40 p-3 rounded-lg border border-border">

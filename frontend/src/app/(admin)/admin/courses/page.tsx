@@ -277,7 +277,7 @@ export default function AdminCourses() {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Courses</h1>
         <p className="text-muted-foreground mt-1">
