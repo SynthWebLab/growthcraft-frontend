@@ -101,9 +101,6 @@ export function useSocket() {
         } finally {
           isRefreshing = false;
         }
-      } else if (!err.message.includes("Authentication error")) {
-        // Non-auth errors (e.g. xhr poll error) — stop retrying
-        socket.disconnect();
       }
     });
 

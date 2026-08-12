@@ -10,6 +10,8 @@ import {
   Clock,
   Video,
   Calendar,
+  Check,
+  CheckCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatHistory, useSendMessage, chatKeys } from "@/hooks/queries/useChat";
@@ -298,10 +300,21 @@ export function ChatWindow({
       }
     };
 
+    const handleIncomingRead = (data: any) => {
+      console.log("[ChatWindow] Real-time read receipt received:", data);
+      if (selectedContact && data.readerId === selectedContact.id) {
+        void queryClient.invalidateQueries({
+          queryKey: chatKeys.history(selectedContact.id),
+        });
+      }
+    };
+
     socket.on("chat.message", handleIncomingMessage);
+    socket.on("chat.read", handleIncomingRead);
 
     return () => {
       socket.off("chat.message", handleIncomingMessage);
+      socket.off("chat.read", handleIncomingRead);
     };
   }, [selectedContact, user?._id, queryClient, contacts, role]);
 
@@ -399,6 +412,15 @@ export function ChatWindow({
     tomorrow.setDate(tomorrow.getDate() + 1);
     setScheduleDate(tomorrow.toISOString().split("T")[0]);
     setScheduleTime("11:00 AM");
+
+    // Auto-generate unique Google Meet Link
+    const randStr = (len: number) => {
+      const chars = "abcdefghijklmnopqrstuvwxyz";
+      return Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    };
+    const autoLink = `https://meet.google.com/${randStr(3)}-${randStr(4)}-${randStr(3)}`;
+    setScheduleLink(autoLink);
+
     setIsScheduleMeetModalOpen(true);
   };
 
@@ -706,6 +728,15 @@ export function ChatWindow({
                       <span className="text-[9px] text-muted-foreground mt-1 px-1 flex items-center gap-1">
                         <Clock className="h-3 w-3 shrink-0" />
                         {time}
+                        {isOwn && (
+                          <span className="ml-1 shrink-0">
+                            {message.isRead ? (
+                              <CheckCheck className="h-3 w-3 text-sky-500 shrink-0" />
+                            ) : (
+                              <Check className="h-3 w-3 text-muted-foreground shrink-0" />
+                            )}
+                          </span>
+                        )}
                       </span>
                     </div>
                   );

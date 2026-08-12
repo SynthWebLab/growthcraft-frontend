@@ -10,7 +10,10 @@ export const getSocket = (): Socket => {
     socket = io(SOCKET_URL, {
       withCredentials: true,
       autoConnect: false,
-      reconnection: false,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
   }
   return socket;
