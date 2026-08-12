@@ -322,7 +322,7 @@ function AdminEventsContent() {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
           {typeParam ? `${typeParam}s` : "Events & Bootcamps"}
