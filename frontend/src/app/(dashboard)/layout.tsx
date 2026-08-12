@@ -12,7 +12,7 @@ import {
   LayoutDashboard, BookOpen, Award, User, HelpCircle, Settings,
   GraduationCap, Users, Calendar, BarChart3, Building2,
   Briefcase, Search, FileText, Megaphone, DollarSign, Wrench, Trophy, Target,
-  Loader2, Layers
+  Loader2, Layers, MessageSquare
 } from "lucide-react";
 
 type Role = "Student" | "College" | "Ambassador" | "Mentor" | "HiringPartner";
@@ -33,6 +33,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
           { icon: Trophy, label: "Hackathons", href: "hackathons" },
           { icon: Target, label: "Training Programs", href: "training-programs" },
           { icon: Users, label: "Mentors", href: "mentors" },
+          { icon: MessageSquare, label: "Doubt Sessions", href: "doubt-sessions" },
           { icon: Award, label: "Certificates", href: "certificates" },
           { icon: Briefcase, label: "Jobs", href: "jobs" },
         ],
@@ -86,6 +87,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
           { icon: Calendar, label: "Sessions", href: "sessions" },
           { icon: Calendar, label: "Availability", href: "availability" },
           { icon: Users, label: "Students", href: "students" },
+          { icon: MessageSquare, label: "Doubt Sessions", href: "doubt-sessions" },
           { icon: DollarSign, label: "Earnings", href: "earnings" },
         ],
       },

@@ -76,6 +76,7 @@ export interface MentorAvailabilityData {
 export type MentorAvailabilityResponse = ApiResponse<MentorAvailabilityData>;
 
 export interface MentorStudent {
+  id?: string;
   name: string;
   course: string;
   sessionsCompleted: number;

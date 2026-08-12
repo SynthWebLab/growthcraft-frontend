@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { MessageSquare } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import PanelDataTable, { type Column } from "@/components/panel/PanelDataTable";
 import { useMentorStudents } from "@/hooks/queries/useMentor";
@@ -26,6 +28,19 @@ const columns: Column<MentorStudent>[] = [
   { key: "sessionsCompleted", label: "Sessions", sortable: true },
   { key: "lastSession", label: "Last Session", sortable: true },
   { key: "nextSession", label: "Next Session", sortable: true },
+  {
+    key: "actions" as any,
+    label: "Actions",
+    render: (row) => (
+      <Link
+        href={`/mentor/doubt-sessions?userId=${row.id}`}
+        className="text-magenta hover:text-magenta/80 flex items-center gap-1 text-xs font-semibold bg-lavender/35 hover:bg-lavender/50 px-2.5 py-1.5 rounded-md w-max"
+      >
+        <MessageSquare className="h-3.5 w-3.5" />
+        Message
+      </Link>
+    ),
+  },
 ];
 
 const StudentsSkeleton = () => (
@@ -57,19 +72,28 @@ const MentorStudents = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-border/40">
-          <div>
-            <span className="text-muted-foreground block text-[10px] uppercase">Sessions</span>
-            <span className="font-semibold text-foreground">{row.sessionsCompleted}</span>
+        <div className="flex items-center justify-between pt-2.5 border-t border-border/40">
+          <div className="grid grid-cols-3 gap-2 flex-1 text-xs">
+            <div>
+              <span className="text-muted-foreground block text-[10px] uppercase">Sessions</span>
+              <span className="font-semibold text-foreground">{row.sessionsCompleted}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block text-[10px] uppercase">Last Session</span>
+              <span className="font-medium text-foreground">{row.lastSession || "-"}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block text-[10px] uppercase">Next Session</span>
+              <span className="font-medium text-foreground">{row.nextSession || "-"}</span>
+            </div>
           </div>
-          <div>
-            <span className="text-muted-foreground block text-[10px] uppercase">Last Session</span>
-            <span className="font-medium text-foreground">{row.lastSession || "-"}</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground block text-[10px] uppercase">Next Session</span>
-            <span className="font-medium text-foreground">{row.nextSession || "-"}</span>
-          </div>
+          <Link
+            href={`/mentor/doubt-sessions?userId=${row.id}`}
+            className="text-magenta hover:text-magenta/80 flex items-center gap-1.5 text-xs font-semibold bg-lavender/35 hover:bg-lavender/50 px-2.5 py-1 rounded-md"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            Chat
+          </Link>
         </div>
       </div>
     );

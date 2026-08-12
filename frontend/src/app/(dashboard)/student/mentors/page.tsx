@@ -4,7 +4,8 @@ import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
-import { Users, Star, Linkedin, Globe } from "lucide-react";
+import Link from "next/link";
+import { Users, Star, Linkedin, Globe, MessageSquare } from "lucide-react";
 import { useStudentMentors } from "@/hooks/queries/useStudent";
 import { PanelEmptyState } from "@/components/panel";
 
@@ -110,6 +111,15 @@ export default function StudentMentorsPage() {
                       >
                         <Globe className="h-4 w-4" />
                       </a>
+                    )}
+                    {mentor.userId?._id && (
+                      <Link
+                        href={`/student/doubt-sessions?userId=${mentor.userId._id}`}
+                        className="text-muted-foreground hover:text-magenta transition-colors ml-auto flex items-center gap-1 text-xs font-semibold bg-lavender/35 hover:bg-lavender/50 px-2.5 py-1 rounded-md"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        Chat
+                      </Link>
                     )}
                   </div>
                 </div>

@@ -212,6 +212,10 @@ export const API_ENDPOINTS = {
     createLink: "/payments/create-link",
     myPayments: "/payments/my-payments",
   },
+  chats: {
+    messages: (receiverId: string) => `/chats/messages/${receiverId}`,
+    send: "/chats/messages",
+  },
 } as const;
 
 
