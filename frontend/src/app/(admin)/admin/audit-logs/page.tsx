@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAdminAuditLogs } from "@/hooks/queries/useAdmin";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { AccessDenied } from "@/components/admin/AccessDenied";
@@ -20,7 +20,12 @@ export default function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
   const [actionFilter, setActionFilter] = useState("");
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
+  const [mounted, setMounted] = useState(false);
   const { isSuperAdmin } = useAdminRole();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Queries
   const { data: logsData, isLoading } = useAdminAuditLogs({
@@ -28,6 +33,14 @@ export default function AdminAuditLogsPage() {
     limit: 15,
     action: actionFilter,
   });
+
+  if (!mounted || isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   if (!isSuperAdmin) {
     return (
@@ -88,7 +101,7 @@ export default function AdminAuditLogsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">System Audit Logs</h1>
         <p className="text-muted-foreground">
@@ -103,7 +116,7 @@ export default function AdminAuditLogsPage() {
             Search logs by action prefix or target ID. Click "View Details" in actions to review json payload changes.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 md:space-y-6">
           <DataTable
             columns={columns}
             data={logsList}
