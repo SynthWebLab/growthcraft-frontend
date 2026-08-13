@@ -259,8 +259,9 @@ export default function MentorCohortsPage() {
 
                 {/* Tab 1: Students List & Rubric Rating */}
                 <TabsContent value="students" className="pt-4">
-                  <DataCard className="p-0 overflow-hidden">
-                    <div className="divide-y divide-border">
+                  <DataCard className="relative overflow-hidden p-0">
+                    {/* Lightly Blurred Content, text remains legible */}
+                    <div className="filter blur-[0.8px] opacity-75 select-none pointer-events-none divide-y divide-border">
                       {students.length === 0 ? (
                         <p className="text-sm text-muted-foreground p-8 text-center">No students registered in this batch.</p>
                       ) : (
@@ -285,80 +286,99 @@ export default function MentorCohortsPage() {
                         })
                       )}
                     </div>
+
+                    {/* Coming Soon Overlay */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[0.5px] z-10 p-4 text-center">
+                      <div className="bg-slate-900/95 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl shadow-lg border border-white/10 backdrop-blur-md flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-amber-400 animate-pulse" />
+                        <span>Coming Soon</span>
+                      </div>
+                    </div>
                   </DataCard>
                 </TabsContent>
 
                 {/* Tab 2: Attendance Registry */}
                 <TabsContent value="attendance" className="pt-4">
-                  <DataCard>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-border/50 pb-4">
-                      <div>
-                        <h4 className="font-bold text-foreground text-sm">Attendance registry sheet</h4>
-                        <p className="text-xs text-muted-foreground">Select date and select attendance for each enrolled student.</p>
+                  <DataCard className="relative overflow-hidden">
+                    {/* Lightly Blurred Content, text remains legible */}
+                    <div className="filter blur-[0.8px] opacity-75 select-none pointer-events-none">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-border/50 pb-4">
+                        <div>
+                          <h4 className="font-bold text-foreground text-sm">Attendance registry sheet</h4>
+                          <p className="text-xs text-muted-foreground">Select date and select attendance for each enrolled student.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="att-date" className="text-xs shrink-0">Session Date</Label>
+                          <Input
+                            id="att-date"
+                            type="date"
+                            value={attendanceDate}
+                            onChange={(e) => setAttendanceDate(e.target.value)}
+                            className="w-36 h-9 text-xs"
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="att-date" className="text-xs shrink-0">Session Date</Label>
-                        <Input
-                          id="att-date"
-                          type="date"
-                          value={attendanceDate}
-                          onChange={(e) => setAttendanceDate(e.target.value)}
-                          className="w-36 h-9 text-xs"
-                        />
-                      </div>
-                    </div>
 
-                    <div className="divide-y divide-border/60 max-h-[350px] overflow-y-auto pr-2 mb-6">
-                      {students.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-6 text-center">No students to mark.</p>
-                      ) : (
-                        students.map((student: any, idx: number) => {
-                          const studentId = student.id || student._id || student.userId?._id || student.userId;
-                          const studentName = student.name || student.userId?.fullName || "Student";
-                          const studentEmail = student.email || student.userId?.email || "";
-                          const currentRecord = attendanceRecords[studentId] || { status: "Present", remarks: "" };
+                      <div className="divide-y divide-border/60 max-h-[350px] overflow-y-auto pr-2 mb-6">
+                        {students.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-6 text-center">No students to mark.</p>
+                        ) : (
+                          students.map((student: any, idx: number) => {
+                            const studentId = student.id || student._id || student.userId?._id || student.userId;
+                            const studentName = student.name || student.userId?.fullName || "Student";
+                            const studentEmail = student.email || student.userId?.email || "";
+                            const currentRecord = attendanceRecords[studentId] || { status: "Present", remarks: "" };
 
-                          return (
-                            <div key={studentId || `att-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3">
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-foreground truncate">
-                                  {studentName}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground truncate">{studentEmail}</p>
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
-                                <div className="flex rounded-md border border-border overflow-hidden bg-marble shrink-0">
-                                  {["Present", "Absent", "Late", "Excused"].map((status) => (
-                                    <button
-                                      key={status}
-                                      onClick={() => handleStatusChange(studentId, status)}
-                                      className={`text-[11px] px-2.5 py-1.5 font-medium border-r border-border last:border-0 transition-colors ${
-                                        currentRecord.status === status
-                                          ? "bg-magenta text-white"
-                                          : "text-muted-foreground hover:bg-marble-dark"
-                                      }`}
-                                    >
-                                      {status}
-                                    </button>
-                                  ))}
+                            return (
+                              <div key={studentId || `att-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-foreground truncate">
+                                    {studentName}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground truncate">{studentEmail}</p>
                                 </div>
-                                <Input
-                                  placeholder="Remarks..."
-                                  value={currentRecord.remarks}
-                                  onChange={(e) => handleRemarksChange(studentId, e.target.value)}
-                                  className="h-8 text-xs flex-1 sm:flex-initial min-w-[90px] max-w-[120px]"
-                                />
+
+                                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
+                                  <div className="flex rounded-md border border-border overflow-hidden bg-marble shrink-0">
+                                    {["Present", "Absent", "Late", "Excused"].map((status) => (
+                                      <button
+                                        key={status}
+                                        onClick={() => handleStatusChange(studentId, status)}
+                                        className={`text-[11px] px-2.5 py-1.5 font-medium border-r border-border last:border-0 transition-colors ${
+                                          currentRecord.status === status
+                                            ? "bg-magenta text-white"
+                                            : "text-muted-foreground hover:bg-marble-dark"
+                                        }`}
+                                      >
+                                        {status}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <Input
+                                    placeholder="Remarks..."
+                                    value={currentRecord.remarks}
+                                    onChange={(e) => handleRemarksChange(studentId, e.target.value)}
+                                    className="h-8 text-xs flex-1 sm:flex-initial min-w-[90px] max-w-[120px]"
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })
-                      )}
+                            );
+                          })
+                        )}
+                      </div>
+
+                      <Button onClick={handleSaveAttendance} disabled={markAttendanceMutation.isPending || students.length === 0} className="bg-magenta hover:bg-magenta/90 text-white w-full sm:w-auto">
+                        {markAttendanceMutation.isPending ? "Saving Attendance..." : "Save Registry Sheet"}
+                      </Button>
                     </div>
 
-                    <Button onClick={handleSaveAttendance} disabled={markAttendanceMutation.isPending || students.length === 0} className="bg-magenta hover:bg-magenta/90 text-white w-full sm:w-auto">
-                      {markAttendanceMutation.isPending ? "Saving Attendance..." : "Save Registry Sheet"}
-                    </Button>
+                    {/* Coming Soon Overlay */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[0.5px] z-10 p-4 text-center">
+                      <div className="bg-slate-900/95 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl shadow-lg border border-white/10 backdrop-blur-md flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-amber-400 animate-pulse" />
+                        <span>Coming Soon</span>
+                      </div>
+                    </div>
                   </DataCard>
                 </TabsContent>
 
@@ -379,7 +399,6 @@ export default function MentorCohortsPage() {
                               <th className="p-3 font-semibold text-muted-foreground text-xs uppercase">Checked In</th>
                               <th className="p-3 font-semibold text-muted-foreground text-xs uppercase">Checked Out</th>
                               <th className="p-3 font-semibold text-muted-foreground text-xs uppercase">Duration</th>
-                              <th className="p-3 font-semibold text-muted-foreground text-xs uppercase">Payout</th>
                               <th className="p-3 font-semibold text-muted-foreground text-xs uppercase">Session notes</th>
                             </tr>
                           </thead>
@@ -394,9 +413,6 @@ export default function MentorCohortsPage() {
                                 </td>
                                 <td className="p-3 whitespace-nowrap text-xs text-foreground">
                                   {log.hoursBilled ? `${log.hoursBilled.toFixed(2)} hrs` : "-"}
-                                </td>
-                                <td className="p-3 whitespace-nowrap text-xs text-foreground font-semibold">
-                                  {log.payoutAmount ? `₹${log.payoutAmount}` : "-"}
                                 </td>
                                 <td className="p-3 text-xs text-muted-foreground max-w-[200px] truncate" title={log.sessionNotes}>
                                   {log.sessionNotes || "-"}
