@@ -13,8 +13,8 @@ export default function StudentTrainingProgramsPage() {
     const slug = program?.slug || "industrial-software-engineering-program";
     return {
       id: e._id,
-      title: program?.title ?? e.title,
-      subtitle: program?.domain || "Industrial Training",
+      title: program?.programName || program?.title || e.title || "Training Program",
+      subtitle: program?.fullTitle || program?.domain || "Industrial Training",
       status: e.status,
       paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
       enrollmentDate: e.createdAt || e.enrollmentDate || new Date().toISOString(),

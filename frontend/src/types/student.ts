@@ -37,6 +37,8 @@ export interface PopulatedEventRef {
 export interface PopulatedProgramRef {
   _id: string;
   title?: string;
+  programName?: string;
+  fullTitle?: string;
   slug?: string;
   domain?: string;
 }

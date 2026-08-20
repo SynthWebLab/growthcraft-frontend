@@ -15,6 +15,8 @@ export interface CohortDate {
 export interface TrainingProgram {
   _id: string;
   title: string;
+  programName?: string;
+  fullTitle?: string;
   slug: string;
   description: string;
   domain: string;

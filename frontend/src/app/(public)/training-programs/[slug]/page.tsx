@@ -406,9 +406,15 @@ export default function TrainingProgramDetailPage({
                 </span>
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 break-words">
-                {program.title}
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 break-words">
+                {program.programName || program.title}
               </h1>
+
+              {program.fullTitle && (
+                <p className="text-lg md:text-xl font-medium text-muted-foreground mb-4">
+                  {program.fullTitle}
+                </p>
+              )}
 
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 {mentors.length > 0 && (

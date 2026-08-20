@@ -293,9 +293,16 @@ export default function TrainingProgramsPage() {
                     )}
 
                     {/* Program Title */}
-                    <h3 className="text-base font-bold text-foreground group-hover:text-magenta transition-colors mb-2 line-clamp-2">
-                      {program.title}
+                    <h3 className="text-lg font-bold text-foreground group-hover:text-magenta transition-colors mb-1 line-clamp-1">
+                      {program.programName || program.title}
                     </h3>
+
+                    {/* Full Title (Displayed distinctly) */}
+                    {program.fullTitle && (
+                      <p className="text-xs font-medium text-primary/80 dark:text-lavender mb-2 line-clamp-1">
+                        {program.fullTitle}
+                      </p>
+                    )}
 
                     {/* Description */}
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
