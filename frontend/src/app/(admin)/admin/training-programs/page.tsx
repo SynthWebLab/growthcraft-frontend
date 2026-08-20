@@ -29,7 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Check, Flame, Plus } from "lucide-react";
+import { Check, Flame, Plus, Building2, Trash2, Briefcase } from "lucide-react";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
 
 /* ─── Constants ─────────────────────────────────────────────── */
 
@@ -46,6 +47,33 @@ const DOMAINS = [
 
 const LEVELS = ["Beginner", "Intermediate", "Advanced"];
 
+const INTERNSHIP_MODES = ["Hybrid", "Remote", "On-site", "Campus Hub", "Offline"];
+
+export interface FormPartner {
+  companyName: string;
+  role: string;
+  duration?: string;
+  mode?: string;
+  description?: string;
+}
+
+const DEFAULT_FORM_PARTNERS: FormPartner[] = [
+  {
+    companyName: "SynthWeb",
+    role: "Full Stack & Enterprise Software Intern",
+    duration: "60 Days",
+    mode: "Hybrid",
+    description: "Work on live enterprise client software and microservices systems.",
+  },
+  {
+    companyName: "Social Stories",
+    role: "Product Engineering & Growth Intern",
+    duration: "60 Days",
+    mode: "Hybrid",
+    description: "Build modern user-facing web applications and growth tooling.",
+  },
+];
+
 const EMPTY_FORM = {
   title: "",
   description: "",
@@ -60,6 +88,7 @@ const EMPTY_FORM = {
   is_featured: false,
   selectedMentorIds: [] as string[],
   mentorNames: "",
+  internshipPartners: DEFAULT_FORM_PARTNERS as FormPartner[],
 };
 
 /* ─── Component ─────────────────────────────────────────────── */
@@ -112,6 +141,17 @@ export default function AdminTrainingPrograms() {
   const handleEdit = (program: any) => {
     setEditingProgram(program);
     const existingMentorIds = (program.mentors || []).map((m: any) => m.userId || m._id || "").filter(Boolean);
+    const existingPartners =
+      Array.isArray(program.internshipPartners) && program.internshipPartners.length > 0
+        ? program.internshipPartners.map((p: any) => ({
+            companyName: p.companyName || "",
+            role: p.role || "Industrial Intern",
+            duration: p.duration || `${program.durationDays || 60} Days`,
+            mode: p.mode || "Hybrid",
+            description: p.description || "",
+          }))
+        : DEFAULT_FORM_PARTNERS;
+
     setFormData({
       title: program.title || "",
       description: program.description || "",
@@ -126,6 +166,7 @@ export default function AdminTrainingPrograms() {
       is_featured: !!program.isFeatured,
       selectedMentorIds: existingMentorIds,
       mentorNames: (program.mentors || []).map((m: any) => m.name || m.fullName || "").filter(Boolean).join(", "),
+      internshipPartners: existingPartners,
     });
     setIsDialogOpen(true);
   };
@@ -167,6 +208,9 @@ export default function AdminTrainingPrograms() {
       isPublished: formData.is_published,
       isFeatured: formData.is_featured,
       mentorIds: formData.selectedMentorIds,
+      internshipPartners: (formData.internshipPartners || []).filter(
+        (p: any) => p.companyName && p.companyName.trim() !== ""
+      ),
     };
 
     if (formData.originalPrice) payload.originalPrice = parseFloat(formData.originalPrice);
@@ -197,6 +241,29 @@ export default function AdminTrainingPrograms() {
       key: "price",
       label: "Price",
       render: (v: number) => (v != null ? `₹${v.toLocaleString()}` : "Free"),
+    },
+    {
+      key: "internshipPartners",
+      label: "Internship Partners",
+      render: (v: any) => {
+        const partners = Array.isArray(v) && v.length > 0 ? v : [
+          { companyName: "SynthWeb" },
+          { companyName: "Social Stories" },
+        ];
+        return (
+          <div className="flex flex-wrap gap-1 max-w-[200px]">
+            {partners.map((p: any, idx: number) => (
+              <span
+                key={idx}
+                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 flex items-center gap-1"
+              >
+                <Building2 className="h-2.5 w-2.5" />
+                {p.companyName}
+              </span>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: "isPublished",
@@ -263,7 +330,7 @@ export default function AdminTrainingPrograms() {
 
       {/* Add / Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-2xl lg:max-w-3xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>
               {editingProgram ? "Edit Training Program" : "Add New Training Program"}
@@ -451,6 +518,153 @@ export default function AdminTrainingPrograms() {
                   Selected: {formData.mentorNames}
                 </p>
               )}
+            </div>
+
+            {/* Internship Partner Companies Management */}
+            <div className="space-y-3 md:col-span-2 border rounded-xl p-4 bg-muted/10 border-border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <Label className="text-sm font-bold">Internship Partner Companies</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Partner companies offering student internships for this program (e.g., SynthWeb, Social Stories). Students choose their preferred company during enrollment.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      internshipPartners: [
+                        ...formData.internshipPartners,
+                        {
+                          companyName: "",
+                          role: "Industrial Intern",
+                          duration: `${formData.durationDays || 60} Days`,
+                          mode: "Hybrid",
+                          description: "",
+                        },
+                      ],
+                    });
+                  }}
+                  className="h-8 text-xs font-semibold gap-1 self-start sm:self-auto"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add Partner
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {formData.internshipPartners.map((partner, pIdx) => (
+                  <div
+                    key={pIdx}
+                    className="p-3 rounded-lg border bg-background space-y-2.5 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between gap-2 pb-1 border-b">
+                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-2">
+                        <PartnerLogo companyName={partner.companyName} size="sm" className="h-5 w-5 rounded-md" />
+                        Partner #{pIdx + 1}: <strong className="text-foreground">{partner.companyName || "New Company"}</strong>
+                      </span>
+                      {formData.internshipPartners.length > 1 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const updated = formData.internshipPartners.filter((_, i) => i !== pIdx);
+                            setFormData({ ...formData, internshipPartners: updated });
+                          }}
+                          className="h-6 px-2 text-destructive hover:bg-destructive/10 text-xs"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" /> Remove
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-semibold">Company Name *</Label>
+                        <Input
+                          value={partner.companyName}
+                          onChange={(e) => {
+                            const updated = [...formData.internshipPartners];
+                            updated[pIdx].companyName = e.target.value;
+                            setFormData({ ...formData, internshipPartners: updated });
+                          }}
+                          placeholder="e.g. SynthWeb, Social Stories"
+                          className="h-8 text-xs"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-semibold">Internship Role *</Label>
+                        <Input
+                          value={partner.role}
+                          onChange={(e) => {
+                            const updated = [...formData.internshipPartners];
+                            updated[pIdx].role = e.target.value;
+                            setFormData({ ...formData, internshipPartners: updated });
+                          }}
+                          placeholder="e.g. Full Stack Developer Intern"
+                          className="h-8 text-xs"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px]">Duration</Label>
+                        <Input
+                          value={partner.duration || ""}
+                          onChange={(e) => {
+                            const updated = [...formData.internshipPartners];
+                            updated[pIdx].duration = e.target.value;
+                            setFormData({ ...formData, internshipPartners: updated });
+                          }}
+                          placeholder="e.g. 60 Days / 2 Months"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px]">Mode</Label>
+                        <Select
+                          value={partner.mode || "Hybrid"}
+                          onValueChange={(val) => {
+                            const updated = [...formData.internshipPartners];
+                            updated[pIdx].mode = val;
+                            setFormData({ ...formData, internshipPartners: updated });
+                          }}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select mode" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {INTERNSHIP_MODES.map((m) => (
+                              <SelectItem key={m} value={m} className="text-xs">
+                                {m}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1 sm:col-span-2">
+                        <Label className="text-[11px]">Description / Project Scope</Label>
+                        <Input
+                          value={partner.description || ""}
+                          onChange={(e) => {
+                            const updated = [...formData.internshipPartners];
+                            updated[pIdx].description = e.target.value;
+                            setFormData({ ...formData, internshipPartners: updated });
+                          }}
+                          placeholder="e.g. Build live enterprise software systems and microservices."
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Toggles */}

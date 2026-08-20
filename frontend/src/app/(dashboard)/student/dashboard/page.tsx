@@ -58,11 +58,15 @@ const StudentDashboard = () => {
   const { data, isLoading, isError, refetch } = useStudentDashboard();
   const { data: user } = useCurrentUser();
   const { openCheckout } = useRazorpayCheckout();
-
   const dashboard = data?.data;
   const counts = dashboard?.counts;
-  const recentCourses = dashboard?.recent?.courses ?? [];
-  const recentEvents = dashboard?.recent?.events ?? [];
+
+  const recentCourses = (dashboard?.recent?.courses ?? []).filter(
+    (e: any) => e.paymentStatus !== "pending" && e.status !== "pending"
+  );
+  const recentEvents = (dashboard?.recent?.events ?? []).filter(
+    (e: any) => e.paymentStatus !== "pending" && e.status !== "pending"
+  );
 
   const firstName = user?.fullName ? user.fullName.split(" ")[0] : "";
   const title = firstName ? `Welcome back, ${firstName}! 👋` : "Welcome back! 👋";
@@ -105,11 +109,11 @@ const StudentDashboard = () => {
         email: user?.email || "",
         contact: user?.phone || "",
       },
-      onSuccess: (paymentId) => {
+      onSuccess: (paymentId: string) => {
         toast.success("Payment completed successfully!");
         refetch();
       },
-      onError: (err) => {
+      onError: (err?: string) => {
         toast.error(err || "Payment failed. Please try again.");
       },
     });
@@ -168,7 +172,7 @@ const StudentDashboard = () => {
           </p>
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {recentCourses.map((enrollment) => {
+            {recentCourses.map((enrollment: any) => {
               const course = resolveRef(enrollment.courseId);
               const badge = statusBadge(enrollment.status);
               const expiryDate = enrollment.status === "pending"
@@ -199,7 +203,7 @@ const StudentDashboard = () => {
                         className="w-full bg-magenta text-white hover:bg-magenta/90 text-[10px] py-1.5 rounded-lg font-bold transition-colors"
                         onClick={() => handlePayNow(enrollment, course?.title ?? enrollment.title, "course")}
                       >
-                        Pay Now
+                        Complete Payment
                       </button>
                     </div>
                   )}
@@ -248,7 +252,7 @@ const StudentDashboard = () => {
           </p>
         ) : (
           <div className="space-y-3">
-            {recentEvents.map((enrollment) => {
+            {recentEvents.map((enrollment: any) => {
               const event = resolveRef(enrollment.eventId);
               const badge = statusBadge(enrollment.status);
               

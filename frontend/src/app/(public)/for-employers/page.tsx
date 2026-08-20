@@ -7,7 +7,8 @@ import { DataCard } from "@/components/ui/data-card";
 import { StatCounter } from "@/components/ui/stat-counter";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Briefcase, AlertTriangle, Search, Clock, Target, ArrowRight, Star, Code2 } from "lucide-react";
+import { Briefcase, AlertTriangle, Search, Clock, Target, ArrowRight, Star, Code2, Building2 } from "lucide-react";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
 
 const pains = [
   { icon: AlertTriangle, text: "Screening hundreds of resumes wastes weeks of engineering time." },
@@ -114,10 +115,14 @@ const ForEmployers = () => {
             </Button>
           </div>
           <div className="flex items-center justify-center">
-            <div className="w-full max-w-md p-8 rounded-2xl bg-marble border border-border text-center">
-              <Briefcase className="h-16 w-16 mx-auto text-lavender mb-4" />
-              <p className="text-lg font-bold">100+ hiring partners</p>
-              <p className="text-sm text-muted-foreground">trust our talent pipeline</p>
+            <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl bg-marble border border-border text-center space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <PartnerLogo companyName="SynthWeb" size="lg" className="shadow-sm" />
+              </div>
+              <p className="text-lg font-bold text-foreground">Featured Hiring & Industrial Partner</p>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                SynthWeb Technologies and our network of 100+ hiring partners trust GrowthCraft for job-ready engineering talent.
+              </p>
             </div>
           </div>
         </div>

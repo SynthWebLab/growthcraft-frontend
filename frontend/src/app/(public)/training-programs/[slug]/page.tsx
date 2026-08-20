@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { useState, use, useMemo } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Check,
   Star,
   ArrowLeft,
@@ -26,8 +34,22 @@ import {
   Calendar,
   Clock,
   Flame,
+  Building2,
+  Briefcase,
+  ShieldCheck,
+  CheckCircle2,
+  Sparkles,
+  MapPin,
+  Lock,
+  Shield,
+  Zap,
+  Award,
+  TrendingUp,
+  ExternalLink,
 } from "lucide-react";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
@@ -90,6 +112,34 @@ export default function TrainingProgramDetailPage({
   const { openCheckout, isLoading: checkoutLoading } = useRazorpayCheckout();
   const callbackMutation = useRequestTrainingProgramCallback();
 
+
+  // Modal state
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [selectedPartnerIndex, setSelectedPartnerIndex] = useState(0);
+
+  // Derive Internship Partners (defaults to SynthWeb and Social Stories if not configured)
+  const internshipPartners = useMemo(() => {
+    const partners = programData?.data?.internshipPartners || (program as any)?.internshipPartners || [];
+    if (Array.isArray(partners) && partners.length > 0) return partners;
+    return [
+      {
+        companyName: "SynthWeb",
+        role: `${program?.title || "Industrial"} Software Intern`,
+        duration: `${program?.duration || 60} Days Internship`,
+        mode: "Hybrid / Campus Hub",
+        stipend: "Performance-based Stipend + PPO Opportunity",
+        description: "Work on live enterprise client software, microservices architecture, and high-performance backend systems.",
+      },
+      {
+        companyName: "Social Stories",
+        role: "Product Engineering & Growth Intern",
+        duration: `${program?.duration || 60} Days Internship`,
+        mode: "Hybrid / Remote",
+        stipend: "Performance-based Stipend + Co-branded Certificate",
+        description: "Build modern user-facing web applications, responsive workflows, and digital growth tooling.",
+      },
+    ];
+  }, [programData, program]);
 
   // Loading state
   if (isLoading) {
@@ -226,6 +276,13 @@ export default function TrainingProgramDetailPage({
       return;
     }
 
+    // Open Company Selection Modal so the student chooses their internship partner company!
+    setIsCompanyModalOpen(true);
+  };
+
+  // Handle confirming company selection and launching Razorpay checkout
+  const handleConfirmCompanyAndPay = async () => {
+    const chosenPartner = internshipPartners[selectedPartnerIndex] || internshipPartners[0];
     try {
       const response = await enrollMutation.mutateAsync({
         programId: program._id,
@@ -233,8 +290,17 @@ export default function TrainingProgramDetailPage({
           fullName: user.fullName,
           email: user.email,
           phone: user.phone || "",
+          selectedCompany: {
+            companyName: chosenPartner.companyName,
+            role: chosenPartner.role,
+            duration: chosenPartner.duration,
+            stipend: chosenPartner.stipend,
+            mode: chosenPartner.mode,
+          },
         },
       });
+
+      setIsCompanyModalOpen(false);
 
       if (response?.data?.enrollment?._id) {
         openCheckout({
@@ -242,7 +308,7 @@ export default function TrainingProgramDetailPage({
           itemType: "training-program",
           itemId: response.data.enrollment._id,
           title: program.title,
-          description: `Enrollment fee for ${program.title}`,
+          description: `Enrollment fee for ${program.title} • Internship Partner: ${chosenPartner.companyName}`,
           prefill: {
             name: user.fullName,
             email: user.email,
@@ -250,7 +316,7 @@ export default function TrainingProgramDetailPage({
           },
           onSuccess: (paymentId) => {
             toast.success("Payment completed!", {
-              description: `Payment ID: ${paymentId}. You are now enrolled!`,
+              description: `Payment ID: ${paymentId}. You are now enrolled under ${chosenPartner.companyName}!`,
             });
             // Invalidate queries to immediately show active enrollment status
             queryClient.invalidateQueries({ queryKey: ["training-program", program._id] });
@@ -258,7 +324,10 @@ export default function TrainingProgramDetailPage({
             queryClient.invalidateQueries({ queryKey: ["training-programs"] });
           },
           onError: (err) => {
-            toast.error(err || "Payment failed. Please try again from your dashboard.");
+            toast.error(err || "Payment cancelled or failed. You can click Enroll Now to try again anytime.");
+            queryClient.invalidateQueries({ queryKey: ["training-program", program._id] });
+            queryClient.invalidateQueries({ queryKey: ["training-program-enrollment-status", program._id] });
+            queryClient.invalidateQueries({ queryKey: ["training-programs"] });
           },
         });
       }
@@ -404,6 +473,12 @@ export default function TrainingProgramDetailPage({
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-graphite/10 text-graphite">
                   {program.duration} days
                 </span>
+                {internshipPartners.length > 0 && (
+                  <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 flex items-center gap-1.5 max-w-full">
+                    <Building2 className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Internship Partners: {internshipPartners.map((p: any) => p.companyName).join(", ")}</span>
+                  </span>
+                )}
               </div>
 
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 break-words">
@@ -446,6 +521,10 @@ export default function TrainingProgramDetailPage({
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="w-full justify-start bg-muted overflow-x-auto">
                 <TabsTrigger value="overview" className="flex-shrink-0">Overview</TabsTrigger>
+                <TabsTrigger value="internships" className="flex-shrink-0 flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-magenta" />
+                  <span>Internship Partners ({internshipPartners.length})</span>
+                </TabsTrigger>
                 <TabsTrigger value="syllabus" className="flex-shrink-0">Syllabus</TabsTrigger>
                 <TabsTrigger value="cohorts" className="flex-shrink-0">Cohorts</TabsTrigger>
                 <TabsTrigger value="mentor" className="flex-shrink-0">{mentors.length > 1 ? "Mentors" : "Mentor"}</TabsTrigger>
@@ -496,6 +575,61 @@ export default function TrainingProgramDetailPage({
                       </li>
                     ))}
                   </ul>
+                </div>
+              </TabsContent>
+
+              {/* Internship Partners Tab */}
+              <TabsContent value="internships" className="pt-6 space-y-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="p-1.5 rounded-lg bg-magenta text-white">
+                      <Building2 className="h-4 w-4" />
+                    </span>
+                    <h2 className="text-xl font-bold">Industry Internship Partners</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    All students enrolled in this training program will undergo hands-on practical project internship with one of our certified partner companies:
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {internshipPartners.map((partner: any, idx: number) => (
+                    <DataCard key={idx} className="space-y-4 hover:border-magenta/40 transition-all border shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <PartnerLogo
+                            companyName={partner.companyName}
+                            logoUrl={partner.logoUrl}
+                            size="lg"
+                          />
+                          <div>
+                            <h3 className="text-lg font-bold text-foreground">{partner.companyName}</h3>
+                            <p className="text-xs font-semibold text-magenta">{partner.role}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] font-bold uppercase">
+                          Certified Partner
+                        </Badge>
+                      </div>
+
+                      {partner.description && (
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {partner.description}
+                        </p>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t text-xs">
+                        <div className="bg-muted/50 p-2 rounded-lg">
+                          <span className="text-[10px] font-medium text-muted-foreground block">Internship Mode</span>
+                          <span className="font-semibold text-foreground">{partner.mode || "Hybrid / Campus Hub"}</span>
+                        </div>
+                        <div className="bg-muted/50 p-2 rounded-lg">
+                          <span className="text-[10px] font-medium text-muted-foreground block">Duration</span>
+                          <span className="font-semibold text-foreground">{partner.duration || `${program.duration || 60} Days`}</span>
+                        </div>
+                      </div>
+                    </DataCard>
+                  ))}
                 </div>
               </TabsContent>
 
@@ -787,6 +921,138 @@ export default function TrainingProgramDetailPage({
           </div>
         </div>
       </Section>
+
+      {/* Company Selection Dialog (During Enrollment) */}
+      <Dialog open={isCompanyModalOpen} onOpenChange={setIsCompanyModalOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-2xl bg-card border border-border shadow-2xl rounded-2xl p-4 sm:p-6 md:p-7 overflow-hidden max-h-[90vh] flex flex-col">
+          <DialogHeader className="pb-3 border-b border-border/60 shrink-0">
+            <div className="flex items-start gap-3 sm:gap-3.5">
+              <div className="p-2.5 sm:p-3 rounded-2xl bg-magenta/10 text-magenta shrink-0">
+                <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <div className="space-y-0.5 sm:space-y-1 min-w-0">
+                <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight text-foreground font-display leading-tight">
+                  Choose Your Internship Partner
+                </DialogTitle>
+                <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Select which partner company you would like to complete your practical internship under for{" "}
+                  <strong className="text-foreground">{program.title}</strong>:
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Info callout strip */}
+          <div className="flex items-center gap-2 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-magenta/5 border border-magenta/15 text-[11px] sm:text-xs text-foreground/80 my-1 shrink-0">
+            <Sparkles className="h-4 w-4 text-magenta shrink-0" />
+            <span className="leading-snug">
+              <strong>Guaranteed Internship Track:</strong> Practical training, live project deliverables, and certificates are co-issued with your chosen partner.
+            </span>
+          </div>
+
+          {/* Cards List */}
+          <div className="space-y-2.5 sm:space-y-3 my-1 overflow-y-auto pr-1 flex-1 min-h-0">
+            {internshipPartners.map((partner: any, idx: number) => {
+              const isSelected = selectedPartnerIndex === idx;
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedPartnerIndex(idx)}
+                  className={`p-3.5 sm:p-4.5 rounded-2xl border-2 transition-all cursor-pointer space-y-2 sm:space-y-2.5 ${
+                    isSelected
+                      ? "border-magenta bg-magenta/[0.04] shadow-sm ring-1 ring-magenta/40"
+                      : "border-border hover:border-magenta/40 bg-card hover:bg-muted/30"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                      <PartnerLogo
+                        companyName={partner.companyName}
+                        logoUrl={partner.logoUrl}
+                        size="md"
+                        className={isSelected ? "ring-2 ring-magenta/40" : ""}
+                      />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <h4 className="font-bold text-sm sm:text-base text-foreground leading-snug truncate">
+                            {partner.companyName}
+                          </h4>
+                          <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Partner
+                          </span>
+                        </div>
+                        <p className="text-[11px] sm:text-xs font-semibold text-magenta mt-0.5 truncate">
+                          {partner.role}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 pt-0.5">
+                      <div
+                        className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? "border-magenta bg-magenta text-white shadow-sm"
+                            : "border-muted-foreground/30 bg-background"
+                        }`}
+                      >
+                        {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {partner.description && (
+                    <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed sm:pl-[52px]">
+                      {partner.description}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-medium sm:pl-[52px] pt-0.5">
+                    {partner.mode && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-muted text-foreground border border-border/50">
+                        <MapPin className="h-3 w-3 text-muted-foreground" /> {partner.mode}
+                      </span>
+                    )}
+                    {partner.duration && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-muted text-foreground border border-border/50">
+                        <Clock className="h-3 w-3 text-muted-foreground" /> {partner.duration}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border mt-2 shrink-0">
+            <div className="text-xs text-muted-foreground w-full sm:w-auto text-left">
+              Selected: <strong className="text-foreground">{internshipPartners[selectedPartnerIndex]?.companyName || "Partner"}</strong> ({internshipPartners[selectedPartnerIndex]?.role || "Internship"})
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCompanyModalOpen(false)}
+                disabled={enrollMutation.isPending}
+                className="w-full sm:w-auto rounded-xl h-10 sm:h-9"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmCompanyAndPay}
+                disabled={enrollMutation.isPending}
+                className="bg-magenta hover:bg-magenta/90 text-white font-bold w-full sm:w-auto rounded-xl shadow-md shadow-magenta/20 h-10 sm:h-9"
+              >
+                {enrollMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Confirm & Pay ₹{program.price.toLocaleString()}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

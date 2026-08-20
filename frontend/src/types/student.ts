@@ -41,6 +41,13 @@ export interface PopulatedProgramRef {
   fullTitle?: string;
   slug?: string;
   domain?: string;
+  internshipPartners?: Array<{
+    companyName: string;
+    role?: string;
+    mode?: string;
+    duration?: string;
+    description?: string;
+  }>;
 }
 
 export interface StudentCourseEnrollment {
@@ -72,6 +79,13 @@ export interface StudentProgramEnrollment {
   paymentStatus: PaymentStatus;
   enrollmentDate: string;
   createdAt: string;
+  selectedCompany?: {
+    companyName: string;
+    role?: string;
+    mode?: string;
+    duration?: string;
+    description?: string;
+  };
 }
 
 export interface StudentCertificate {

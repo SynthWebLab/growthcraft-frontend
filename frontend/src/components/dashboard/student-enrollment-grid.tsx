@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import DataCard from "@/components/ui/data-card";
 import { PanelEmptyState } from "@/components/panel";
-import { Calendar, CreditCard } from "lucide-react";
+import { Calendar, CreditCard, Building2 } from "lucide-react";
 import { formatDate, statusBadge } from "@/lib/student-dashboard.utils";
 import type { EnrollmentStatus } from "@/types/student";
 import { PaymentCheckoutModal, type PaymentItemDetails } from "@/components/dashboard/payment-checkout-modal";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
 
 export interface EnrollmentGridItem {
   id: string;
@@ -24,6 +25,11 @@ export interface EnrollmentGridItem {
   workspaceHref?: string;
   emoji?: string;
   type?: string;
+  partnerCompany?: {
+    companyName: string;
+    role?: string;
+    mode?: string;
+  };
 }
 
 interface StudentEnrollmentGridProps {
@@ -120,9 +126,17 @@ function StudentEnrollmentGridContent({
                         {item.subtitle}
                       </p>
                     )}
-                    <Badge variant="secondary" className={`mt-2 text-[10px] sm:text-xs ${badge.className}`}>
-                      {badge.label}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <Badge variant="secondary" className={`text-[10px] sm:text-xs ${badge.className}`}>
+                        {badge.label}
+                      </Badge>
+                      {item.partnerCompany?.companyName && (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 py-0.5">
+                          <PartnerLogo companyName={item.partnerCompany.companyName} size="sm" className="h-3.5 w-3.5 rounded-xs" />
+                          <span>{item.partnerCompany.companyName}</span>
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
 

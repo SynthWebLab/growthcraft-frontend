@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataCard } from "@/components/ui/data-card";
 import { Section } from "@/components/ui/section";
 import { getPrimaryCta } from "@/lib/ctaPolicy";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
 import {
   useTrainingPrograms,
   useTrainingProgramConfig,
@@ -319,6 +320,12 @@ export default function TrainingProgramsPage() {
                         <Briefcase className="h-3 w-3" />
                         Internship
                       </span>
+                      {program.internshipPartners && program.internshipPartners.length > 0 && (
+                        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                          <PartnerLogo companyName={program.internshipPartners[0]?.companyName} size="sm" className="h-3.5 w-3.5 rounded-xs" />
+                          <span>{program.internshipPartners.map((p: any) => p.companyName).join(", ")}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Tools chips (max 4) */}

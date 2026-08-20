@@ -7,6 +7,10 @@ interface Partner {
 
 const companies: Partner[] = [
   {
+    name: "SynthWeb",
+    logo: "/images/partners/synthweb.webp",
+  },
+  {
     name: "Razorpay",
     logo: "https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/razorpay-icon.png",
   },

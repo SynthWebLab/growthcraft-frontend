@@ -72,7 +72,19 @@ export function useEnrollInTrainingProgram() {
       data,
     }: {
       programId: string;
-      data: { fullName: string; email: string; phone: string; cohortId?: string };
+      data: {
+        fullName: string;
+        email: string;
+        phone: string;
+        cohortId?: string;
+        selectedCompany?: {
+          companyName: string;
+          role?: string;
+          duration?: string;
+          stipend?: string;
+          mode?: string;
+        };
+      };
     }) => enrollInTrainingProgram(programId, data),
     onSuccess: (data, variables) => {
       const enrollment = data.data?.enrollment || data.data;
