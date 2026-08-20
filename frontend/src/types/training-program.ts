@@ -63,6 +63,8 @@ export interface TrainingProgram {
     studentsCount?: number;
     expertise?: string[];
   }>;
+  prerequisites?: string[];
+  careerOutcomes?: string[];
   createdAt: string;
   updatedAt: string;
 }

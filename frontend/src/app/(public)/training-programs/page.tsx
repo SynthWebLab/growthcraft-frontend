@@ -328,6 +328,14 @@ export default function TrainingProgramsPage() {
                       )}
                     </div>
 
+                    {/* Prerequisites */}
+                    {program.prerequisites && program.prerequisites.length > 0 && (
+                      <div className="text-[11px] text-muted-foreground/90 line-clamp-1 mb-2.5 flex items-center gap-1">
+                        <span className="font-semibold text-foreground/80">Prerequisites:</span>
+                        <span className="truncate">{Array.isArray(program.prerequisites) ? program.prerequisites.join("; ") : program.prerequisites}</span>
+                      </div>
+                    )}
+
                     {/* Tools chips (max 4) */}
                     <div className="flex flex-wrap gap-1.5 mb-4">
                       {program.tools.slice(0, 4).map((tool, idx) => (

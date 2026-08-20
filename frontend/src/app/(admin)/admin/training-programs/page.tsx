@@ -88,6 +88,7 @@ const EMPTY_FORM = {
   is_featured: false,
   selectedMentorIds: [] as string[],
   mentorNames: "",
+  prerequisites: "",
   internshipPartners: DEFAULT_FORM_PARTNERS as FormPartner[],
 };
 
@@ -152,6 +153,10 @@ export default function AdminTrainingPrograms() {
           }))
         : DEFAULT_FORM_PARTNERS;
 
+    const existingPrereqs = Array.isArray(program.prerequisites)
+      ? program.prerequisites.map((p: any) => typeof p === 'string' ? p : p.text || String(p)).join(", ")
+      : (program.prerequisites || "");
+
     setFormData({
       title: program.title || "",
       description: program.description || "",
@@ -166,6 +171,7 @@ export default function AdminTrainingPrograms() {
       is_featured: !!program.isFeatured,
       selectedMentorIds: existingMentorIds,
       mentorNames: (program.mentors || []).map((m: any) => m.name || m.fullName || "").filter(Boolean).join(", "),
+      prerequisites: existingPrereqs,
       internshipPartners: existingPartners,
     });
     setIsDialogOpen(true);
@@ -197,6 +203,13 @@ export default function AdminTrainingPrograms() {
       ? formData.tools.split(",").map((t) => t.trim()).filter(Boolean)
       : ["General"];
 
+    const prereqArray = formData.prerequisites
+      ? formData.prerequisites
+          .split(/,|\n/)
+          .map((p) => p.trim())
+          .filter(Boolean)
+      : [];
+
     const payload: any = {
       title: formData.title.trim(),
       description: formData.description.trim(),
@@ -204,6 +217,7 @@ export default function AdminTrainingPrograms() {
       level: formData.level,
       durationDays: formData.durationDays ? parseInt(formData.durationDays) : 30,
       tools: toolsArray,
+      prerequisites: prereqArray,
       price: formData.price ? parseFloat(formData.price) : 0,
       isPublished: formData.is_published,
       isFeatured: formData.is_featured,
@@ -457,6 +471,17 @@ export default function AdminTrainingPrograms() {
                 value={formData.tools}
                 onChange={(e) => setFormData({ ...formData, tools: e.target.value })}
                 placeholder="e.g. React, Node.js, MongoDB, Docker"
+              />
+            </div>
+
+            {/* Prerequisites */}
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="tp-prerequisites">Prerequisites (comma or line separated)</Label>
+              <Input
+                id="tp-prerequisites"
+                value={formData.prerequisites}
+                onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
+                placeholder="e.g. Basic JavaScript + React knowledge, Git proficiency"
               />
             </div>
 

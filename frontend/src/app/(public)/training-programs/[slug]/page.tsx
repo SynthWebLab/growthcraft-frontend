@@ -141,6 +141,39 @@ export default function TrainingProgramDetailPage({
     ];
   }, [programData, program]);
 
+  // Derive dynamic prerequisites from program or overview
+  const resolvedPrerequisites: string[] = useMemo(() => {
+    const rawPrereqs = program?.prerequisites || (programData?.data as any)?.program?.prerequisites;
+    if (Array.isArray(rawPrereqs) && rawPrereqs.length > 0) {
+      return rawPrereqs.map((p: any) => (typeof p === "string" ? p : p.text || String(p))).filter(Boolean);
+    }
+    if (Array.isArray(overview?.prerequisites) && overview.prerequisites.length > 0) {
+      return overview.prerequisites.map((p: any) => (typeof p === "string" ? p : p.text || String(p))).filter(Boolean);
+    }
+    return [];
+  }, [programData, program, overview]);
+
+  // Derive dynamic What You'll Learn
+  const resolvedWhatYouWillLearn: string[] = useMemo(() => {
+    if (Array.isArray(overview?.whatYouWillLearn) && overview.whatYouWillLearn.length > 0) {
+      return overview.whatYouWillLearn
+        .map((item: any) => (typeof item === "string" ? item : item.text || String(item)))
+        .filter(Boolean);
+    }
+    const progAny = program as any;
+    if (Array.isArray(progAny?.whatYouWillLearn) && progAny.whatYouWillLearn.length > 0) {
+      return progAny.whatYouWillLearn
+        .map((item: any) => (typeof item === "string" ? item : item.text || String(item)))
+        .filter(Boolean);
+    }
+    return [
+      `Hands-on practical development in ${program?.domain || "industrial software"}`,
+      "Real-world enterprise client project architecture",
+      "Mentored code reviews and weekly milestone reviews",
+      "Industry internship completion and co-branded verification",
+    ];
+  }, [overview?.whatYouWillLearn, program]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -542,10 +575,10 @@ export default function TrainingProgramDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">What you'll learn</h2>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {overview?.whatYouWillLearn?.map((item) => (
-                      <div key={item._id} className="flex items-start gap-2">
+                    {resolvedWhatYouWillLearn.map((item: string, idx: number) => (
+                      <div key={idx} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-magenta mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-foreground">{item.text}</span>
+                        <span className="text-sm text-foreground">{item}</span>
                       </div>
                     ))}
                   </div>
@@ -567,14 +600,23 @@ export default function TrainingProgramDetailPage({
 
                 <div>
                   <h2 className="text-xl font-bold mb-4">Prerequisites</h2>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    {overview?.prerequisites?.map((item) => (
-                      <li key={item._id} className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-lavender mt-0.5" />
-                        {item.text}
+                  {resolvedPrerequisites.length > 0 ? (
+                    <ul className="space-y-2.5 text-sm text-muted-foreground">
+                      {resolvedPrerequisites.map((item: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="h-4 w-4 text-lavender mt-0.5 shrink-0" />
+                          <span className="text-foreground">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-lavender mt-0.5 shrink-0" />
+                        <span className="text-foreground">Basic computer and internet literacy; no prior coding experience required.</span>
                       </li>
-                    ))}
-                  </ul>
+                    </ul>
+                  )}
                 </div>
               </TabsContent>
 
@@ -864,6 +906,21 @@ export default function TrainingProgramDetailPage({
                       <span>{item.text}</span>
                     </div>
                   ))}
+                </div>
+
+                {/* Prerequisites highlight in sidebar */}
+                <div className="mt-4 pt-3.5 border-t border-border/80 text-xs space-y-1.5">
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck className="h-4 w-4 text-magenta shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-foreground block">Prerequisites:</span>
+                      <span className="text-muted-foreground leading-relaxed">
+                        {resolvedPrerequisites.length > 0
+                          ? resolvedPrerequisites.join("; ")
+                          : "No prior coding required (Beginner friendly)"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </DataCard>
 
