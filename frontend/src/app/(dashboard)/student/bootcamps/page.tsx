@@ -8,21 +8,26 @@ import { resolveRef } from "@/lib/student-dashboard.utils";
 export default function StudentBootcampsPage() {
   const { data, isLoading, isError } = useStudentBootcamps();
 
-  const items: EnrollmentGridItem[] = (data?.data?.bootcamps ?? []).map((e) => {
-    const event = resolveRef(e.eventId);
-    const slug = event?.slug || "fullstack-web-dev-bootcamp-2026";
-    return {
-      id: e._id,
-      title: event?.title ?? e.title,
-      subtitle: event?.mode || event?.domain,
-      status: e.status,
-      paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
-      enrollmentDate: e.enrollmentDate,
-      href: `/events/${slug}`,
-      workspaceHref: `/student/bootcamps/${slug}`,
-      emoji: "🚀",
-    };
-  });
+  const items: EnrollmentGridItem[] = (data?.data?.bootcamps ?? [])
+    .filter((e) => {
+      const isPaid = e.paymentStatus === "completed" || e.status === "confirmed";
+      return isPaid && e.paymentStatus !== "pending" && e.status !== "pending";
+    })
+    .map((e) => {
+      const event = resolveRef(e.eventId);
+      const slug = event?.slug || "fullstack-web-dev-bootcamp-2026";
+      return {
+        id: e._id,
+        title: event?.title ?? e.title,
+        subtitle: event?.mode || event?.domain,
+        status: e.status,
+        paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
+        enrollmentDate: e.enrollmentDate,
+        href: `/events/${slug}`,
+        workspaceHref: `/student/bootcamps/${slug}`,
+        emoji: "🚀",
+      };
+    });
 
   return (
     <StudentEnrollmentGrid

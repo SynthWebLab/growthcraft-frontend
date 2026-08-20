@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataCard } from "@/components/ui/data-card";
 import { Section } from "@/components/ui/section";
 import { getPrimaryCta } from "@/lib/ctaPolicy";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
 import {
   useTrainingPrograms,
   useTrainingProgramConfig,
@@ -293,9 +294,16 @@ export default function TrainingProgramsPage() {
                     )}
 
                     {/* Program Title */}
-                    <h3 className="text-base font-bold text-foreground group-hover:text-magenta transition-colors mb-2 line-clamp-2">
-                      {program.title}
+                    <h3 className="text-lg font-bold text-foreground group-hover:text-magenta transition-colors mb-1 line-clamp-1">
+                      {program.programName || program.title}
                     </h3>
+
+                    {/* Full Title (Displayed distinctly) */}
+                    {program.fullTitle && (
+                      <p className="text-xs font-medium text-primary/80 dark:text-lavender mb-2 line-clamp-1">
+                        {program.fullTitle}
+                      </p>
+                    )}
 
                     {/* Description */}
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
@@ -312,7 +320,21 @@ export default function TrainingProgramsPage() {
                         <Briefcase className="h-3 w-3" />
                         Internship
                       </span>
+                      {program.internshipPartners && program.internshipPartners.length > 0 && (
+                        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                          <PartnerLogo companyName={program.internshipPartners[0]?.companyName} size="sm" className="h-3.5 w-3.5 rounded-xs" />
+                          <span>{program.internshipPartners.map((p: any) => p.companyName).join(", ")}</span>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Prerequisites */}
+                    {program.prerequisites && program.prerequisites.length > 0 && (
+                      <div className="text-[11px] text-muted-foreground/90 line-clamp-1 mb-2.5 flex items-center gap-1">
+                        <span className="font-semibold text-foreground/80">Prerequisites:</span>
+                        <span className="truncate">{Array.isArray(program.prerequisites) ? program.prerequisites.join("; ") : program.prerequisites}</span>
+                      </div>
+                    )}
 
                     {/* Tools chips (max 4) */}
                     <div className="flex flex-wrap gap-1.5 mb-4">
