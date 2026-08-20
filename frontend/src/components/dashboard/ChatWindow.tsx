@@ -118,10 +118,23 @@ export function ChatWindow({
 
   const sendMessageMutation = useSendMessage();
 
+  // Deduplicate and sanitize contacts defensively
+  const uniqueContacts = useMemo(() => {
+    const seen = new Set<string>();
+    const list: ChatContact[] = [];
+    for (const c of contacts) {
+      if (c && c.id && !seen.has(c.id)) {
+        seen.add(c.id);
+        list.push(c);
+      }
+    }
+    return list;
+  }, [contacts]);
+
   // Populate mock pending requests for demo/test purposes
   useEffect(() => {
-    if (contacts.length > 0 && role === "mentor") {
-      const firstStudent = contacts[0];
+    if (uniqueContacts.length > 0 && role === "mentor") {
+      const firstStudent = uniqueContacts[0];
       setPendingRequests((prev) => ({
         ...prev,
         [firstStudent.id]: {
@@ -131,13 +144,13 @@ export function ChatWindow({
         },
       }));
     }
-  }, [contacts, role]);
+  }, [uniqueContacts, role]);
 
   // Set default selected contact from query parameter or first contact
   useEffect(() => {
-    if (contacts.length > 0) {
+    if (uniqueContacts.length > 0) {
       if (defaultSelectedId) {
-        const matchingContact = contacts.find((c) => c.id === defaultSelectedId);
+        const matchingContact = uniqueContacts.find((c) => c.id === defaultSelectedId);
         if (matchingContact) {
           setSelectedContact(matchingContact);
           setIsMobileViewActive(true);
@@ -146,10 +159,10 @@ export function ChatWindow({
       }
       // If no default but we are on desktop, select first contact automatically
       if (typeof window !== "undefined" && window.innerWidth >= 768 && !selectedContact) {
-        setSelectedContact(contacts[0]);
+        setSelectedContact(uniqueContacts[0]);
       }
     }
-  }, [contacts, defaultSelectedId]);
+  }, [uniqueContacts, defaultSelectedId]);
 
   // Fetch messages for selected contact
   const { data: historyResponse, isLoading: historyLoading } = useChatHistory(
@@ -260,7 +273,7 @@ export function ChatWindow({
       // Notify mentor if an incoming message is a new doubt request
       if (newMsg.message?.startsWith("[MEET_REQUEST]") && role === "mentor") {
         const parsed = parseMessageContent(newMsg.message);
-        const sender = contacts.find((c) => c.id === newMsg.senderId);
+        const sender = uniqueContacts.find((c) => c.id === newMsg.senderId);
         const senderName = sender?.name || "A student";
 
         toast.info(`🔔 Doubt Request from ${senderName}: "${parsed.topic}"`, {
@@ -316,7 +329,7 @@ export function ChatWindow({
       socket.off("chat.message", handleIncomingMessage);
       socket.off("chat.read", handleIncomingRead);
     };
-  }, [selectedContact, user?._id, queryClient, contacts, role]);
+  }, [selectedContact, user?._id, queryClient, uniqueContacts, role]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -325,14 +338,14 @@ export function ChatWindow({
 
   // Filter contacts by search query & tab
   const filteredContacts = useMemo(() => {
-    let list = contacts;
+    let list = uniqueContacts;
     if (activeTab === "requests") {
-      list = contacts.filter((c) => !!pendingRequests[c.id]);
+      list = uniqueContacts.filter((c) => !!pendingRequests[c.id]);
     }
     return list.filter((c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [contacts, searchQuery, activeTab, pendingRequests]);
+  }, [uniqueContacts, searchQuery, activeTab, pendingRequests]);
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -508,7 +521,7 @@ export function ChatWindow({
               <p>No conversations found</p>
             </div>
           ) : (
-            filteredContacts.map((contact) => {
+            filteredContacts.map((contact, index) => {
               const active = selectedContact?.id === contact.id;
               const initials = contact.name
                 .split(" ")
@@ -519,7 +532,7 @@ export function ChatWindow({
 
               return (
                 <button
-                  key={contact.id}
+                  key={contact.id || `contact-${index}`}
                   onClick={() => {
                     setSelectedContact(contact);
                     setIsMobileViewActive(true);
@@ -611,7 +624,7 @@ export function ChatWindow({
                   <p className="text-xs">Send your first message to start the conversation.</p>
                 </div>
               ) : (
-                mockMessages.map((message: any) => {
+                mockMessages.map((message: any, index: number) => {
                   const isOwn = message.senderId === user?._id;
                   const time = new Date(message.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
@@ -621,7 +634,7 @@ export function ChatWindow({
 
                   return (
                     <div
-                      key={message._id}
+                      key={message._id || `msg-${index}`}
                       className={cn(
                         "flex flex-col w-[85%] md:w-[70%]",
                         isOwn ? "ml-auto items-end" : "mr-auto items-start"

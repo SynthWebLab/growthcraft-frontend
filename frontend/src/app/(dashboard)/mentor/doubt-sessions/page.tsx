@@ -17,12 +17,23 @@ export default function MentorDoubtSessionsPage() {
   }, [studentsResponse]);
 
   const contacts = useMemo<ChatContact[]>(() => {
-    return mentees.map((s: any) => ({
-      id: s.id || "",
-      name: s.name || "Student",
-      course: s.course || "Cohort Student",
-      role: "Student",
-    }));
+    const seen = new Set<string>();
+    const result: ChatContact[] = [];
+
+    for (const s of mentees) {
+      const id = s.id || s._id || s.userId?._id || s.userId || "";
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+
+      result.push({
+        id,
+        name: s.name || s.fullName || s.userId?.fullName || "Student",
+        course: s.course || (s.batchId?.code ? `Batch ${s.batchId.code}` : "Cohort Student"),
+        role: "Student",
+      });
+    }
+
+    return result;
   }, [mentees]);
 
   return (
