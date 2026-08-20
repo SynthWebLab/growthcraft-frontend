@@ -435,66 +435,77 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
           </Card>
 
           {/* Hackathon Milestones & Phase Schedule */}
-          <Card className="p-4 sm:p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-magenta shrink-0" />
-                <h2 className="text-base sm:text-lg font-bold text-foreground">Timeline & Milestones</h2>
+          <Card className="relative overflow-hidden p-4 sm:p-6 rounded-2xl border border-border bg-white shadow-sm">
+            {/* Lightly Blurred Content, text remains legible */}
+            <div className="filter blur-[0.8px] opacity-75 space-y-4 select-none pointer-events-none">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-magenta shrink-0" />
+                  <h2 className="text-base sm:text-lg font-bold text-foreground">Timeline & Milestones</h2>
+                </div>
+                <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground">
+                  {computedStatus === "Closed" ? "Concluded" : computedStatus === "Live" ? "Phase 3 Active" : "Upcoming"}
+                </span>
               </div>
-              <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground">
-                {computedStatus === "Closed" ? "Concluded" : computedStatus === "Live" ? "Phase 3 Active" : "Upcoming"}
-              </span>
+
+              <div className="relative border-l-2 border-slate-200 ml-2 space-y-5 pt-2 pb-1">
+                {phases.map((p: any, idx: number) => {
+                  const phaseStatus = (() => {
+                    if (computedStatus === "Closed") return "Completed";
+                    if (computedStatus === "Live") {
+                      if (p.phase < 3) return "Completed";
+                      if (p.phase === 3) return "In Progress";
+                      return "Upcoming";
+                    }
+                    if (p.phase === 1) return "In Progress";
+                    return "Upcoming";
+                  })();
+
+                  const isCompleted = phaseStatus === "Completed";
+                  const isInProgress = phaseStatus === "In Progress";
+
+                  return (
+                    <div key={idx} className="relative pl-5">
+                      <span 
+                        className={`absolute -left-[9px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white ${
+                          isCompleted 
+                            ? "bg-emerald-500 ring-2 ring-emerald-100" 
+                            : isInProgress 
+                            ? "bg-magenta ring-4 ring-magenta/20 animate-pulse" 
+                            : "bg-slate-300"
+                        }`} 
+                      />
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <h3 className={`text-xs sm:text-sm font-bold ${isInProgress ? "text-magenta" : "text-foreground"}`}>
+                          Phase {p.phase}: {p.name}
+                        </h3>
+                        <div className="flex items-center text-[10px] sm:text-xs">
+                          {isCompleted ? (
+                            <span className="text-emerald-600 font-medium flex items-center gap-1">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Completed
+                            </span>
+                          ) : isInProgress ? (
+                            <Badge variant="outline" className="bg-magenta/10 text-magenta border-magenta/20 text-[9px] sm:text-[10px] py-0.5 px-2 font-semibold">
+                              IN PROGRESS
+                            </Badge>
+                          ) : (
+                            <span className="text-slate-500 font-medium">Upcoming</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 leading-relaxed">{p.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="relative border-l-2 border-slate-200 ml-2 space-y-5 pt-2 pb-1">
-              {phases.map((p: any, idx: number) => {
-                const phaseStatus = (() => {
-                  if (computedStatus === "Closed") return "Completed";
-                  if (computedStatus === "Live") {
-                    if (p.phase < 3) return "Completed";
-                    if (p.phase === 3) return "In Progress";
-                    return "Upcoming";
-                  }
-                  if (p.phase === 1) return "In Progress";
-                  return "Upcoming";
-                })();
-
-                const isCompleted = phaseStatus === "Completed";
-                const isInProgress = phaseStatus === "In Progress";
-
-                return (
-                  <div key={idx} className="relative pl-5">
-                    <span 
-                      className={`absolute -left-[9px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white ${
-                        isCompleted 
-                          ? "bg-emerald-500 ring-2 ring-emerald-100" 
-                          : isInProgress 
-                          ? "bg-magenta ring-4 ring-magenta/20 animate-pulse" 
-                          : "bg-slate-300"
-                      }`} 
-                    />
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <h3 className={`text-xs sm:text-sm font-bold ${isInProgress ? "text-magenta" : "text-foreground"}`}>
-                        Phase {p.phase}: {p.name}
-                      </h3>
-                      <div className="flex items-center text-[10px] sm:text-xs">
-                        {isCompleted ? (
-                          <span className="text-emerald-600 font-medium flex items-center gap-1">
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Completed
-                          </span>
-                        ) : isInProgress ? (
-                          <Badge variant="outline" className="bg-magenta/10 text-magenta border-magenta/20 text-[9px] sm:text-[10px] py-0.5 px-2 font-semibold">
-                            IN PROGRESS
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-500 font-medium">Upcoming</span>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 leading-relaxed">{p.description}</p>
-                  </div>
-                );
-              })}
+            {/* Coming Soon Overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[0.5px] z-10 p-4 text-center">
+              <div className="bg-slate-900/95 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl shadow-lg border border-white/10 backdrop-blur-md flex items-center gap-2">
+                <Hourglass className="h-4 w-4 text-amber-400 animate-pulse" />
+                <span>Coming Soon</span>
+              </div>
             </div>
           </Card>
 
@@ -624,30 +635,22 @@ export default function StudentHackathonWorkspacePage({ params }: { params: Prom
                       <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{m.designation || m.areaOfExpertise || "Campus Mentor"}</p>
                     </div>
                   </div>
-                  {isOnline || m.meetingLink ? (
-                    <a 
-                      href={m.meetingLink || "https://meet.google.com/gc-hackathon-room"} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="shrink-0"
-                    >
-                      <Button 
-                        size="sm" 
-                        className="h-7 text-[10px] sm:text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center gap-1.5 shadow-sm px-2.5"
-                      >
-                        <Video className="h-3 w-3 text-white" /> Meet
-                      </Button>
-                    </a>
-                  ) : (
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <Button 
                       size="sm" 
-                      variant="outline" 
-                      onClick={() => toast.info(`Session query sent to ${m.name}`)}
-                      className="h-7 text-[10px] sm:text-xs rounded-lg border-magenta/30 text-magenta hover:bg-magenta/10 px-2.5 shrink-0"
+                      disabled
+                      className="h-7 text-[10px] sm:text-xs rounded-lg bg-slate-100 border border-slate-200 text-slate-400 font-medium flex items-center gap-1 px-2 cursor-not-allowed"
                     >
-                      <MessageSquare className="h-3 w-3 mr-1" /> Ask
+                      <MessageSquare className="h-3 w-3 text-slate-400" /> Ask
                     </Button>
-                  )}
+                    <Button 
+                      size="sm" 
+                      disabled
+                      className="h-7 text-[10px] sm:text-xs rounded-lg bg-slate-100 border border-slate-200 text-slate-400 font-medium flex items-center gap-1 px-2 cursor-not-allowed"
+                    >
+                      <Video className="h-3 w-3 text-slate-400" /> Call
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

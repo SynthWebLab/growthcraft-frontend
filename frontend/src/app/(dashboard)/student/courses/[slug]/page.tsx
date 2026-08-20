@@ -266,47 +266,58 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
           </Card>
 
           {/* Module Curriculum Breakdown */}
-          <Card className="p-4 sm:p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Layers className="h-5 w-5 text-magenta shrink-0" />
-                <h2 className="text-base sm:text-lg font-bold text-foreground">Curriculum Breakdown</h2>
+          <Card className="relative overflow-hidden p-4 sm:p-6 rounded-2xl border border-border bg-white shadow-sm">
+            {/* Lightly Blurred Content, text remains legible */}
+            <div className="filter blur-[0.8px] opacity-75 space-y-4 select-none pointer-events-none">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-magenta shrink-0" />
+                  <h2 className="text-base sm:text-lg font-bold text-foreground">Curriculum Breakdown</h2>
+                </div>
+                <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground">Logged by Mentor</span>
               </div>
-              <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground">Logged by Mentor</span>
+
+              <div className="space-y-3 pt-1">
+                {modules.map((m: any, idx: number) => {
+                  const isCompleted = m.status === "Completed";
+                  const isInProgress = m.status === "In Progress";
+
+                  return (
+                    <div key={idx} className="p-3 sm:p-4 rounded-xl border border-border bg-slate-50 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-2">
+                          <span className="h-5.5 w-5.5 rounded-full bg-magenta/10 text-magenta font-bold flex items-center justify-center text-[10px] sm:text-xs shrink-0 p-1">
+                            {m.moduleNumber}
+                          </span>
+                          <span>{m.title}</span>
+                        </h3>
+                        <div className="flex items-center text-[11px] sm:text-xs">
+                          {isCompleted ? (
+                            <span className="text-emerald-600 font-medium flex items-center gap-1">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Completed ({m.lessonsCount} lessons)
+                            </span>
+                          ) : isInProgress ? (
+                            <Badge variant="outline" className="bg-magenta/10 text-magenta border-magenta/20 text-[9px] sm:text-[10px] py-0.5 px-2 font-semibold">
+                              IN PROGRESS
+                            </Badge>
+                          ) : (
+                            <span className="text-slate-500 font-medium">Upcoming ({m.lessonsCount} lessons)</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">{m.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="space-y-3 pt-1">
-              {modules.map((m: any, idx: number) => {
-                const isCompleted = m.status === "Completed";
-                const isInProgress = m.status === "In Progress";
-
-                return (
-                  <div key={idx} className="p-3 sm:p-4 rounded-xl border border-border bg-slate-50 space-y-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                      <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-2">
-                        <span className="h-5.5 w-5.5 rounded-full bg-magenta/10 text-magenta font-bold flex items-center justify-center text-[10px] sm:text-xs shrink-0 p-1">
-                          {m.moduleNumber}
-                        </span>
-                        <span>{m.title}</span>
-                      </h3>
-                      <div className="flex items-center text-[11px] sm:text-xs">
-                        {isCompleted ? (
-                          <span className="text-emerald-600 font-medium flex items-center gap-1">
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Completed ({m.lessonsCount} lessons)
-                          </span>
-                        ) : isInProgress ? (
-                          <Badge variant="outline" className="bg-magenta/10 text-magenta border-magenta/20 text-[9px] sm:text-[10px] py-0.5 px-2 font-semibold">
-                            IN PROGRESS
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-500 font-medium">Upcoming ({m.lessonsCount} lessons)</span>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">{m.description}</p>
-                  </div>
-                );
-              })}
+            {/* Coming Soon Overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[0.5px] z-10 p-4 text-center">
+              <div className="bg-slate-900/95 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl shadow-lg border border-white/10 backdrop-blur-md flex items-center gap-2">
+                <Hourglass className="h-4 w-4 text-amber-400 animate-pulse" />
+                <span>Coming Soon</span>
+              </div>
             </div>
           </Card>
 
@@ -436,14 +447,22 @@ export default function StudentCourseWorkspacePage({ params }: { params: Promise
                       <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{ins.designation || "Lead Instructor"}</p>
                     </div>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => toast.info(`Doubt query sent to ${ins.name}`)}
-                    className="h-7 text-[10px] sm:text-xs rounded-lg border-magenta/30 text-magenta hover:bg-magenta/10 px-2.5 shrink-0"
-                  >
-                    <MessageSquare className="h-3 w-3 mr-1" /> Ask
-                  </Button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button 
+                      size="sm" 
+                      disabled
+                      className="h-7 text-[10px] sm:text-xs rounded-lg bg-slate-100 border border-slate-200 text-slate-400 font-medium flex items-center gap-1 px-2 cursor-not-allowed"
+                    >
+                      <MessageSquare className="h-3 w-3 text-slate-400" /> Ask
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      disabled
+                      className="h-7 text-[10px] sm:text-xs rounded-lg bg-slate-100 border border-slate-200 text-slate-400 font-medium flex items-center gap-1 px-2 cursor-not-allowed"
+                    >
+                      <Video className="h-3 w-3 text-slate-400" /> Call
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

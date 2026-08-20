@@ -99,7 +99,7 @@ export default function AdminAttendancePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Attendance Management</h1>
         <p className="text-muted-foreground">
@@ -153,7 +153,7 @@ export default function AdminAttendancePage() {
             <CardTitle>Batch Attendance Stats</CardTitle>
             <CardDescription>Historical attendance summary for the selected batch.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col justify-center h-[120px]">
+          <CardContent className="flex flex-col justify-center min-h-[120px] py-4">
             {selectedBatchId ? (
               summaryLoading ? (
                 <div className="text-sm text-muted-foreground text-center">Loading summary...</div>

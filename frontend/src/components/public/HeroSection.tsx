@@ -80,13 +80,28 @@ export const HeroSection = () => {
           </div>
         </div>
 
-        {/* Right Column - Code Windows */}
+        {/* Right Column - Layered Code Windows */}
         <div
-          className="space-y-3 sm:space-y-4 animate-fade-up"
+          className="relative max-w-[520px] sm:max-w-[580px] lg:max-w-[620px] w-full mx-auto lg:ml-auto animate-fade-up"
           style={{ animationDelay: "0.2s" }}
         >
-          <CodeWindow code={expressCode} language="server.js" />
-          <CodeWindow code={reactCode} language="CourseCard.jsx" />
+          {/* First Slide (Back - top header and lines peeking out) */}
+          <div className="relative z-10 w-[92%] sm:w-[94%]">
+            <CodeWindow
+              code={expressCode}
+              language="server.js"
+              className="rounded-xl border border-white/10 shadow-lg"
+            />
+          </div>
+
+          {/* Second Slide (Front - starts slightly lower to reveal back panel text) */}
+          <div className="relative z-20 -mt-48 sm:-mt-56 md:-mt-64 ml-auto w-[92%] sm:w-[94%]">
+            <CodeWindow
+              code={reactCode}
+              language="CourseCard.jsx"
+              className="rounded-xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] ring-1 ring-white/10"
+            />
+          </div>
         </div>
       </div>
     </Section>

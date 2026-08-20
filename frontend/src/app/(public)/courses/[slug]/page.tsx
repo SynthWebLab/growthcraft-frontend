@@ -311,12 +311,12 @@ export default function CourseDetailPage({
           {/* Main content */}
           <div className="lg:col-span-8 space-y-8">
             {/* Banner */}
-            <div className="aspect-video bg-graphite rounded-xl flex items-center justify-center overflow-hidden">
+            {/* <div className="aspect-video bg-graphite rounded-xl flex items-center justify-center overflow-hidden">
               <div className="text-center text-white/50">
                 <PlayCircle className="h-16 w-16 mx-auto mb-2" />
                 <p className="text-sm">Course Preview</p>
               </div>
-            </div>
+            </div> */}
 
             {/* Title area */}
             <div>

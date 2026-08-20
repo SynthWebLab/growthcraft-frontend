@@ -18,6 +18,9 @@ export const metadata: Metadata = {
     title: "GrowthCraft - Where Learning Meets Opportunity",
     description: "Learn tech, master skills, join bootcamps, and land your dream job.",
   },
+  appleWebApp: {
+    title: "GrowthCraft",
+  },
 };
 
 export const viewport = {

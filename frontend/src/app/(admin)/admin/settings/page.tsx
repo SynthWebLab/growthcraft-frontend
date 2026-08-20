@@ -109,13 +109,13 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Settings</h1>
         <p className="text-muted-foreground mt-1">Manage platform settings</p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
+      <Tabs defaultValue="general" className="space-y-4 md:space-y-6">
         <div className="w-full overflow-x-auto pb-1">
           <TabsList className="inline-flex w-max md:w-auto">
             <TabsTrigger value="general" className="gap-2">
@@ -299,7 +299,7 @@ export default function AdminSettings() {
               <CardTitle>Notification Settings</CardTitle>
               <CardDescription>Configure notification preferences</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 md:space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Email Notifications</Label>
@@ -336,7 +336,7 @@ export default function AdminSettings() {
               <CardTitle>Advanced Settings</CardTitle>
               <CardDescription>Advanced configuration options</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 md:space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Maintenance Mode</Label>
