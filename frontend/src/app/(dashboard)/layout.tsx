@@ -84,7 +84,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         items: [
           { icon: LayoutDashboard, label: "Dashboard", href: "dashboard" },
           { icon: Layers, label: "Batches", href: "batches" },
-          { icon: Calendar, label: "Sessions", href: "sessions" },
+          { icon: Calendar, label: "Scheduled Sessions", href: "sessions" },
           { icon: Calendar, label: "Availability", href: "availability" },
           { icon: Users, label: "Students", href: "students" },
           { icon: MessageSquare, label: "Doubt Sessions", href: "doubt-sessions" },
