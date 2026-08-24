@@ -481,13 +481,22 @@ export default function TrainingProgramDetailPage({
         <div className="grid lg:grid-cols-12 gap-8 overflow-hidden">
           {/* Main content */}
           <div className="lg:col-span-8 space-y-8 min-w-0">
-            {/* Banner */}
-            <div className="aspect-video bg-graphite rounded-xl flex items-center justify-center overflow-hidden">
-              <div className="text-center text-white/50">
-                <PlayCircle className="h-16 w-16 mx-auto mb-2" />
-                <p className="text-sm">Program Preview</p>
-              </div>
+            {/* Program Preview Section */}
+            <div className="aspect-video bg-graphite rounded-2xl flex items-center justify-center overflow-hidden relative shadow-md group">
+              {program.thumbnail ? (
+                <img
+                  src={program.thumbnail}
+                  alt={program.programName || program.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center text-white/50 group-hover:text-white/70 transition-colors">
+                  <PlayCircle className="h-16 w-16 mx-auto mb-2 text-white/40 group-hover:text-magenta transition-colors" />
+                  <p className="text-sm font-medium">Program Preview</p>
+                </div>
+              )}
             </div>
+            
 
             {/* Title area */}
             <div>

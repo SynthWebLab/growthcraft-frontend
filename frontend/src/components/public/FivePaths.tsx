@@ -82,7 +82,7 @@ export const FivePaths = () => {
         const nextIndex = (currentIndex + 1) % roles.length;
         return roles[nextIndex];
       });
-    }, 3500);
+    }, 4000);
 
     return () => clearInterval(timer);
   }, [userInteracted]);
@@ -93,9 +93,9 @@ export const FivePaths = () => {
   };
 
   return (
-    <Section variant="marble">
-      <div className="text-center mb-10 sm:mb-12 md:mb-14 animate-fade-up">
-        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3">
+    <Section variant="marble" className="!py-10 sm:!py-14 md:!py-18 lg:!py-22">
+      <div className="text-center mb-8 sm:mb-12 md:mb-14 animate-fade-up">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3 font-semibold">
           For everyone
         </p>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display">
@@ -108,7 +108,7 @@ export const FivePaths = () => {
         onValueChange={handleTabChange}
         className="max-w-4xl mx-auto"
       >
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto bg-card border border-border rounded-xl p-1 gap-1 relative z-10 shadow-sm">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto bg-card border border-border rounded-xl p-1 gap-1 relative z-10 shadow-xs">
           {roles.map((role) => (
             <TabsTrigger
               key={role}
@@ -137,7 +137,7 @@ export const FivePaths = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -15 }}
                     transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="mt-6 sm:mt-8 rounded-xl border border-border bg-card p-6 sm:p-8 shadow-sm relative overflow-hidden"
+                    className="mt-6 sm:mt-8 rounded-xl border border-border bg-card p-5 sm:p-8 shadow-sm relative overflow-hidden"
                   >
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <RoleBadge role={role} />
@@ -147,7 +147,7 @@ export const FivePaths = () => {
                       {p.pain}
                     </p>
 
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-extrabold font-display mb-4 sm:mb-5 text-foreground">
+                    <h3 className="text-base sm:text-xl md:text-2xl font-extrabold font-display mb-3 sm:mb-5 text-foreground leading-snug">
                       {p.value}
                     </h3>
 
@@ -166,7 +166,7 @@ export const FivePaths = () => {
                       ))}
                     </ul>
 
-                    <Button asChild className="group shadow-md transition-all hover:scale-[1.02]">
+                    <Button asChild className="w-full sm:w-auto group shadow-md transition-all hover:scale-[1.02]">
                       <Link href={p.link}>
                         {p.cta} <ArrowRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
                       </Link>
@@ -181,4 +181,3 @@ export const FivePaths = () => {
     </Section>
   );
 };
-

@@ -46,17 +46,17 @@ export const TrustStrip = () => {
       </div>
 
       <TooltipProvider delayDuration={0}>
-        <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-6 md:gap-8 lg:gap-10 mb-14 sm:mb-18 md:mb-22">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6 mb-12 sm:mb-16 md:mb-20">
           {collegeLogos.map((item) => (
             <Tooltip key={item.name}>
               <TooltipTrigger asChild>
                 <div
-                  className="group flex items-center justify-center h-24 sm:h-28 md:h-32 min-w-[150px] sm:min-w-[180px] md:min-w-[220px] px-6 sm:px-8 py-3.5 rounded-2xl bg-card border border-border/80 shadow-xs hover:border-magenta/40 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer"
+                  className="group flex items-center justify-center h-20 sm:h-24 md:h-28 px-3 sm:px-4 py-2.5 rounded-xl sm:rounded-2xl bg-card border border-border/80 shadow-xs hover:border-magenta/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                 >
                   <img
                     src={item.logo}
                     alt={item.name}
-                    className="h-16 sm:h-20 md:h-22 w-auto max-w-[140px] sm:max-w-[170px] md:max-w-[200px] object-contain transition-transform duration-300 group-hover:scale-110"
+                    className="h-10 sm:h-14 md:h-16 w-auto max-w-[100px] sm:max-w-[130px] md:max-w-[150px] object-contain transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
               </TooltipTrigger>
@@ -79,4 +79,3 @@ export const TrustStrip = () => {
     </Section>
   );
 };
-

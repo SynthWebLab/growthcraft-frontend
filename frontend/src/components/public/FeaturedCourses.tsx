@@ -18,7 +18,6 @@ import {
   ArrowRight,
   Sparkles,
   Flame,
-  Layers,
 } from "lucide-react";
 
 type CatalogueTab = "courses" | "training-programs" | "events";
@@ -123,14 +122,14 @@ export const FeaturedCourses = () => {
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold font-display text-white tracking-tight">
             Built for builders. Taught by builders.
           </h2>
-          <p className="text-sm sm:text-base text-white/60 max-w-2xl mx-auto mt-3">
+          <p className="text-xs sm:text-sm md:text-base text-white/60 max-w-2xl mx-auto mt-2 sm:mt-3 leading-relaxed px-2">
             Explore industry-vetted courses, intensive campus internships, and hands-on bootcamps.
           </p>
         </div>
 
         {/* Primary Offering Tabs */}
-        <div className="flex justify-center mb-8 sm:mb-10">
-          <div className="inline-flex p-1.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-xl overflow-x-auto max-w-full">
+        <div className="flex justify-center mb-6 sm:mb-8 md:mb-10 px-2">
+          <div className="inline-flex p-1 sm:p-1.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-xl overflow-x-auto max-w-full scrollbar-hide">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -138,13 +137,13 @@ export const FeaturedCourses = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2.5 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 sm:gap-2.5 px-3 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
                     isActive
                       ? "bg-magenta text-white shadow-lg shadow-magenta/25 scale-[1.02]"
                       : "text-white/70 hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? "text-white" : "text-white/60"}`} />
+                  <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isActive ? "text-white" : "text-white/60"}`} />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -154,12 +153,12 @@ export const FeaturedCourses = () => {
 
         {/* Sub-Category Filter for Courses */}
         {activeTab === "courses" && (
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-8 animate-fade-in">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mb-6 sm:mb-8 animate-fade-in px-2">
             {courseCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCourseCategory(category)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+                className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium transition-all ${
                   selectedCourseCategory === category
                     ? "bg-white/20 text-white border border-white/30"
                     : "bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-transparent"
@@ -181,15 +180,15 @@ export const FeaturedCourses = () => {
 
         {/* Tab 1: Courses Content */}
         {!isLoading && activeTab === "courses" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-fade-in">
             {courses.map((course: any) => (
               <DataCard
                 key={course._id || course.id}
                 variant="dark"
-                className="h-full flex flex-col hover:border-magenta/40 transition-all duration-300 group"
+                className="h-full flex flex-col hover:border-magenta/40 transition-all duration-300 group p-4 sm:p-5 md:p-6"
               >
                 {/* Tags */}
-                <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
                   <span className="px-2.5 py-0.5 rounded-full bg-magenta/20 text-magenta text-[11px] font-semibold border border-magenta/30">
                     {course.category}
                   </span>
@@ -263,12 +262,12 @@ export const FeaturedCourses = () => {
 
         {/* Tab 2: Training Programs Content */}
         {!isLoading && activeTab === "training-programs" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-fade-in">
             {trainingPrograms.map((program: any) => (
               <DataCard
                 key={program._id}
                 variant="dark"
-                className="h-full flex flex-col hover:border-magenta/40 transition-all duration-300 group"
+                className="h-full flex flex-col hover:border-magenta/40 transition-all duration-300 group p-4 sm:p-5 md:p-6"
               >
                 {/* Header tags */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -357,12 +356,12 @@ export const FeaturedCourses = () => {
 
         {/* Tab 3: Events Content */}
         {!isLoading && activeTab === "events" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-fade-in">
             {events.map((event: any) => (
               <DataCard
                 key={event._id}
                 variant="dark"
-                className="h-full flex flex-col hover:border-magenta/40 transition-all duration-300 group"
+                className="h-full flex flex-col hover:border-magenta/40 transition-all duration-300 group p-4 sm:p-5 md:p-6"
               >
                 {/* Header tags */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -448,7 +447,7 @@ export const FeaturedCourses = () => {
         <div className="text-center mt-10 sm:mt-12 md:mt-14">
           <Link
             href={currentTabConfig.viewAllHref}
-            className="inline-flex items-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-magenta to-lavender text-white font-bold text-sm sm:text-base shadow-xl shadow-magenta/20 hover:shadow-magenta/40 hover:scale-[1.03] transition-all duration-300 group"
+            className="inline-flex items-center justify-center gap-2.5 w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-magenta to-lavender text-white font-bold text-sm sm:text-base shadow-xl shadow-magenta/20 hover:shadow-magenta/40 hover:scale-[1.02] transition-all duration-300 group"
           >
             <span>{currentTabConfig.viewAllText}</span>
             <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1.5 transition-transform" />

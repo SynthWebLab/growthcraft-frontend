@@ -76,7 +76,7 @@ const companies: Partner[] = [
    },
   { name: "Urban Company",
     logo:"https://iconlogovector.com/uploads/images/2025/11/lg-69165dd60f7ef-Urban-Company.webp"
-   },
+  },
   { name: "Rapido",
     logo:"https://1000logos.net/wp-content/uploads/2023/09/Rapido-Logo.png"
    },
@@ -88,8 +88,8 @@ const companies: Partner[] = [
 export const HiringPartners = () => {
   return (
     <Section variant="white" className="!py-8 sm:!py-12 md:!py-16 lg:!py-20">
-      <div className="text-center mb-10 sm:mb-12 md:mb-14 animate-fade-up">
-        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3">
+      <div className="text-center mb-8 sm:mb-12 md:mb-14 animate-fade-up">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3 font-semibold">
           Hiring partners
         </p>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display">
@@ -97,17 +97,17 @@ export const HiringPartners = () => {
         </h2>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-5 sm:gap-24">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
         {companies.map((company) => (
           <div
             key={company.name}
-            className="flex items-center justify-center h-14 sm:h-16 rounded-xl bg-card px-3 py-2 "
+            className="flex items-center justify-center h-14 sm:h-16 md:h-18 rounded-xl bg-card border border-border/60 hover:border-magenta/30 p-2.5 sm:p-3 transition-all hover:shadow-xs"
           >
             {company.logo ? (
               <img
                 src={company.logo}
                 alt={company.name}
-                className="h-25 object-contain   hover:grayscale-0 transition-all"
+                className="max-h-7 sm:max-h-9 md:max-h-10 w-auto max-w-full object-contain hover:grayscale-0 transition-all"
               />
             ) : (
               <span className="text-xs sm:text-sm font-medium text-muted-foreground">

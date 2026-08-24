@@ -4,7 +4,7 @@ import { Section } from "@/components/ui/section";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useBootcamps } from "@/hooks/queries/useBootcamps";
-import { Calendar, MapPin, Users, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Users } from "lucide-react";
 
 export const BootcampHighlight = () => {
   // Fetch open bootcamps
@@ -20,8 +20,8 @@ export const BootcampHighlight = () => {
 
   return (
     <Section variant="white" className="!py-8 sm:!py-12 md:!py-16 lg:!py-20">
-      <div className="text-center mb-10 sm:mb-12 md:mb-14 animate-fade-up">
-        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3">
+      <div className="text-center mb-8 sm:mb-12 md:mb-14 animate-fade-up">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3 font-semibold">
           Next bootcamp
         </p>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display">
@@ -32,8 +32,8 @@ export const BootcampHighlight = () => {
       <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card animate-fade-up">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           {/* Left Side - Bootcamp Info */}
-          <div className="bg-marble p-6 sm:p-8 lg:p-12 flex items-center justify-center">
-            <div className="text-center">
+          <div className="bg-marble p-5 sm:p-8 lg:p-12 flex items-center justify-center">
+            <div className="text-center w-full">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-semibold mb-3 sm:mb-4">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 Enrolling Now
@@ -41,7 +41,7 @@ export const BootcampHighlight = () => {
               <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold font-display mb-2">
                 {openBootcamp.title}
               </h3>
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-3 sm:mt-4">
+              <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5 mt-3 sm:mt-4">
                 {openBootcamp.skillsCovered.slice(0, 5).map((skill) => (
                   <span
                     key={skill}
@@ -55,19 +55,19 @@ export const BootcampHighlight = () => {
           </div>
 
           {/* Right Side - Details */}
-          <div className="p-6 sm:p-8 lg:p-12 flex flex-col justify-center">
+          <div className="p-5 sm:p-8 lg:p-12 flex flex-col justify-center">
             <div className="space-y-3 sm:space-y-4 mb-5 sm:mb-6">
-              <div className="flex items-center gap-3 text-sm sm:text-base text-muted-foreground">
+              <div className="flex items-center gap-3 text-xs sm:text-sm md:text-base text-muted-foreground">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-secondary flex-shrink-0" />
                 <span>
                   {new Date(openBootcamp.startDate).toLocaleDateString()} — {new Date(openBootcamp.endDate).toLocaleDateString()}
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-sm sm:text-base text-muted-foreground">
+              <div className="flex items-center gap-3 text-xs sm:text-sm md:text-base text-muted-foreground">
                 <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-secondary flex-shrink-0" />
                 <span>{openBootcamp.mode} · 12 weeks</span>
               </div>
-              <div className="flex items-center gap-3 text-sm sm:text-base">
+              <div className="flex items-center gap-3 text-xs sm:text-sm md:text-base">
                 <Users className="h-4 w-4 sm:h-5 sm:w-5 text-secondary flex-shrink-0" />
                 <span className="text-primary font-bold">
                   {openBootcamp.availableSeats} seat{openBootcamp.availableSeats !== 1 ? "s" : ""} left
@@ -98,8 +98,8 @@ export const BootcampHighlight = () => {
             </div>
 
             {/* CTA & Price */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:w-auto" asChild>
                   <Link href={`/bootcamps/${openBootcamp.slug}`}>
                     Reserve Seat
@@ -111,12 +111,12 @@ export const BootcampHighlight = () => {
                   </Link>
                 </Button>
               </div>
-              <div className="flex flex-col">
+              <div className="flex items-baseline sm:flex-col gap-2 sm:gap-0">
                 <span className="text-xl sm:text-2xl font-bold font-display">
                   ₹{openBootcamp.price.toLocaleString()}
                 </span>
                 {openBootcamp.originalPrice && openBootcamp.originalPrice > openBootcamp.price && (
-                  <span className="text-sm text-muted-foreground line-through">
+                  <span className="text-xs sm:text-sm text-muted-foreground line-through">
                     ₹{openBootcamp.originalPrice.toLocaleString()}
                   </span>
                 )}
