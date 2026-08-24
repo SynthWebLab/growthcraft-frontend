@@ -1,8 +1,9 @@
 "use client";
 
-import { Calendar, ArrowRight, MapPin, Flame, Loader2 } from "lucide-react";
+import { Calendar, ArrowRight, Flame, Loader2, Users } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { DataCard } from "@/components/ui/data-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import type { Bootcamp } from "@/types/bootcamp";
@@ -16,8 +17,12 @@ interface BootcampEventCardProps {
   isProcessing?: boolean;
 }
 
-const formatBootcampDate = (date: string) =>
-  new Date(date).toLocaleDateString("en-GB");
+const formatBootcampDate = (date: string) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -61,32 +66,30 @@ export function BootcampEventCard({
 
   const rawPrimaryCTA = bootcamp.primaryCTA || "Reserve Seat";
   const primaryCTA = isEnrolled ? "Seat Reserved" : (rawPrimaryCTA === "Seat Reserved" || rawPrimaryCTA === "Already Enrolled" ? "Reserve Seat" : rawPrimaryCTA);
-  const rawSecondaryCTA = isEnrolled ? null : bootcamp.secondaryCTA;
-  const secondaryCTA = (rawSecondaryCTA === primaryCTA || primaryCTA === "Request Callback" || primaryCTA === "Seat Reserved") ? null : rawSecondaryCTA;
   const isFinalizedStatus = bootcamp.status === "Closed" || bootcamp.status === "Completed";
   const isPrimaryDisabled = Boolean(isProcessing) || isRestrictedRole || isEnrolled || (bootcamp.cta?.disabled ?? (!bootcamp.canRegister || isFinalizedStatus));
   const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? bootcamp.status : primaryCTA);
 
+  const mentorsList = (bootcamp as any).mentors || [];
+  const mentorNames = bootcamp.mentorNames || [];
+
   return (
     <Link 
       href={`/events/${bootcamp.slug}`}
-      className="flex flex-col lg:flex-row gap-0 lg:gap-6 rounded-xl border overflow-hidden bg-card hover:border-primary/30 hover:shadow-lg transition-all block"
+      className="group block h-full"
     >
-      <div className="lg:w-[40%] h-32 sm:h-48 lg:h-auto bg-graphite flex items-center justify-center">
-        <div className="text-center text-white/40">
-          <MapPin className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-xs">{bootcamp.mode}</p>
-        </div>
-      </div>
-
-      <div className="lg:w-[60%] p-4 sm:p-6 flex flex-col justify-between">
+      <DataCard className="h-full flex flex-col justify-between hover:border-primary/40 hover:shadow-lg transition-all duration-300 p-5 sm:p-6">
         <div>
+          {/* Badge Row */}
           <div className="flex flex-wrap items-center gap-2 mb-3">
             {Boolean((bootcamp as any).isFeatured || (bootcamp as any).is_featured || (bootcamp as any).isFeatured === "true" || (bootcamp as any).is_featured === "true") && (
               <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
                 <Flame className="h-3 w-3" /> Trending
               </span>
             )}
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-magenta/10 text-magenta">
+              Bootcamp
+            </span>
             <span
               className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getStatusColor(
                 bootcamp.status
@@ -94,36 +97,17 @@ export function BootcampEventCard({
             >
               {bootcamp.status}
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary">
-              Bootcamp
-            </span>
             <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
               {bootcamp.mode}
             </span>
           </div>
 
-          <h2 className="text-lg sm:text-xl font-bold mb-2">{bootcamp.title}</h2>
-
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-            {bootcamp.description}
-          </p>
-
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground mb-4">
-            <span className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              <span className="text-xs sm:text-sm">
-                {formatBootcampDate(bootcamp.startDate)} -{" "}
-                {formatBootcampDate(bootcamp.endDate)}
-              </span>
-            </span>
-          </div>
-
-          {/* Mentors */}
-          {(bootcamp as any).mentors && (bootcamp as any).mentors.length > 0 ? (
-            <div className="flex items-center gap-2 mb-4">
+          {/* Assigned Mentors */}
+          {mentorsList.length > 0 ? (
+            <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
               <div className="flex -space-x-1.5 overflow-hidden">
-                {(bootcamp as any).mentors.map((m: any, idx: number) => (
-                  <Avatar key={idx} className="inline-block h-6 w-6 rounded-full ring-1 ring-background">
+                {mentorsList.slice(0, 3).map((m: any, idx: number) => (
+                  <Avatar key={idx} className="inline-block h-5 w-5 rounded-full ring-1 ring-background">
                     <AvatarImage src={m.avatar || undefined} />
                     <AvatarFallback className="text-[8px] bg-primary/10 text-primary font-bold">
                       {(m.name || m.fullName || "M").charAt(0).toUpperCase()}
@@ -132,103 +116,116 @@ export function BootcampEventCard({
                 ))}
               </div>
               <span className="text-xs font-medium text-foreground/80 truncate">
-                {(bootcamp as any).mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ")}
+                {mentorsList.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ")}
               </span>
             </div>
-          ) : bootcamp.mentorNames && bootcamp.mentorNames.length > 0 ? (
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xs text-muted-foreground">
-                {bootcamp.mentorNames.join(", ")}
-              </span>
+          ) : mentorNames.length > 0 ? (
+            <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
+              <Users className="h-3.5 w-3.5 text-primary" />
+              <span className="truncate">{mentorNames.join(", ")}</span>
             </div>
           ) : null}
 
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {bootcamp.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-2 py-0.5 rounded text-[10px] bg-primary/10 text-primary font-medium"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
+          {/* Title */}
+          <h3 className="text-lg font-bold text-foreground group-hover:text-magenta transition-colors mb-2 line-clamp-2">
+            {bootcamp.title}
+          </h3>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t gap-3 sm:gap-4">
-          <div>
+          {/* Description */}
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+            {bootcamp.description}
+          </p>
+
+          {/* Date & Seats Info */}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
+              <Calendar className="h-3 w-3" />
+              {formatBootcampDate(bootcamp.startDate)} — {formatBootcampDate(bootcamp.endDate)}
+            </span>
             {bootcamp.availableSeats > 0 && bootcamp.status === "Open" && (
-              <p className="text-xs sm:text-sm font-bold text-primary">
-                {bootcamp.availableSeats} seat
-                {bootcamp.availableSeats !== 1 ? "s" : ""} left of {bootcamp.maxSeats}
-              </p>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success">
+                {bootcamp.availableSeats} seat{bootcamp.availableSeats !== 1 ? "s" : ""} left
+              </span>
             )}
             {bootcamp.availableSeats === 0 && bootcamp.status === "Open" && (
-              <p className="text-xs sm:text-sm font-bold text-danger">Seats Full</p>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-danger/10 text-danger">
+                Seats Full
+              </span>
             )}
-            <p className="text-lg font-extrabold text-foreground">
+          </div>
+
+          {/* Skills / Tools Chips */}
+          {bootcamp.skillsCovered && bootcamp.skillsCovered.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {bootcamp.skillsCovered.slice(0, 4).map((skill, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground"
+                >
+                  {skill}
+                </span>
+              ))}
+              {bootcamp.skillsCovered.length > 4 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
+                  +{bootcamp.skillsCovered.length - 4}
+                </span>
+              )}
+            </div>
+          ) : bootcamp.tags && bootcamp.tags.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {bootcamp.tags.slice(0, 4).map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Footer with Price and CTA */}
+        <div className="flex items-center justify-between pt-4 border-t border-border mt-2">
+          <div>
+            <span className="text-lg font-extrabold text-magenta">
               ₹{bootcamp.price.toLocaleString()}
-            </p>
+            </span>
             {bootcamp.originalPrice && bootcamp.originalPrice > bootcamp.price && (
-              <span className="text-sm text-muted-foreground line-through">
+              <span className="text-xs text-muted-foreground line-through ml-2">
                 ₹{bootcamp.originalPrice.toLocaleString()}
               </span>
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-            {secondaryCTA && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full sm:w-auto"
-                disabled={isRestrictedRole}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (isRestrictedRole) return;
-                  if (onSecondaryCTAClick) {
-                    onSecondaryCTAClick(bootcamp);
-                    return;
-                  }
-                  onPrimaryCTAClick(bootcamp);
-                }}
-              >
-                {isRestrictedRole ? "Students Only" : secondaryCTA}
-              </Button>
+          <Button
+            size="sm"
+            className={`${
+              isPrimaryDisabled
+                ? "cursor-not-allowed opacity-50"
+                : bootcamp.canRegister
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : ""
+            }`}
+            variant={isFinalizedStatus || isRestrictedRole ? "outline" : bootcamp.canRegister ? "default" : "outline"}
+            disabled={isPrimaryDisabled}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!isRestrictedRole) onPrimaryCTAClick(bootcamp);
+            }}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <span>{primaryButtonLabel}</span>
+                {!isFinalizedStatus && bootcamp.canRegister && <ArrowRight className="ml-1.5 h-3.5 w-3.5" />}
+              </>
             )}
-            <Button
-              className={`w-full sm:w-auto ${
-                isPrimaryDisabled
-                  ? "cursor-not-allowed opacity-50"
-                  : bootcamp.canRegister
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : ""
-              }`}
-              size="default"
-              variant={isFinalizedStatus || isRestrictedRole ? "outline" : bootcamp.canRegister ? "default" : "outline"}
-              disabled={isPrimaryDisabled}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!isRestrictedRole) onPrimaryCTAClick(bootcamp);
-              }}
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                  Checking Payment...
-                </>
-              ) : (
-                <>
-                  {primaryButtonLabel}
-                  {!isFinalizedStatus && bootcamp.canRegister && <ArrowRight className="ml-2 h-4 w-4" />}
-                </>
-              )}
-            </Button>
-          </div>
+          </Button>
         </div>
-      </div>
+      </DataCard>
     </Link>
   );
 }

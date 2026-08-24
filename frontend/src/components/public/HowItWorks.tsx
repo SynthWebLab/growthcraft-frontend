@@ -33,14 +33,14 @@ export const HowItWorks = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % steps.length);
-    }, 2500);
+    }, 3000);
     return () => clearInterval(timer);
   }, []);
 
   return (
-    <Section variant="white">
-      <div className="text-center mb-12 sm:mb-14 md:mb-16 animate-fade-up">
-        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3">
+    <Section variant="white" className="!py-10 sm:!py-14 md:!py-18 lg:!py-22">
+      <div className="text-center mb-10 sm:mb-14 md:mb-16 animate-fade-up">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3 font-semibold">
           The journey
         </p>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display">
@@ -70,7 +70,7 @@ export const HowItWorks = () => {
               <div
                 key={num}
                 onClick={() => setActiveStep(index)}
-                className="text-center relative group cursor-pointer"
+                className="text-center relative group cursor-pointer p-3 sm:p-2 rounded-xl transition-colors hover:bg-muted/30"
               >
                 <div className="relative inline-flex items-center justify-center mb-3 sm:mb-4">
                   {/* Glowing halo for active step */}
@@ -90,19 +90,19 @@ export const HowItWorks = () => {
                   {/* Step Circle */}
                   <motion.div
                     animate={{
-                      scale: isActive ? 1.15 : 1,
+                      scale: isActive ? 1.12 : 1,
                     }}
                     transition={{ duration: 0.3 }}
                     className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center relative z-10 transition-colors duration-500 ${
                       isActive
                         ? "bg-primary border-primary text-white shadow-lg shadow-primary/40"
                         : isPassed
-                        ? "bg-white border-primary text-primary"
-                        : "bg-white border-border text-muted-foreground/40"
+                        ? "bg-white border-primary text-primary dark:bg-card"
+                        : "bg-white border-border text-muted-foreground/40 dark:bg-card"
                     }`}
                   >
                     <span
-                      className={`text-xl sm:text-2xl font-extrabold font-display transition-colors duration-300 ${
+                      className={`text-lg sm:text-2xl font-extrabold font-display transition-colors duration-300 ${
                         isActive
                           ? "text-white"
                           : isPassed
@@ -148,4 +148,3 @@ export const HowItWorks = () => {
     </Section>
   );
 };
-

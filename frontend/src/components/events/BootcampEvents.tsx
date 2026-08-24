@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { EventSection } from "@/components/events/EventSection";
+import { Section } from "@/components/ui/section";
 import { Loader2 } from "lucide-react";
 import {
   Pagination,
@@ -35,7 +35,7 @@ interface BootcampEventsProps {
   enabled?: boolean;
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 9;
 
 export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsProps) {
   const { checkout, isProcessing, processingItemId } = useDirectCheckout();
@@ -76,7 +76,6 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
 
   const handleBootcampCTA = (bootcamp: Bootcamp) => {
     if (bootcamp.primaryCTA.toLowerCase().includes("reserve") || bootcamp.primaryCTA.toLowerCase().includes("enroll")) {
-      // Direct checkout — skip the popup form
       checkout({
         itemId: bootcamp.id,
         itemType: "bootcamp",
@@ -111,37 +110,37 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
 
   if (isLoading && !bootcamps.length) {
     return (
-      <EventSection variant="white">
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-magenta" />
+      <Section variant="white">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-magenta mb-4" />
         </div>
-      </EventSection>
+      </Section>
     );
   }
 
   if (error) {
     return (
-      <EventSection variant="white">
+      <Section variant="white">
         <div className="text-center py-16">
           <p className="text-danger mb-4">Failed to load bootcamps. Please try again.</p>
           <Button onClick={() => refetch()}>Retry</Button>
         </div>
-      </EventSection>
+      </Section>
     );
   }
 
   return (
-    <>
-      <EventSection variant="white">
-        <div className="mb-6">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-3">
-            Live Bootcamps
-          </h2>
-          <p className="text-muted-foreground max-w-2xl">
-            Intensive, mentor-led programs designed to make you job-ready in weeks.
-          </p>
-        </div>
+    <Section variant="white" className="!py-4 sm:!py-6">
+      <div className="mb-6">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-2">
+          Live Bootcamps
+        </h2>
+        <p className="text-sm md:text-base text-muted-foreground max-w-2xl">
+          Intensive, mentor-led programs designed to make you job-ready in weeks.
+        </p>
+      </div>
 
+      <div className="flex flex-col gap-4 mb-6">
         <EventFilters
           groups={[
             {
@@ -169,38 +168,39 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
           ]}
           onClearAll={clearBootcampFilters}
         />
-        <div className="text-sm text-muted-foreground">
-          Showing {bootcamps.length} of {totalItems} bootcamp{totalItems !== 1 ? "s" : ""}
-          {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
-        </div>
-      </EventSection>
+        {totalItems > 0 && (
+          <div className="text-sm text-muted-foreground">
+            Showing {bootcamps.length} of {totalItems} bootcamp{totalItems !== 1 ? "s" : ""}
+            {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
+          </div>
+        )}
+      </div>
 
       {bootcamps.length > 0 ? (
-        bootcamps.map((bootcamp, i) => (
-          <EventSection key={bootcamp.id} variant={i % 2 === 0 ? "white" : "marble"}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {bootcamps.map((bootcamp) => (
             <BootcampEventCard
+              key={bootcamp.id}
               bootcamp={bootcamp}
               onPrimaryCTAClick={handleBootcampCTA}
               onSecondaryCTAClick={() => openBootcampForm(bootcamp, "callback")}
               isProcessing={isProcessing && processingItemId === bootcamp.id}
             />
-          </EventSection>
-        ))
+          ))}
+        </div>
       ) : (
-        <EventSection variant="white">
-          <div className="text-center py-16">
-            <p className="text-muted-foreground mb-4">
-              No upcoming bootcamps match the current filters.
-            </p>
-            <Button variant="outline" onClick={clearBootcampFilters}>
-              Clear Filters
-            </Button>
-          </div>
-        </EventSection>
+        <div className="text-center py-16">
+          <p className="text-muted-foreground mb-4">
+            No upcoming bootcamps match the current filters.
+          </p>
+          <Button variant="outline" onClick={clearBootcampFilters}>
+            Clear Filters
+          </Button>
+        </div>
       )}
 
       {totalPages > 1 && (
-        <EventSection variant="white" className="pt-8 pb-12 md:pt-10 md:pb-16">
+        <div className="pt-4 pb-8">
           <Pagination>
             <PaginationContent>
               {hasPreviousPage && (
@@ -244,8 +244,8 @@ export function BootcampEvents({ onOpenForm, enabled = true }: BootcampEventsPro
               )}
             </PaginationContent>
           </Pagination>
-        </EventSection>
+        </div>
       )}
-    </>
+    </Section>
   );
 }

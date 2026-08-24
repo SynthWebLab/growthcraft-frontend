@@ -8,22 +8,27 @@ import { resolveRef } from "@/lib/student-dashboard.utils";
 export default function StudentCoursesPage() {
   const { data, isLoading, isError } = useStudentCourses();
 
-  const items: EnrollmentGridItem[] = (data?.data?.courses ?? []).map((e) => {
-    const course = resolveRef(e.courseId);
-    const slug = course?.slug || "full-stack-web-development";
-    return {
-      id: e._id,
-      title: course?.title ?? e.title,
-      subtitle: course?.category || course?.difficultyLevel || "Development",
-      status: e.status,
-      paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
-      enrollmentDate: e.createdAt || e.enrollmentDate || new Date().toISOString(),
-      href: `/courses/${slug}`,
-      workspaceHref: `/student/courses/${slug}`,
-      emoji: "📚",
-      type: "course",
-    };
-  });
+  const items: EnrollmentGridItem[] = (data?.data?.courses ?? [])
+    .filter((e) => {
+      const isPaid = e.paymentStatus === "completed" || e.status === "confirmed";
+      return isPaid && e.paymentStatus !== "pending" && e.status !== "pending";
+    })
+    .map((e) => {
+      const course = resolveRef(e.courseId);
+      const slug = course?.slug || "full-stack-web-development";
+      return {
+        id: e._id,
+        title: course?.title ?? e.title,
+        subtitle: course?.category || course?.difficultyLevel || "Development",
+        status: e.status,
+        paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
+        enrollmentDate: e.createdAt || e.enrollmentDate || new Date().toISOString(),
+        href: `/courses/${slug}`,
+        workspaceHref: `/student/courses/${slug}`,
+        emoji: "📚",
+        type: "course",
+      };
+    });
 
   return (
     <StudentEnrollmentGrid

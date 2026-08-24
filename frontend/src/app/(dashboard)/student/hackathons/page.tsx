@@ -8,21 +8,26 @@ import { resolveRef } from "@/lib/student-dashboard.utils";
 export default function StudentHackathonsPage() {
   const { data, isLoading, isError } = useStudentHackathons();
 
-  const items: EnrollmentGridItem[] = (data?.data?.hackathons ?? []).map((e) => {
-    const event = resolveRef(e.eventId);
-    const slug = event?.slug || "build-a-thon-2026";
-    return {
-      id: e._id,
-      title: event?.title ?? e.title,
-      subtitle: event?.mode || event?.domain,
-      status: e.status,
-      paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
-      enrollmentDate: e.enrollmentDate,
-      href: `/events/${slug}`,
-      workspaceHref: `/student/hackathons/${slug}`,
-      emoji: "🏆",
-    };
-  });
+  const items: EnrollmentGridItem[] = (data?.data?.hackathons ?? [])
+    .filter((e) => {
+      const isPaid = e.paymentStatus === "completed" || e.status === "confirmed";
+      return isPaid && e.paymentStatus !== "pending" && e.status !== "pending";
+    })
+    .map((e) => {
+      const event = resolveRef(e.eventId);
+      const slug = event?.slug || "build-a-thon-2026";
+      return {
+        id: e._id,
+        title: event?.title ?? e.title,
+        subtitle: event?.mode || event?.domain,
+        status: e.status,
+        paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
+        enrollmentDate: e.enrollmentDate,
+        href: `/events/${slug}`,
+        workspaceHref: `/student/hackathons/${slug}`,
+        emoji: "🏆",
+      };
+    });
 
   return (
     <StudentEnrollmentGrid

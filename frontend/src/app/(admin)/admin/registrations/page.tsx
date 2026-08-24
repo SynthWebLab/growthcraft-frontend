@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Building2 } from "lucide-react";
 import {
   useAdminRegistrations,
   useUpdateAdminRegistration,
@@ -39,6 +40,13 @@ interface Registration {
   event_id: string | null;
   item_type: string;
   item_title: string;
+  selected_company?: {
+    companyName: string;
+    role?: string;
+    duration?: string;
+    stipend?: string;
+    mode?: string;
+  } | null;
   created_at: string;
 }
 
@@ -193,6 +201,33 @@ export default function AdminRegistrations() {
       ),
     },
     {
+      key: "selected_company",
+      label: "Internship Partner",
+      render: (value: any, row: Registration) => {
+        if (row.item_type !== "training-program") return <span className="text-muted-foreground text-xs">—</span>;
+        if (!value || !value.companyName) {
+          return (
+            <span className="text-muted-foreground text-[11px] italic">
+              Not chosen
+            </span>
+          );
+        }
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-xs text-foreground flex items-center gap-1">
+              <Building2 className="h-3 w-3 text-emerald-600 shrink-0" />
+              {value.companyName}
+            </span>
+            {value.role && (
+              <span className="text-[10px] text-muted-foreground line-clamp-1">
+                {value.role}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       key: "status",
       label: "Status",
       render: (value: string) => (
@@ -267,7 +302,7 @@ export default function AdminRegistrations() {
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Registration Details</DialogTitle>
           </DialogHeader>
@@ -308,6 +343,32 @@ export default function AdminRegistrations() {
                     {new Date(selectedRegistration.created_at).toLocaleString()}
                   </span>
                 </div>
+
+                {selectedRegistration.item_type === "training-program" && selectedRegistration.selected_company && (
+                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5" /> Selected Internship Partner
+                      </span>
+                      <Badge variant="outline" className="bg-emerald-500/20 text-emerald-800 border-emerald-500/30 text-[10px]">
+                        Chosen at Enrollment
+                      </Badge>
+                    </div>
+                    <p className="font-bold text-sm text-emerald-950">
+                      {selectedRegistration.selected_company.companyName}
+                    </p>
+                    {selectedRegistration.selected_company.role && (
+                      <p className="text-xs text-emerald-800">
+                        Role: {selectedRegistration.selected_company.role}
+                      </p>
+                    )}
+                    {selectedRegistration.selected_company.stipend && (
+                      <p className="text-[11px] text-emerald-700">
+                        Perks: {selectedRegistration.selected_company.stipend}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4 pt-4 border-t">

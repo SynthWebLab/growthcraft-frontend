@@ -30,12 +30,14 @@ import {
   Hourglass,
   CheckCircle,
   CreditCard,
-  Briefcase
+  Briefcase,
+  Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
 import { useStudentTrainingProgramWorkspace, useSubmitTrainingProgramProject } from "@/hooks/queries/useStudent";
 import { PaymentCheckoutModal } from "@/components/dashboard/payment-checkout-modal";
 
@@ -525,9 +527,57 @@ export default function StudentTrainingProgramWorkspacePage({ params }: { params
 
         </div>
 
-        {/* Right Column: Mentors & Certificate Workflow */}
+        {/* Right Column: Internship Partner & Mentors & Certificate Workflow */}
         <div className="space-y-5 sm:space-y-6">
           
+          {/* Allocated Internship Partner Card */}
+          <Card className="p-4 sm:p-6 rounded-2xl border-2 border-magenta/20 bg-gradient-to-br from-magenta/5 via-purple-500/5 to-white shadow-sm space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-magenta shrink-0" />
+                <h2 className="text-base sm:text-lg font-bold text-foreground">Internship Partner</h2>
+              </div>
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] sm:text-xs font-bold uppercase">
+                Allocated Company
+              </Badge>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white border border-border/80 shadow-xs space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <PartnerLogo
+                    companyName={enrollment?.selectedCompany?.companyName || "SynthWeb"}
+                    logoUrl={enrollment?.selectedCompany?.logoUrl}
+                    size="md"
+                  />
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-foreground">
+                      {enrollment?.selectedCompany?.companyName || "SynthWeb"}
+                    </h3>
+                    <p className="text-[11px] sm:text-xs font-semibold text-magenta">
+                      {enrollment?.selectedCompany?.role || "Industrial Software Intern"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1.5 border-t text-[11px]">
+                <div className="bg-slate-50 p-2 rounded-lg">
+                  <span className="text-[10px] text-muted-foreground block font-medium">Mode</span>
+                  <span className="font-semibold text-foreground truncate block">
+                    {enrollment?.selectedCompany?.mode || "Hybrid / Campus Hub"}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-lg">
+                  <span className="text-[10px] text-muted-foreground block font-medium">Duration</span>
+                  <span className="font-semibold text-foreground truncate block">
+                    {enrollment?.selectedCompany?.duration || "60 Days"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
           {/* Industry Mentors Card */}
           <Card className="p-4 sm:p-6 rounded-2xl border border-border bg-white shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">

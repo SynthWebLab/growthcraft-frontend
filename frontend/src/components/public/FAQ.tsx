@@ -44,8 +44,8 @@ const faqs = [
 export const FAQ = () => {
   return (
     <Section variant="white" className="!py-8 sm:!py-12 md:!py-16 lg:!py-20">
-      <div className="text-center mb-10 sm:mb-12 md:mb-14 animate-fade-up">
-        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3">
+      <div className="text-center mb-8 sm:mb-12 md:mb-14 animate-fade-up">
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-3 font-semibold">
           FAQ
         </p>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display">
@@ -54,17 +54,17 @@ export const FAQ = () => {
       </div>
 
       <div className="max-w-3xl mx-auto">
-        <Accordion type="single" collapsible className="space-y-3">
+        <Accordion type="single" collapsible className="space-y-2.5 sm:space-y-3">
           {faqs.map(({ q, a }, i) => (
             <AccordionItem
               key={i}
               value={`faq-${i}`}
-              className="rounded-xl border border-border bg-card px-5 sm:px-6 data-[state=open]:shadow-card"
+              className="rounded-xl border border-border bg-card px-4 sm:px-6 data-[state=open]:shadow-card transition-all"
             >
-              <AccordionTrigger className="text-left font-display font-semibold text-sm md:text-base hover:no-underline py-4">
+              <AccordionTrigger className="text-left font-display font-semibold text-xs sm:text-sm md:text-base hover:no-underline py-3.5 sm:py-4 leading-snug">
                 {q}
               </AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
+              <AccordionContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed pb-3.5 sm:pb-4">
                 {a}
               </AccordionContent>
             </AccordionItem>

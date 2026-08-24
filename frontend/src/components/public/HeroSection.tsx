@@ -38,7 +38,7 @@ const reactCode = `function CourseCard({ course }) {
 
 export const HeroSection = () => {
   return (
-    <Section variant="white" className="!py-6 sm:!py-12 md:!py-16 lg:!py-20 relative overflow-hidden">
+    <Section variant="white" className="!py-8 sm:!py-12 md:!py-16 lg:!py-20 relative overflow-hidden">
       {/* Animated Gradient Background */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 animate-gradient" />
@@ -47,32 +47,32 @@ export const HeroSection = () => {
         <div className="absolute -bottom-8 left-20 w-48 h-48 sm:w-72 sm:h-72 bg-accent/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 md:gap-12 lg:gap-16 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 md:gap-12 lg:gap-16 items-center">
         {/* Left Column - Content */}
-        <div className="animate-fade-up">
-          <p className="text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mb-2 sm:mb-4 font-semibold">
+        <div className="animate-fade-up text-center lg:text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-semibold mb-3 sm:mb-4">
             India&apos;s outcome-driven MERN academy
-          </p>
+          </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-3 sm:mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.15] mb-3 sm:mb-6 tracking-tight">
             <span className="font-script text-primary">Craft</span> the career.{" "}
             <br className="hidden sm:block" />
             We&apos;ll teach the code.
           </h1>
 
-          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-lg mb-5 sm:mb-8 leading-relaxed">
+          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-lg mx-auto lg:mx-0 mb-6 sm:mb-8 leading-relaxed">
             Escape tutorial hell. Learn from engineers who ship in production,
             build real projects, and get hired — not just certified.
           </p>
 
-          <div className="flex flex-wrap gap-3 sm:gap-4">
-            <Button size="lg" asChild>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 max-w-md mx-auto lg:mx-0">
+            <Button size="lg" className="w-full sm:w-auto shadow-md" asChild>
               <Link href="/courses">Explore Courses</Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-white"
+              className="w-full sm:w-auto border-primary text-primary hover:bg-primary hover:text-white"
               asChild
             >
               <Link href="/partnerships">Talk to a Mentor</Link>
@@ -82,24 +82,24 @@ export const HeroSection = () => {
 
         {/* Right Column - Layered Code Windows */}
         <div
-          className="relative max-w-[520px] sm:max-w-[580px] lg:max-w-[620px] w-full mx-auto lg:ml-auto animate-fade-up"
+          className="relative max-w-[440px] sm:max-w-[540px] lg:max-w-[620px] w-full mx-auto lg:ml-auto animate-fade-up mt-2 lg:mt-0"
           style={{ animationDelay: "0.2s" }}
         >
           {/* First Slide (Back - top header and lines peeking out) */}
-          <div className="relative z-10 w-[92%] sm:w-[94%]">
+          <div className="relative z-10 w-[94%] sm:w-[94%]">
             <CodeWindow
               code={expressCode}
               language="server.js"
-              className="rounded-xl border border-white/10 shadow-lg"
+              className="rounded-xl border border-white/10 shadow-lg text-[11px] sm:text-xs"
             />
           </div>
 
           {/* Second Slide (Front - starts slightly lower to reveal back panel text) */}
-          <div className="relative z-20 -mt-48 sm:-mt-56 md:-mt-64 ml-auto w-[92%] sm:w-[94%]">
+          <div className="relative z-20 -mt-36 sm:-mt-48 md:-mt-56 lg:-mt-64 ml-auto w-[94%] sm:w-[94%]">
             <CodeWindow
               code={reactCode}
               language="CourseCard.jsx"
-              className="rounded-xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] ring-1 ring-white/10"
+              className="rounded-xl border border-white/15 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.8)] ring-1 ring-white/10 text-[11px] sm:text-xs"
             />
           </div>
         </div>
