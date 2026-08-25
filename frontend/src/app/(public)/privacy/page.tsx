@@ -1,126 +1,82 @@
 import { Metadata } from "next";
-import Section from "@/components/ui/section";
-import { COMPANY, LAST_UPDATED, PRIVACY_SECTIONS } from "@/data/legal.data";
-import { Shield, Mail } from "lucide-react";
-import Link from "next/link";
+import { COMPANY, PRIVACY_SECTIONS } from "@/data/legal.data";
+import { LegalPageContent, LegalHighlight, LegalFaq } from "@/components/legal/LegalPageContent";
 
 export const metadata: Metadata = {
   title: `Privacy Policy — ${COMPANY.name}`,
-  description: `Learn how ${COMPANY.name} collects, uses, and protects your personal information.`,
+  description: `Learn how ${COMPANY.name} collects, uses, and safeguards your personal data across our offline training programs, mentor sessions, and hiring pipeline.`,
+  openGraph: {
+    title: `Privacy Policy — ${COMPANY.name}`,
+    description: `Transparency and data privacy guidelines for students, mentors, and colleges using ${COMPANY.name}.`,
+    url: `${COMPANY.url}/privacy`,
+    siteName: COMPANY.name,
+    type: "website",
+  },
 };
+
+const privacyHighlights: LegalHighlight[] = [
+  {
+    iconName: "lock",
+    tag: "Security",
+    title: "Data Protection & Encryption",
+    description: "Strict HTTPS protocols, secure database access controls, and PCI-DSS payment compliance.",
+    targetSectionId: "data-security",
+  },
+  {
+    iconName: "eye",
+    tag: "No Ads",
+    title: "Zero Data Selling",
+    description: "We never monetize or sell your personal information or contact details to third-party advertisers.",
+    targetSectionId: "data-sharing",
+  },
+  {
+    iconName: "user-check",
+    tag: "Academic",
+    title: "Offline-First Transparency",
+    description: "Records are used strictly to manage campus cohorts, 1-on-1 doubt sessions, and placement pipelines.",
+    targetSectionId: "how-we-use",
+  },
+  {
+    iconName: "scale",
+    tag: "User Rights",
+    title: "Your Privacy Rights",
+    description: "You have complete control to access, update, export, or request permanent deletion of your account.",
+    targetSectionId: "your-rights",
+  },
+];
+
+const privacyFaqs: LegalFaq[] = [
+  {
+    question: "How is my personal data used in offline campus training and bootcamps?",
+    answer:
+      "Your personal data is used solely to record attendance, deliver offline workshop materials, manage project submissions, and facilitate 1-on-1 mentor doubt clearing sessions.",
+  },
+  {
+    question: "Are my payment details stored on GrowthCraft servers?",
+    answer:
+      "No. All payments are processed through PCI-DSS certified payment gateways (e.g. Razorpay). We never store your debit/credit card credentials, CVV, or UPI passwords.",
+  },
+  {
+    question: "Who gets access to my portfolio and project submissions?",
+    answer:
+      "Your code submissions and project repositories are shared with verified hiring partners for job placements with your express consent, and with assigned mentors for code reviews.",
+  },
+  {
+    question: "How do I request complete account and data deletion?",
+    answer:
+      `You can submit a deletion request anytime by emailing ${COMPANY.supportEmail} from your registered email. We process and fulfill account deletion requests within 30 days.`,
+  },
+];
 
 export default function PrivacyPolicyPage() {
   return (
-    <>
-      {/* Hero */}
-      <Section variant="white">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-magenta/10 text-magenta mb-6">
-            <Shield className="h-7 w-7" />
-          </div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4">
-            Privacy Policy
-          </h1>
-          <p className="text-muted-foreground text-base md:text-lg leading-relaxed max-w-xl mx-auto">
-            Your privacy matters to us. This policy explains how{" "}
-            <strong className="text-foreground">{COMPANY.name}</strong> handles
-            your data.
-          </p>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Last updated:{" "}
-            <time dateTime={LAST_UPDATED}>
-              {new Date(`${LAST_UPDATED}T00:00:00`).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </time>
-          </p>
-        </div>
-      </Section>
-
-      {/* Table of Contents */}
-      <Section variant="marble" className="py-8 md:py-10">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
-            Contents
-          </h2>
-          <nav aria-label="Privacy policy sections">
-            <ol className="grid sm:grid-cols-2 gap-x-8 gap-y-2 list-decimal list-inside text-sm">
-              {PRIVACY_SECTIONS.map((section) => (
-                <li key={section.id}>
-                  <a
-                    href={`#${section.id}`}
-                    className="text-foreground hover:text-magenta transition-colors font-medium"
-                  >
-                    {section.title}
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </nav>
-        </div>
-      </Section>
-
-      {/* Sections */}
-      <Section variant="white">
-        <div className="max-w-3xl mx-auto space-y-12">
-          {PRIVACY_SECTIONS.map((section, idx) => (
-            <article key={section.id} id={section.id} className="scroll-mt-28">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4 flex items-start gap-3">
-                <span className="text-magenta font-extrabold text-lg leading-7">
-                  {String(idx + 1).padStart(2, "0")}.
-                </span>
-                {section.title}
-              </h2>
-              <div className="space-y-3">
-                {section.content.map((paragraph, pIdx) => (
-                  <p
-                    key={pIdx}
-                    className="text-sm md:text-base text-muted-foreground leading-relaxed"
-                  >
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </Section>
-
-      {/* Contact CTA */}
-      <Section variant="marble">
-        <div className="max-w-3xl mx-auto text-center space-y-4">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground">
-            Have questions about your data?
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Reach out to us anytime — we&apos;re happy to help.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-            <a
-              href={`mailto:${COMPANY.supportEmail}`}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-magenta hover:underline"
-            >
-              <Mail className="h-4 w-4" />
-              {COMPANY.supportEmail}
-            </a>
-            <span className="text-muted-foreground text-sm">or</span>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-magenta hover:underline"
-            >
-              Contact Us
-            </Link>
-          </div>
-          <p className="text-xs text-muted-foreground pt-4">
-            Also see our{" "}
-            <Link href="/terms" className="text-magenta hover:underline font-medium">
-              Terms of Service
-            </Link>
-          </p>
-        </div>
-      </Section>
-    </>
+    <LegalPageContent
+      type="privacy"
+      title="Privacy Policy"
+      subtitle={`Your privacy matters to us. This charter details how ${COMPANY.name} collects, protects, and handles your information across our educational platform and campus operations.`}
+      sections={PRIVACY_SECTIONS}
+      highlights={privacyHighlights}
+      faqs={privacyFaqs}
+    />
   );
 }
