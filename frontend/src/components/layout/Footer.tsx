@@ -24,6 +24,8 @@ const footerLinks = {
   company: [
     { name: "About Us", path: "/about" },
     { name: "Contact", path: "/contact" },
+    { name: "Privacy Policy", path: "/privacy" },
+    { name: "Terms of Service", path: "/terms" },
   ],
 };
 
