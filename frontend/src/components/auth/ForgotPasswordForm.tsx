@@ -227,13 +227,12 @@ export function ForgotPasswordForm() {
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Password strength:</span>
                 <span
-                  className={`font-medium ${
-                    strength.label === "Weak"
+                  className={`font-medium ${strength.label === "Weak"
                       ? "text-red-500"
                       : strength.label === "Medium"
-                      ? "text-yellow-500"
-                      : "text-green-500"
-                  }`}
+                        ? "text-yellow-500"
+                        : "text-green-500"
+                    }`}
                 >
                   {strength.label}
                 </span>
@@ -284,9 +283,11 @@ export function ForgotPasswordForm() {
         </div>
 
         {(validationError || resetPasswordMutation.isError) && (
-          <p className="text-sm text-destructive font-medium">
-            {validationError || resetPasswordMutation.error?.message || "Failed to reset password. Please verify code and try again."}
-          </p>
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md mt-4">
+            <p className="text-sm text-destructive font-medium">
+              {validationError || (resetPasswordMutation.error as any)?.message || "Failed to reset password. Please verify code and try again."}
+            </p>
+          </div>
         )}
 
         <Button

@@ -1,81 +1,201 @@
 import { z } from "zod";
+import {
+  NAME_PATTERN,
+  PHONE_PATTERN,
+  URL_PATTERN,
+  VALID_TEXT_PATTERN,
+  LENGTHS,
+  MESSAGES,
+  isCommonPassword,
+} from "./validators";
 
-// Common validation rules
-const emailSchema = z.string().email("Invalid email address");
+// ---------------------------------------------------------------------------
+// Reusable Sub-Schemas
+// ---------------------------------------------------------------------------
+
+const nameSchema = z
+  .string()
+  .trim()
+  .min(LENGTHS.NAME_MIN, MESSAGES.NAME_TOO_SHORT)
+  .max(LENGTHS.NAME_MAX, MESSAGES.NAME_TOO_LONG)
+  .regex(NAME_PATTERN, MESSAGES.NAME_INVALID);
+
+const emailSchema = z
+  .string()
+  .trim()
+  .min(1, MESSAGES.EMAIL_REQUIRED)
+  .email(MESSAGES.EMAIL_INVALID);
+
+const phoneSchema = z
+  .string()
+  .trim()
+  .min(1, MESSAGES.PHONE_REQUIRED)
+  .regex(PHONE_PATTERN, MESSAGES.PHONE_INVALID);
+
 const passwordSchema = z
   .string()
-  .min(8, "Password must be at least 8 characters")
-  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-  .regex(/[0-9]/, "Password must contain at least one number");
-const phoneSchema = z.string().min(10, "Phone number must be at least 10 digits");
+  .min(LENGTHS.PASSWORD_MIN, MESSAGES.PASSWORD_TOO_SHORT)
+  .max(LENGTHS.PASSWORD_MAX, MESSAGES.PASSWORD_TOO_LONG)
+  .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Must contain at least one lowercase letter")
+  .regex(/\d/, "Must contain at least one number")
+  .refine((val) => !isCommonPassword(val), {
+    message: MESSAGES.PASSWORD_COMMON,
+  });
 
-// Login schema (same for all roles)
+const confirmPasswordSchema = z.string().min(1, "Please confirm your password");
+
+const validTextSchema = (field: string, min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .min(min, MESSAGES.TEXT_TOO_SHORT(field, min))
+    .max(max, MESSAGES.TEXT_TOO_LONG(field, max))
+    .regex(VALID_TEXT_PATTERN, MESSAGES.TEXT_INVALID(field));
+
+const optionalUrlSchema = z
+  .string()
+  .optional()
+  .refine((val) => !val || val === "" || URL_PATTERN.test(val), {
+    message: MESSAGES.URL_INVALID,
+  });
+
+// ---------------------------------------------------------------------------
+// Login Schema (same for all roles)
+// ---------------------------------------------------------------------------
+
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(1, MESSAGES.PASSWORD_REQUIRED),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
-// Student registration schema
-export const studentRegisterSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: emailSchema,
-  phone: phoneSchema,
-  password: passwordSchema,
-});
+// ---------------------------------------------------------------------------
+// Student Registration
+// ---------------------------------------------------------------------------
+
+export const studentRegisterSchema = z
+  .object({
+    name: nameSchema,
+    email: emailSchema,
+    phone: phoneSchema,
+    password: passwordSchema,
+    confirmPassword: confirmPasswordSchema,
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: MESSAGES.PASSWORDS_MISMATCH,
+    path: ["confirmPassword"],
+  });
 
 export type StudentRegisterFormData = z.infer<typeof studentRegisterSchema>;
 
-// Mentor registration schema
-export const mentorRegisterSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: emailSchema,
-  phone: phoneSchema,
-  experience: z.string().min(1, "Experience is required"),
-  expertise: z.string().min(1, "Please select your area of expertise"),
-  company: z.string().min(2, "Organization name is required"),
-  bio: z.string().min(20, "Bio must be at least 20 characters"),
-  password: passwordSchema,
-});
+// ---------------------------------------------------------------------------
+// Mentor Registration
+// ---------------------------------------------------------------------------
+
+export const mentorRegisterSchema = z
+  .object({
+    name: nameSchema,
+    email: emailSchema,
+    phone: phoneSchema,
+    experience: z
+      .string()
+      .min(1, MESSAGES.NUMBER_REQUIRED("Experience"))
+      .refine((val) => /^\d+$/.test(val), {
+        message: MESSAGES.NUMBER_INVALID("Experience"),
+      })
+      .refine((val) => {
+        const num = parseInt(val, 10);
+        return num >= LENGTHS.EXPERIENCE_MIN && num <= LENGTHS.EXPERIENCE_MAX;
+      }, {
+        message: `Experience must be between ${LENGTHS.EXPERIENCE_MIN} and ${LENGTHS.EXPERIENCE_MAX} years`,
+      }),
+    expertise: z.string().min(1, MESSAGES.SELECT_REQUIRED("area of expertise")),
+    company: validTextSchema(
+      "Organization",
+      LENGTHS.COMPANY_MIN,
+      LENGTHS.COMPANY_MAX,
+    ),
+    bio: z
+      .string()
+      .trim()
+      .min(LENGTHS.BIO_MIN, MESSAGES.TEXT_TOO_SHORT("Bio", LENGTHS.BIO_MIN))
+      .max(LENGTHS.BIO_MAX, MESSAGES.TEXT_TOO_LONG("Bio", LENGTHS.BIO_MAX))
+      .regex(/[A-Za-z]/, "Bio must contain letters, not just numbers or symbols"),
+    password: passwordSchema,
+    confirmPassword: confirmPasswordSchema,
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: MESSAGES.PASSWORDS_MISMATCH,
+    path: ["confirmPassword"],
+  });
 
 export type MentorRegisterFormData = z.infer<typeof mentorRegisterSchema>;
 
-// College registration schema
-export const collegeRegisterSchema = z.object({
-  institution: z.string().min(2, "Institution name is required"),
-  contactPerson: z.string().min(2, "Contact person name is required"),
-  designation: z.string().min(2, "Designation is required"),
-  email: emailSchema,
-  phone: phoneSchema,
-  city: z.string().min(2, "City is required"),
-  state: z.string().min(2, "State is required"),
-  website: z.string()
-    .optional()
-    .refine((val) => !val || val === "" || /^https?:\/\/.+\..+/.test(val), {
-      message: "Invalid URL format",
-    }),
-  password: passwordSchema,
-});
+// ---------------------------------------------------------------------------
+// College Registration
+// ---------------------------------------------------------------------------
+
+export const collegeRegisterSchema = z
+  .object({
+    institution: validTextSchema(
+      "Institution name",
+      LENGTHS.INSTITUTION_MIN,
+      LENGTHS.INSTITUTION_MAX,
+    ),
+    contactPerson: nameSchema,
+    designation: validTextSchema(
+      "Designation",
+      LENGTHS.DESIGNATION_MIN,
+      LENGTHS.DESIGNATION_MAX,
+    ),
+    email: emailSchema,
+    phone: phoneSchema,
+    city: validTextSchema("City", LENGTHS.CITY_MIN, LENGTHS.CITY_MAX),
+    state: validTextSchema("State", LENGTHS.STATE_MIN, LENGTHS.STATE_MAX),
+    website: optionalUrlSchema,
+    password: passwordSchema,
+    confirmPassword: confirmPasswordSchema,
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: MESSAGES.PASSWORDS_MISMATCH,
+    path: ["confirmPassword"],
+  });
 
 export type CollegeRegisterFormData = z.infer<typeof collegeRegisterSchema>;
 
-// Employer registration schema
-export const employerRegisterSchema = z.object({
-  company: z.string().min(2, "Company name is required"),
-  contactPerson: z.string().min(2, "Contact person name is required"),
-  industry: z.string().min(1, "Please select an industry"),
-  email: emailSchema,
-  phone: phoneSchema,
-  companySize: z.string().min(1, "Please select company size"),
-  website: z.string()
-    .optional()
-    .refine((val) => !val || val === "" || /^https?:\/\/.+\..+/.test(val), {
-      message: "Invalid URL format",
-    }),
-  hiringNeeds: z.string().optional().or(z.literal("")),
-  password: passwordSchema,
-});
+// ---------------------------------------------------------------------------
+// Employer Registration
+// ---------------------------------------------------------------------------
+
+export const employerRegisterSchema = z
+  .object({
+    company: validTextSchema(
+      "Company name",
+      LENGTHS.COMPANY_MIN,
+      LENGTHS.COMPANY_MAX,
+    ),
+    contactPerson: nameSchema,
+    industry: z.string().min(1, MESSAGES.SELECT_REQUIRED("an industry")),
+    email: emailSchema,
+    phone: phoneSchema,
+    companySize: z.string().min(1, MESSAGES.SELECT_REQUIRED("company size")),
+    website: optionalUrlSchema,
+    hiringNeeds: z
+      .string()
+      .max(LENGTHS.HIRING_NEEDS_MAX, MESSAGES.TEXT_TOO_LONG("Hiring needs", LENGTHS.HIRING_NEEDS_MAX))
+      .refine((val) => !val || val === "" || /[A-Za-z]/.test(val), {
+        message: "Hiring needs must contain letters, not just numbers or symbols",
+      })
+      .optional()
+      .or(z.literal("")),
+    password: passwordSchema,
+    confirmPassword: confirmPasswordSchema,
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: MESSAGES.PASSWORDS_MISMATCH,
+    path: ["confirmPassword"],
+  });
 
 export type EmployerRegisterFormData = z.infer<typeof employerRegisterSchema>;
