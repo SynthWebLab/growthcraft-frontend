@@ -121,7 +121,8 @@ export const mentorRegisterSchema = z
       .string()
       .trim()
       .min(LENGTHS.BIO_MIN, MESSAGES.TEXT_TOO_SHORT("Bio", LENGTHS.BIO_MIN))
-      .max(LENGTHS.BIO_MAX, MESSAGES.TEXT_TOO_LONG("Bio", LENGTHS.BIO_MAX)),
+      .max(LENGTHS.BIO_MAX, MESSAGES.TEXT_TOO_LONG("Bio", LENGTHS.BIO_MAX))
+      .regex(/[A-Za-z]/, "Bio must contain letters, not just numbers or symbols"),
     password: passwordSchema,
     confirmPassword: confirmPasswordSchema,
   })
@@ -184,6 +185,9 @@ export const employerRegisterSchema = z
     hiringNeeds: z
       .string()
       .max(LENGTHS.HIRING_NEEDS_MAX, MESSAGES.TEXT_TOO_LONG("Hiring needs", LENGTHS.HIRING_NEEDS_MAX))
+      .refine((val) => !val || val === "" || /[A-Za-z]/.test(val), {
+        message: "Hiring needs must contain letters, not just numbers or symbols",
+      })
       .optional()
       .or(z.literal("")),
     password: passwordSchema,
