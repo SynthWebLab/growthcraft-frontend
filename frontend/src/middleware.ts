@@ -36,45 +36,51 @@ const roleRoutes = {
   super_admin: ['/admin'],
 } as const;
 
+import { decodeJwt } from 'jose';
+
 /**
  * Check if user is authenticated
- * Only call backend if we have both cookies
+ * Parse JWT from cookies instead of fetching backend
  */
 async function checkAuth(request: NextRequest): Promise<{ isAuthenticated: boolean; user: any | null }> {
   try {
     // Check if we have the necessary cookies
-    const refreshToken = request.cookies.get('refreshToken');
     const accessToken = request.cookies.get('access_token');
+    const refreshToken = request.cookies.get('refreshToken');
 
     // If no cookies at all, definitely not authenticated
-    if (!refreshToken && !accessToken) {
+    if (!accessToken && !refreshToken) {
       return { isAuthenticated: false, user: null };
     }
 
-    // Try to get user profile from backend
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5002/api/v1';
-    const cookies = request.cookies.toString();
-
-    const response = await fetch(`${backendUrl}${API_ENDPOINTS.auth.profile}`, {
-      method: 'GET',
-      headers: {
-        'Cookie': cookies,
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.data?.user) {
+    if (accessToken?.value) {
+      const decoded = decodeJwt(accessToken.value);
+      
+      // Optionally check expiration
+      const isExpired = decoded.exp ? (decoded.exp * 1000) < Date.now() : false;
+      
+      if (!isExpired && decoded.userId) {
         return {
           isAuthenticated: true,
-          user: data.data.user,
+          user: {
+            id: decoded.userId,
+            email: decoded.email,
+            role: decoded.role,
+            isEmailVerified: decoded.isEmailVerified ?? false,
+            isAmbassador: decoded.isAmbassador ?? false,
+            isActive: decoded.isActive ?? true,
+          }
         };
       }
     }
 
-    // Profile fetch failed - not authenticated
+    // If access token is expired or missing but we have a refresh token,
+    // we can either:
+    // 1. Try to refresh it here in middleware (requires fetch)
+    // 2. Treat as unauthenticated and force login (current fallback)
+    // 3. Let it pass and let client-side interceptors handle refresh (best UX)
+    // To maintain old behavior strictly (fetch profile failed -> redirect),
+    // we will return unauthenticated if access token is invalid/missing.
     return { isAuthenticated: false, user: null };
   } catch (error) {
     return { isAuthenticated: false, user: null };
