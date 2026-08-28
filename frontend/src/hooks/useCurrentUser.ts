@@ -98,6 +98,8 @@ export function useCurrentUser() {
   return {
     ...query,
     data: clientUser,
+    user: clientUser,
+    isAuthenticated: !!clientUser,
   };
 }
 

@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/hooks/useAuth";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useLogout } from "@/hooks/queries/useAuthentication";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/hooks/useSocket";
@@ -31,7 +31,7 @@ interface PanelTopbarProps {
 }
 
 const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) => {
-  const { user: profile } = useAuth();
+  const { user: profile } = useCurrentUser();
   const { mutate: signOut } = useLogout();
   const router = useRouter();
   const pathname = usePathname();
