@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { authService } from "@/services/auth.service";
 import { AUTH_ROUTES, DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
+import { broadcastAuthChange } from "@/lib/auth/authSync";
 import type { RegisterData } from "@/types/api";
 
 // Query keys for cache management
@@ -146,6 +147,9 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
           return;
         }
 
+        // Broadcast login to all other open tabs
+        broadcastAuthChange("LOGIN", user);
+
         toast.success("Welcome back!", {
           description: "You've been logged in successfully.",
         });
@@ -202,7 +206,6 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
  */
 export function useVerifyEmail(callbackUrl?: string) {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ email, otp }: { email: string; otp: string }) =>
@@ -210,31 +213,19 @@ export function useVerifyEmail(callbackUrl?: string) {
     onSuccess: (response) => {
       if (response.success) {
         const user = response.data?.user;
-        if (user) {
-          if (typeof window !== "undefined") {
-            localStorage.setItem("gc_user", JSON.stringify(user));
-          }
-          queryClient.setQueryData(authKeys.profile(), user);
-        }
-        toast.success("Email verified!", {
-          description: callbackUrl 
-            ? "Redirecting you to the course..."
-            : "Taking you to your dashboard...",
+        const role = (user?.role?.toLowerCase() || "student") as keyof typeof AUTH_ROUTES.login;
+        const targetLoginRoute = AUTH_ROUTES.login[role] || AUTH_ROUTES.login.student;
+        const finalRedirect = callbackUrl && callbackUrl !== '/'
+          ? `${targetLoginRoute}?callbackUrl=${encodeURIComponent(callbackUrl)}`
+          : targetLoginRoute;
+
+        toast.success("Email verified successfully!", {
+          description: "Please sign in with your credentials to continue.",
         });
-        
-        // Redirect to callback URL or dashboard
-        // Backend has already logged the user in during verification
+
         setTimeout(() => {
-          if (callbackUrl && callbackUrl !== '/') {
-            router.push(callbackUrl);
-            router.refresh(); // Refresh to update auth state
-          } else {
-            // Redirect based on user role
-            const dashboardRoute = DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || DASHBOARD_ROUTES.student;
-            router.push(dashboardRoute);
-            router.refresh(); // Refresh to update auth state
-          }
-        }, 1500);
+          router.push(finalRedirect);
+        }, 1200);
       } else {
         toast.error("Verification failed", {
           description: response.error?.message || "Invalid or expired OTP.",
@@ -357,6 +348,8 @@ export function useLogout() {
       if (typeof window !== "undefined") {
         localStorage.removeItem("gc_user");
       }
+      // Broadcast logout to all other open tabs
+      broadcastAuthChange("LOGOUT");
       // Clear all React Query cache
       queryClient.clear();
       
@@ -401,6 +394,8 @@ export function useLogoutAll() {
       if (typeof window !== "undefined") {
         localStorage.removeItem("gc_user");
       }
+      // Broadcast logout to all other open tabs
+      broadcastAuthChange("LOGOUT");
       // Clear all React Query cache
       queryClient.clear();
       
