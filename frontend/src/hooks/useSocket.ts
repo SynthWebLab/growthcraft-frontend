@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSocket } from "@/lib/socket";
-import { useAuth } from "./useAuth";
+import { useCurrentUser } from "./useCurrentUser";
 import { toast } from "sonner";
 import { notificationsKeys } from "./queries/useNotifications";
 import { authService } from "@/services/auth.service";
@@ -28,7 +28,7 @@ const getNotificationToastMessage = (notification: any): string => {
 };
 
 export function useSocket() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useCurrentUser();
   const queryClient = useQueryClient();
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAmbassadorDashboard } from "@/hooks/queries/useAmbassador";
-import { useAuth } from "@/hooks/useAuth";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { KpiCard } from "@/components/panel";
 import DataCard from "@/components/ui/data-card";
 import { Loader2, Copy, Check, ArrowRight } from "lucide-react";
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 export default function AmbassadorDashboardPage() {
-  const { user } = useAuth();
+  const { user } = useCurrentUser();
   const { data: statsResponse, isLoading, error } = useAmbassadorDashboard();
   const stats = statsResponse?.data;
   const [copied, setCopied] = useState(false);
