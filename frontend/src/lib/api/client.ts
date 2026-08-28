@@ -6,6 +6,7 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { API_ENDPOINTS } from "./endpoints";
 import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
+import { ApiError } from "@/lib/errors/ApiError";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5002/api/v1";
 
@@ -226,24 +227,34 @@ export async function apiFetch<T = any>(
 
     if (error.isAxiosError && error.response) {
       const data = error.response.data;
-      const apiError: any = new Error(
-        data?.error?.message || data?.message || `Request failed with status ${error.response.status}`
+      const apiError = new ApiError(
+        data?.error?.message || data?.message || `Request failed with status ${error.response.status}`,
+        {
+          statusCode: error.response.status,
+          code: data?.error?.code || data?.code || "API_ERROR",
+          details: data?.error?.details || data?.details,
+          originalError: error,
+          response: {
+            status: error.response.status,
+            statusText: error.response.statusText,
+            data: data,
+          },
+        }
       );
-      // Mimic the expected response object format
-      apiError.response = {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: data,
-      };
       throw apiError;
     }
 
     if (error.message === "Network Error" || error.code === "ERR_NETWORK") {
-      throw new Error(
+      throw new ApiError(
         "Cannot connect to backend. Please ensure:\n" +
         "1. Backend is running (npm run dev in backend folder)\n" +
         "2. Backend is on http://localhost:5002\n" +
-        "3. CORS is configured to allow http://localhost:3000"
+        "3. CORS is configured to allow http://localhost:3000",
+        {
+          statusCode: 0,
+          code: "ERR_NETWORK",
+          originalError: error,
+        }
       );
     }
 

@@ -6,14 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { mentorService } from "@/services/mentor.service";
-
-function extractApiError(error: any, fallback: string): string {
-  const errorData = error?.response?.data?.error;
-  const fieldErrors: Array<{ message: string }> =
-    errorData?.details?.error?.errors || errorData?.details?.errors || [];
-  if (fieldErrors.length) return fieldErrors.map((e) => e.message).join(", ");
-  return errorData?.message || error?.message || fallback;
-}
+import { extractApiError } from "@/lib/errors/error-handler";
 
 export const mentorKeys = {
   all: ["mentor"] as const,
