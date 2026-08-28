@@ -1,11 +1,9 @@
 "use client";
 
-import { use, Suspense } from "react";
-export const dynamic = "force-dynamic";
-import { useSearchParams } from "next/navigation";
-
+import { Suspense } from "react";
+import { useParams, useSearchParams, notFound } from "next/navigation";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GraduationCap, Building2, UserCheck, Briefcase, CheckCircle, Info } from "lucide-react";
@@ -167,9 +165,10 @@ function LoginPageContent({ role }: { role: keyof typeof roleConfig }) {
   );
 }
 
-export default function LoginPage({ params }: { params: Promise<{ role: string }> }) {
-  const { role: roleParam } = use(params);
-  const role = roleParam as keyof typeof roleConfig;
+export default function LoginPage() {
+  const params = useParams();
+  const rawRole = Array.isArray(params?.role) ? params.role[0] : params?.role;
+  const role = (rawRole?.toLowerCase() || "") as keyof typeof roleConfig;
   const config = roleConfig[role];
 
   if (!config) {
@@ -177,8 +176,9 @@ export default function LoginPage({ params }: { params: Promise<{ role: string }
   }
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <LoginPageContent role={role} />
     </Suspense>
   );
 }
+
