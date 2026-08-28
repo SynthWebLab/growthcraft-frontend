@@ -45,7 +45,7 @@ async function checkAuth(request: NextRequest): Promise<{ isAuthenticated: boole
     // Check if we have the necessary cookies
     const refreshToken = request.cookies.get('refreshToken');
     const accessToken = request.cookies.get('access_token');
-    
+
     // If no cookies at all, definitely not authenticated
     if (!refreshToken && !accessToken) {
       return { isAuthenticated: false, user: null };
@@ -54,7 +54,7 @@ async function checkAuth(request: NextRequest): Promise<{ isAuthenticated: boole
     // Try to get user profile from backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5002/api/v1';
     const cookies = request.cookies.toString();
-    
+
     const response = await fetch(`${backendUrl}${API_ENDPOINTS.auth.profile}`, {
       method: 'GET',
       headers: {
@@ -115,7 +115,7 @@ export async function middleware(request: NextRequest) {
     }
     return pathname.startsWith(route);
   });
-  
+
   // Check if route is auth route (login, register, etc.)
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
   const isAlwaysAccessibleAuthRoute = alwaysAccessibleAuthRoutes.some(route => pathname.startsWith(route));
@@ -172,7 +172,7 @@ export async function middleware(request: NextRequest) {
     if (!isAuthenticated) {
       // Determine which login page based on the route
       let loginRoute = '/login/student'; // default
-      
+
       if (pathname.startsWith('/student')) loginRoute = '/login/student';
       else if (pathname.startsWith('/mentor')) loginRoute = '/login/mentor';
       else if (pathname.startsWith('/college')) loginRoute = '/login/college';
