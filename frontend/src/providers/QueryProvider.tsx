@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
+  // Single source of truth for TanStack React Query client across the application
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -12,6 +13,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 60 * 1000, // 1 minute
             refetchOnWindowFocus: false,
+            retry: 1,
           },
         },
       })
