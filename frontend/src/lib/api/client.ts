@@ -5,7 +5,6 @@
 
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { API_ENDPOINTS } from "./endpoints";
-import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5002/api/v1";
 
