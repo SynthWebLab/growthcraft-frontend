@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import { authKeys } from "./queries/useAuthentication";
+import { subscribeToAuthChanges } from "@/lib/auth/authSync";
 
 // Helper to get cached user from localStorage safely in Next.js (client-side only)
 export const getCachedUser = () => {
@@ -16,6 +17,8 @@ export const getCachedUser = () => {
 };
 
 export function useCurrentUser() {
+  const queryClient = useQueryClient();
+
   // Initialise from localStorage so first render has data (avoids flicker)
   const [clientUser, setClientUser] = useState<any>(() => getCachedUser() ?? null);
 
@@ -49,11 +52,48 @@ export function useCurrentUser() {
 
   useEffect(() => {
     // Once the query has settled (not loading), always trust query.data over localStorage.
-    // This prevents stale localStorage from showing an old role after logout.
     if (!query.isLoading) {
       setClientUser(query.data ?? null);
     }
   }, [query.data, query.isLoading]);
+
+  // Cross-tab synchronization & tab focus/visibility listener
+  useEffect(() => {
+    // 1. Subscribe to cross-tab auth state broadcast & storage events
+    const unsubscribe = subscribeToAuthChanges((event) => {
+      if (event.type === "LOGIN" && event.user) {
+        setClientUser(event.user);
+        queryClient.setQueryData(authKeys.profile(), event.user);
+        void queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+      } else if (event.type === "LOGOUT") {
+        setClientUser(null);
+        queryClient.setQueryData(authKeys.profile(), null);
+      }
+    });
+
+    // 2. Re-validate on tab focus or visibility change
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        const cached = getCachedUser();
+        if (cached && (!clientUser || cached.id !== clientUser.id)) {
+          setClientUser(cached);
+          void queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+        } else if (!cached && clientUser) {
+          setClientUser(null);
+          queryClient.setQueryData(authKeys.profile(), null);
+        }
+      }
+    };
+
+    window.addEventListener("focus", handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("focus", handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [clientUser, queryClient]);
 
   return {
     ...query,

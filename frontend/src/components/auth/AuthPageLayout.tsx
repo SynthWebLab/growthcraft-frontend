@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { LucideIcon, AlertCircle, LogOut, LayoutDashboard, Loader2 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useQueryClient } from "@tanstack/react-query";
@@ -76,6 +76,24 @@ export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, chil
   const userRoleDisplay = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
   const expectedRoleDisplay = expectedRole ? expectedRole.charAt(0).toUpperCase() + expectedRole.slice(1) : "";
   const userDashboard = user?.role ? (dashboardRoutes[user.role as keyof typeof dashboardRoutes] || "/") : "/";
+
+  // Auto-redirect authenticated + verified users when there is no role conflict
+  // (e.g. multi-tab login detected while on /verify-email or their own login page)
+  useEffect(() => {
+    if (user && user.isEmailVerified && !isLoading) {
+      if (!expectedRole || user.role?.toLowerCase() === expectedRole.toLowerCase()) {
+        if (typeof window !== "undefined") {
+          const searchParams = new URLSearchParams(window.location.search);
+          const callbackUrl = searchParams.get("callbackUrl");
+          if (callbackUrl && callbackUrl !== "/") {
+            window.location.href = callbackUrl;
+          } else {
+            window.location.href = userDashboard;
+          }
+        }
+      }
+    }
+  }, [user, isLoading, expectedRole, userDashboard]);
 
   // If user is loading session, show loading spinner
   if (isLoading) {
