@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useState, useEffect } from "react";
-import { LucideIcon, AlertCircle, LogOut, LayoutDashboard, Loader2 } from "lucide-react";
+import { LucideIcon, AlertCircle, LogOut, LayoutDashboard, Loader2, ArrowLeft } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
@@ -106,6 +106,17 @@ export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, chil
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-secondary via-background to-secondary flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Back to Home Button */}
+      <div className="absolute top-5 left-5 md:top-8 md:left-8 z-20">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 backdrop-blur-sm border border-border/40 hover:border-border rounded-xl transition-all duration-200 shadow-sm hover:shadow group"
+        >
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5 text-muted-foreground group-hover:text-foreground" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
+
       {/* Background container (blurred and non-interactive if conflict exists) */}
       <div className={cn("w-full max-w-md transition-all duration-500 ease-in-out", hasConflict && "blur-[4px] pointer-events-none select-none opacity-80")}>
         {/* Logo / Brand */}
