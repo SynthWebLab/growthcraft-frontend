@@ -309,11 +309,7 @@ export const adminService = {
   uploadImage: async (file: File): Promise<{ url: string }> => {
     const formData = new FormData();
     formData.append("file", file);
-    return apiClient.post<{ url: string }>(API_ENDPOINTS.admin.upload, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    return apiClient.post<{ url: string }>(API_ENDPOINTS.admin.upload, formData);
   },
 
   // --- Enquiries & Lead Callbacks ---
