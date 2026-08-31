@@ -136,6 +136,7 @@ axiosInstance.interceptors.response.use(
     // If already refreshing, queue this request
     if (isRefreshing) {
       console.log(`[Axios Interceptor] Token refresh is already in progress. Queuing request for ${endpoint}`);
+      originalRequest._retry = true; // Prevent queued request from endlessly triggering refresh
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       })
