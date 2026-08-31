@@ -4,15 +4,16 @@ import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import { authKeys } from "./queries/useAuthentication";
 import { subscribeToAuthChanges } from "@/lib/auth/authSync";
+import type { AuthUser } from "@/types/auth.types";
 
 // Helper to get cached user from localStorage safely in Next.js (client-side only)
-export const getCachedUser = () => {
-  if (typeof window === "undefined") return undefined;
+export const getCachedUser = (): AuthUser | null => {
+  if (typeof window === "undefined") return null;
   try {
     const data = localStorage.getItem("gc_user");
-    return data ? JSON.parse(data) : undefined;
+    return data ? (JSON.parse(data) as AuthUser) : null;
   } catch {
-    return undefined;
+    return null;
   }
 };
 
@@ -20,7 +21,7 @@ export function useCurrentUser() {
   const queryClient = useQueryClient();
 
   // Initialise from localStorage so first render has data (avoids flicker)
-  const [clientUser, setClientUser] = useState<any>(() => getCachedUser() ?? null);
+  const [clientUser, setClientUser] = useState<AuthUser | null>(() => getCachedUser());
 
   const query = useQuery({
     queryKey: authKeys.profile(),
@@ -28,10 +29,11 @@ export function useCurrentUser() {
       try {
         const response = await apiClient.get(API_ENDPOINTS.auth.profile);
         if (response.success && response.data?.user) {
+          const user = response.data.user as AuthUser;
           if (typeof window !== "undefined") {
-            localStorage.setItem("gc_user", JSON.stringify(response.data.user));
+            localStorage.setItem("gc_user", JSON.stringify(user));
           }
-          return response.data.user;
+          return user;
         }
         // No valid session — clear stale localStorage
         if (typeof window !== "undefined") {

@@ -1,4 +1,4 @@
-﻿import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export type AdminOnlyAction =
   | "manage:users"
@@ -18,7 +18,7 @@ export type AdminOnlyAction =
 export function useAdminRole() {
   const { data: user } = useCurrentUser();
 
-  const role = (user as any)?.role as string | undefined;
+  const role = user?.role;
   const isSuperAdmin = role === "super_admin";
   const isOps = role === "ops";
 

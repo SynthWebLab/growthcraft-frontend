@@ -82,7 +82,7 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
         // If the cached user's role doesn't match the expected portal role, hard-block.
         if (expectedRole && cachedUser.role?.toLowerCase() !== expectedRole.toLowerCase()) {
           throw new Error(
-            `ALREADY_LOGGED_IN:${cachedUser.role}:${cachedUser.firstName ?? ""} ${cachedUser.lastName ?? ""}`
+            `ALREADY_LOGGED_IN:${cachedUser.role}:${cachedUser.fullName ?? ""}`
           );
         }
       }
