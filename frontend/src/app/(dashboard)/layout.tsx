@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import PanelSidebar, { type NavSection } from "@/components/dashboard/PanelSidebar";
 import PanelTopbar from "@/components/dashboard/PanelTopbar";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/hooks/useAuth";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
 import {
   LayoutDashboard, BookOpen, Award, User, HelpCircle, Settings,
@@ -131,7 +131,7 @@ function getPanelKey(pathname: string): string {
 }
 
 const PanelLayout = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated } = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname();
 

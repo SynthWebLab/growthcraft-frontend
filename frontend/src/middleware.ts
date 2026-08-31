@@ -131,7 +131,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow verify-email page even for authenticated users (they may not have verified yet)
+  // If user is authenticated and email is verified:
+  // - On /verify-email or their own role's login/register pages → redirect to their dashboard (or callbackUrl)
+  // - On a DIFFERENT role's login/register page → allow rendering so AuthPageLayout shows the Account Conflict modal
+  if (isAuthenticated && isEmailVerified && userRole) {
+    if (pathname.startsWith('/verify-email')) {
+      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+      if (callbackUrl && callbackUrl !== '/') {
+        return NextResponse.redirect(new URL(callbackUrl, request.url));
+      }
+      const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
+      return NextResponse.redirect(new URL(dashboardRoute, request.url));
+    }
+
+    if (isAuthRoute) {
+      const targetRole = getTargetRoleFromPath(pathname);
+      // Only auto-redirect for their own portal or generic auth routes (no role in path)
+      if (targetRole === null || targetRole === userRole) {
+        const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+        if (callbackUrl && callbackUrl !== '/') {
+          return NextResponse.redirect(new URL(callbackUrl, request.url));
+        }
+        const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
+        return NextResponse.redirect(new URL(dashboardRoute, request.url));
+      }
+      // Different role portal → fall through and let the page render (conflict modal will show)
+    }
+  }
+
+  // Allow verify-email page for unauthenticated users or authenticated users awaiting email verification
   if (isAlwaysAccessibleAuthRoute) {
     return NextResponse.next();
   }
@@ -140,27 +168,6 @@ export async function middleware(request: NextRequest) {
   // But allow them to access LOGIN pages (they might want to logout or use a different account)
   if (pathname.startsWith('/register') && isAuthenticated && !isEmailVerified) {
     return NextResponse.redirect(new URL('/verify-email', request.url));
-  }
-
-  // For authenticated + verified users visiting an auth page:
-  // - If visiting their OWN role's login page → redirect to their dashboard (or callbackUrl)
-  // - If visiting a DIFFERENT role's login page → ALLOW the page to render so that
-  //   AuthPageLayout can show the "Account Conflict" modal with Logout & Switch option.
-  if (isAuthRoute && isAuthenticated && isEmailVerified && userRole) {
-    const targetRole = getTargetRoleFromPath(pathname);
-
-    // Only auto-redirect for their own portal or generic auth routes (no role in path)
-    if (targetRole === null || targetRole === userRole) {
-      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
-
-      if (callbackUrl && callbackUrl !== '/') {
-        return NextResponse.redirect(new URL(callbackUrl, request.url));
-      }
-
-      const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
-      return NextResponse.redirect(new URL(dashboardRoute, request.url));
-    }
-    // Different role portal → fall through and let the page render (conflict modal will show)
   }
 
   // Allow auth routes for non-authenticated users

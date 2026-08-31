@@ -51,7 +51,7 @@ export const AUTH_ROUTES = {
   login: {
     student: "/login/student",
     mentor: "/login/mentor",
-    college: "/college",
+    college: "/login/college",
     employer: "/login/employer",
   },
   home: "/",
