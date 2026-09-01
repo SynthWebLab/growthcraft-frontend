@@ -9,14 +9,7 @@ import { studentService } from "@/services/student.service";
 import { authService } from "@/services/auth.service";
 import { authKeys } from "./useAuthentication";
 import type { UpdateStudentProfileData, BookMentorSessionData } from "@/types/student";
-
-function extractApiError(error: any, fallback: string): string {
-  const errorData = error?.response?.data?.error;
-  const fieldErrors: Array<{ message: string }> =
-    errorData?.details?.error?.errors || errorData?.details?.errors || [];
-  if (fieldErrors.length) return fieldErrors.map((e) => e.message).join(", ");
-  return errorData?.message || error?.message || fallback;
-}
+import { extractApiError } from "@/lib/errors/error-handler";
 
 export const studentKeys = {
   all: ["student"] as const,

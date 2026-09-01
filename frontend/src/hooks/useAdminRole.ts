@@ -1,4 +1,5 @@
-﻿import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ROLES, type UserRole } from "@/lib/constants/roles.constant";
 
 export type AdminOnlyAction =
   | "manage:users"
@@ -10,19 +11,19 @@ export type AdminOnlyAction =
 /**
  * Returns role helpers for admin-portal pages.
  *
- * isSuperAdmin - role === 'super_admin'
- * isOps        - role === 'ops'
+ * isSuperAdmin - role === ROLES.SUPER_ADMIN
+ * isOps        - role === ROLES.OPS
  * can(action)  - returns true only if the current user may perform a
  *                SuperAdmin-only action; Ops users always return false.
  */
 export function useAdminRole() {
   const { data: user } = useCurrentUser();
 
-  const role = (user as any)?.role as string | undefined;
-  const isSuperAdmin = role === "super_admin";
-  const isOps = role === "ops";
+  const role = (user as any)?.role as UserRole | undefined;
+  const isSuperAdmin = role === ROLES.SUPER_ADMIN;
+  const isOps = role === ROLES.OPS;
 
-  const can = (action: AdminOnlyAction): boolean => isSuperAdmin;
+  const can = (_action: AdminOnlyAction): boolean => isSuperAdmin;
 
   return { isSuperAdmin, isOps, can, role };
 }
