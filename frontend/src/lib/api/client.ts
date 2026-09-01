@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * API Client with automatic token refresh
  * Handles 401 errors and refreshes tokens automatically using Axios interceptors
