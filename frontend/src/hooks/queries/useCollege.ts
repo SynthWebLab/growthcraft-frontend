@@ -12,7 +12,14 @@ import type {
   CollegeNotificationPreferences,
   PartnershipTier,
 } from "@/types/college";
-import { extractApiError } from "@/lib/errors/error-handler";
+
+function extractApiError(error: any, fallback: string): string {
+  const errorData = error?.response?.data?.error ?? error?.data?.error;
+  const fieldErrors: Array<{ message: string }> =
+    errorData?.details?.error?.errors || errorData?.details?.errors || [];
+  if (fieldErrors.length) return fieldErrors.map((e) => e.message).join(", ");
+  return errorData?.message || error?.message || fallback;
+}
 
 export const collegeKeys = {
   all: ["college"] as const,

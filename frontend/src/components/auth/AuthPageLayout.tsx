@@ -10,27 +10,32 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { ROLES, type UserRole } from "@/lib/constants/roles.constant";
-import { DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
 
 interface AuthPageLayoutProps {
   icon: LucideIcon;
   title: string;
   subtitle: string;
-  expectedRole?: UserRole;
+  expectedRole?: "student" | "mentor" | "college" | "employer" | "ops" | "super_admin";
   children: ReactNode;
 }
 
-const loginRoutes: Record<UserRole, string> = {
-  [ROLES.STUDENT]: "/login/student",
-  [ROLES.MENTOR]: "/login/mentor",
-  [ROLES.COLLEGE]: "/login/college",
-  [ROLES.EMPLOYER]: "/login/employer",
-  [ROLES.OPS]: "/login/super_admin",
-  [ROLES.SUPER_ADMIN]: "/login/super_admin",
+const loginRoutes: Record<string, string> = {
+  student: "/login/student",
+  mentor: "/login/mentor",
+  college: "/login/college",
+  employer: "/login/employer",
+  ops: "/login/super_admin",
+  super_admin: "/login/super_admin",
 };
 
-const dashboardRoutes = DASHBOARD_ROUTES;
+const dashboardRoutes = {
+  student: "/student",
+  mentor: "/mentor",
+  college: "/college",
+  employer: "/employer",
+  ops: "/admin",
+  super_admin: "/admin",
+} as const;
 
 export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, children }: AuthPageLayoutProps) {
   const { data: user, isLoading } = useCurrentUser();

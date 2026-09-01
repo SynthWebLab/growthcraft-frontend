@@ -1,7 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ambassadorService } from "@/services/ambassador.service";
 import { toast } from "sonner";
-import { extractApiError } from "@/lib/errors/error-handler";
+
+function extractApiError(error: any, fallback: string): string {
+  const errorData = error?.response?.data?.error ?? error?.data?.error;
+  const fieldErrors: Array<{ message: string }> =
+    errorData?.details?.error?.errors || errorData?.details?.errors || [];
+  if (fieldErrors.length) return fieldErrors.map((e) => e.message).join(", ");
+  return errorData?.message || error?.message || fallback;
+}
 
 export const ambassadorKeys = {
   all: ["ambassador"] as const,

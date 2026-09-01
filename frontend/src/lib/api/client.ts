@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * API Client with automatic token refresh
  * Handles 401 errors and refreshes tokens automatically using Axios interceptors
@@ -7,7 +5,7 @@
 
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { API_ENDPOINTS } from "./endpoints";
-import { ApiError } from "@/lib/errors/ApiError";
+import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5002/api/v1";
 
@@ -138,7 +136,6 @@ axiosInstance.interceptors.response.use(
     // If already refreshing, queue this request
     if (isRefreshing) {
       console.log(`[Axios Interceptor] Token refresh is already in progress. Queuing request for ${endpoint}`);
-      originalRequest._retry = true; // Prevent queued request from endlessly triggering refresh
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       })
@@ -229,34 +226,24 @@ export async function apiFetch<T = any>(
 
     if (error.isAxiosError && error.response) {
       const data = error.response.data;
-      const apiError = new ApiError(
-        data?.error?.message || data?.message || `Request failed with status ${error.response.status}`,
-        {
-          statusCode: error.response.status,
-          code: data?.error?.code || data?.code || "API_ERROR",
-          details: data?.error?.details || data?.details,
-          originalError: error,
-          response: {
-            status: error.response.status,
-            statusText: error.response.statusText,
-            data: data,
-          },
-        }
+      const apiError: any = new Error(
+        data?.error?.message || data?.message || `Request failed with status ${error.response.status}`
       );
+      // Mimic the expected response object format
+      apiError.response = {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: data,
+      };
       throw apiError;
     }
 
     if (error.message === "Network Error" || error.code === "ERR_NETWORK") {
-      throw new ApiError(
+      throw new Error(
         "Cannot connect to backend. Please ensure:\n" +
         "1. Backend is running (npm run dev in backend folder)\n" +
         "2. Backend is on http://localhost:5002\n" +
-        "3. CORS is configured to allow http://localhost:3000",
-        {
-          statusCode: 0,
-          code: "ERR_NETWORK",
-          originalError: error,
-        }
+        "3. CORS is configured to allow http://localhost:3000"
       );
     }
 
