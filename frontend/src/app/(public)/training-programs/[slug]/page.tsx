@@ -101,7 +101,7 @@ export default function TrainingProgramDetailPage({
   const faqs = programData?.data?.faqs || [];
 
   // Check enrollment status (only if user is authenticated)
-  const isAuthenticated = user && user.isEmailVerified;
+  const isAuthenticated = !!(user && user.isEmailVerified);
   const { data: enrollmentStatus } = useTrainingProgramEnrollmentStatus(
     program?._id || "",
     !!program?._id && !!isAuthenticated
@@ -315,6 +315,10 @@ export default function TrainingProgramDetailPage({
 
   // Handle confirming company selection and launching Razorpay checkout
   const handleConfirmCompanyAndPay = async () => {
+    if (!user) {
+      toast.error("Please login to complete your enrollment");
+      return;
+    }
     const chosenPartner = internshipPartners[selectedPartnerIndex] || internshipPartners[0];
     try {
       const response = await enrollMutation.mutateAsync({

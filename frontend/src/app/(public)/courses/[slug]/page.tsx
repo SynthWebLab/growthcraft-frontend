@@ -56,7 +56,7 @@ export default function CourseDetailPage({
   const faqs = courseData?.data?.faqs || [];
 
   // Check enrollment status (only if user is authenticated)
-  const isAuthenticated = user && user.isEmailVerified;
+  const isAuthenticated = !!(user && user.isEmailVerified);
   const { data: enrollmentStatus, isLoading: statusLoading } = useEnrollmentStatus(
     course?._id || "",
     !!course?._id && !!isAuthenticated
