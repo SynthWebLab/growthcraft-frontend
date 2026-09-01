@@ -336,7 +336,7 @@ export default function AdminMentorsPage() {
                       </h4>
                       <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
                         {detailData?.data?.checkIns?.length > 0 ? (
-                          detailData.data.checkIns.map((ci: any) => (
+                          detailData?.data.checkIns.map((ci: any) => (
                             <div key={ci._id} className="p-3 bg-muted/40 rounded-lg border border-border text-xs space-y-1">
                               <div className="flex items-center justify-between">
                                 <span className="font-semibold">Batch {ci.batchId?.code}</span>
@@ -383,7 +383,7 @@ export default function AdminMentorsPage() {
                       </h4>
                       <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
                         {detailData?.data?.payouts?.length > 0 ? (
-                          detailData.data.payouts.map((po: any) => (
+                          detailData?.data.payouts.map((po: any) => (
                             <div key={po._id} className="p-3 bg-muted/40 rounded-lg border border-border text-xs space-y-2">
                               <div className="flex items-center justify-between">
                                 <span className="font-semibold">{po.period}</span>
@@ -610,7 +610,7 @@ export default function AdminMentorsPage() {
 
                       <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
                         {detailData?.data?.batches?.length > 0 ? (
-                          detailData.data.batches.map((b: any) => (
+                          detailData?.data.batches.map((b: any) => (
                             <div key={b._id} className="p-3 bg-muted/40 rounded-lg border border-border text-xs space-y-1">
                               <div className="flex items-center justify-between">
                                 <span className="font-semibold">{b.code}</span>
@@ -778,3 +778,4 @@ export default function AdminMentorsPage() {
     </div>
   );
 }
+

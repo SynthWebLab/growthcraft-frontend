@@ -202,7 +202,7 @@ export default function AdminBatchesPage() {
       {
         id: editingBatch.id,
         data: {
-          status: editingStatus,
+          status: editingStatus as any,
           capacity: parseInt(editingCapacity, 10),
           fee: parseFloat(editingFee),
           venue: editingVenue || undefined,
@@ -619,3 +619,4 @@ export default function AdminBatchesPage() {
     </div>
   );
 }
+
