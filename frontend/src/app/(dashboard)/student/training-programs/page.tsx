@@ -8,23 +8,39 @@ import { resolveRef } from "@/lib/student-dashboard.utils";
 export default function StudentTrainingProgramsPage() {
   const { data, isLoading, isError } = useStudentTrainingPrograms();
 
-  const items: EnrollmentGridItem[] = (data?.data?.trainingPrograms ?? []).map((e) => {
-    const program = resolveRef(e.programId);
-    return {
-      id: e._id,
-      title: program?.title ?? e.title,
-      subtitle: program?.domain,
-      status: e.status,
-      enrollmentDate: e.enrollmentDate,
-      href: program?.slug ? `/training-programs/${program.slug}` : undefined,
-      emoji: "💼",
-    };
-  });
+  const items: EnrollmentGridItem[] = (data?.data?.trainingPrograms ?? [])
+    .filter((e) => {
+      const isPaid = e.paymentStatus === "completed" || e.status === "confirmed";
+      return isPaid && e.paymentStatus !== "pending" && e.status !== "pending";
+    })
+    .map((e) => {
+      const program = resolveRef(e.programId);
+      const slug = program?.slug || "industrial-software-engineering-program";
+      const partnerCompany = e.selectedCompany || (program?.internshipPartners?.[0] ? {
+        companyName: program.internshipPartners[0].companyName,
+        role: program.internshipPartners[0].role,
+        mode: program.internshipPartners[0].mode,
+      } : undefined);
+
+      return {
+        id: e._id,
+        title: program?.programName || program?.title || e.title || "Training Program",
+        subtitle: program?.fullTitle || program?.domain || "Industrial Training",
+        status: e.status,
+        paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
+        enrollmentDate: e.createdAt || e.enrollmentDate || new Date().toISOString(),
+        href: `/training-programs/${slug}`,
+        workspaceHref: `/student/training-programs/${slug}`,
+        emoji: "💼",
+        type: "training-program",
+        partnerCompany,
+      };
+    });
 
   return (
     <StudentEnrollmentGrid
       pageTitle="My Training Programs"
-      pageDescription="Training programs you've enrolled in"
+      pageDescription="Industrial training programs you've enrolled in"
       items={items}
       isLoading={isLoading}
       isError={isError}

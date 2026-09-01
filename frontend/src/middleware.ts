@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
+import { LAUNCH_CONFIG } from '@/config/launch.config';
 
 // Define public routes that don't require authentication
 const publicRoutes = [
   '/',
+  '/coming-soon',
   '/about',
   '/courses',
   '/bootcamps',
@@ -43,16 +45,16 @@ async function checkAuth(request: NextRequest): Promise<{ isAuthenticated: boole
     // Check if we have the necessary cookies
     const refreshToken = request.cookies.get('refreshToken');
     const accessToken = request.cookies.get('access_token');
-    
+
     // If no cookies at all, definitely not authenticated
     if (!refreshToken && !accessToken) {
       return { isAuthenticated: false, user: null };
     }
 
     // Try to get user profile from backend
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001/api/v1';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5002/api/v1';
     const cookies = request.cookies.toString();
-    
+
     const response = await fetch(`${backendUrl}${API_ENDPOINTS.auth.profile}`, {
       method: 'GET',
       headers: {
@@ -90,6 +92,17 @@ function getTargetRoleFromPath(pathname: string): string | null {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Coming Soon Strict Mode: Redirect all pages to / when in coming-soon mode
+  if (
+    LAUNCH_CONFIG.IS_COMING_SOON_MODE &&
+    pathname !== '/' &&
+    !pathname.startsWith('/_next') &&
+    !pathname.startsWith('/api') &&
+    !pathname.includes('.')
+  ) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
   // Check authentication status
   const { isAuthenticated, user } = await checkAuth(request);
   const userRole = user?.role as keyof typeof roleRoutes | undefined;
@@ -102,7 +115,7 @@ export async function middleware(request: NextRequest) {
     }
     return pathname.startsWith(route);
   });
-  
+
   // Check if route is auth route (login, register, etc.)
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
   const isAlwaysAccessibleAuthRoute = alwaysAccessibleAuthRoutes.some(route => pathname.startsWith(route));
@@ -112,7 +125,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow verify-email page even for authenticated users (they may not have verified yet)
+  // If user is authenticated and email is verified:
+  // - On /verify-email or their own role's login/register pages → redirect to their dashboard (or callbackUrl)
+  // - On a DIFFERENT role's login/register page → allow rendering so AuthPageLayout shows the Account Conflict modal
+  if (isAuthenticated && isEmailVerified && userRole) {
+    if (pathname.startsWith('/verify-email')) {
+      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+      if (callbackUrl && callbackUrl !== '/') {
+        return NextResponse.redirect(new URL(callbackUrl, request.url));
+      }
+      const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
+      return NextResponse.redirect(new URL(dashboardRoute, request.url));
+    }
+
+    if (isAuthRoute) {
+      const targetRole = getTargetRoleFromPath(pathname);
+      // Only auto-redirect for their own portal or generic auth routes (no role in path)
+      if (targetRole === null || targetRole === userRole) {
+        const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+        if (callbackUrl && callbackUrl !== '/') {
+          return NextResponse.redirect(new URL(callbackUrl, request.url));
+        }
+        const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
+        return NextResponse.redirect(new URL(dashboardRoute, request.url));
+      }
+      // Different role portal → fall through and let the page render (conflict modal will show)
+    }
+  }
+
+  // Allow verify-email page for unauthenticated users or authenticated users awaiting email verification
   if (isAlwaysAccessibleAuthRoute) {
     return NextResponse.next();
   }
@@ -121,27 +162,6 @@ export async function middleware(request: NextRequest) {
   // But allow them to access LOGIN pages (they might want to logout or use a different account)
   if (pathname.startsWith('/register') && isAuthenticated && !isEmailVerified) {
     return NextResponse.redirect(new URL('/verify-email', request.url));
-  }
-
-  // For authenticated + verified users visiting an auth page:
-  // - If visiting their OWN role's login page → redirect to their dashboard (or callbackUrl)
-  // - If visiting a DIFFERENT role's login page → ALLOW the page to render so that
-  //   AuthPageLayout can show the "Account Conflict" modal with Logout & Switch option.
-  if (isAuthRoute && isAuthenticated && isEmailVerified && userRole) {
-    const targetRole = getTargetRoleFromPath(pathname);
-
-    // Only auto-redirect for their own portal or generic auth routes (no role in path)
-    if (targetRole === null || targetRole === userRole) {
-      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
-
-      if (callbackUrl && callbackUrl !== '/') {
-        return NextResponse.redirect(new URL(callbackUrl, request.url));
-      }
-
-      const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
-      return NextResponse.redirect(new URL(dashboardRoute, request.url));
-    }
-    // Different role portal → fall through and let the page render (conflict modal will show)
   }
 
   // Allow auth routes for non-authenticated users
@@ -159,7 +179,7 @@ export async function middleware(request: NextRequest) {
     if (!isAuthenticated) {
       // Determine which login page based on the route
       let loginRoute = '/login/student'; // default
-      
+
       if (pathname.startsWith('/student')) loginRoute = '/login/student';
       else if (pathname.startsWith('/mentor')) loginRoute = '/login/mentor';
       else if (pathname.startsWith('/college')) loginRoute = '/login/college';

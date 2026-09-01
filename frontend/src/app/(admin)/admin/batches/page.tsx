@@ -108,10 +108,23 @@ export default function AdminBatchesPage() {
     let mentorName = "Unassigned";
     let mentorId = null;
     if (b.assignedMentorId) {
-      // Find mentor name from available mentors or user populated fields
-      const mentorObj = mentors.find((m: any) => m._id === b.assignedMentorId || m.userId === b.assignedMentorId);
-      mentorName = mentorObj?.name || b.assignedMentorId.fullName || b.assignedMentorId.name || "Assigned";
-      mentorId = b.assignedMentorId._id || b.assignedMentorId.id || String(b.assignedMentorId);
+      const assignedObj = typeof b.assignedMentorId === "object" ? b.assignedMentorId : null;
+      const populatedUser = assignedObj?.userId && typeof assignedObj.userId === "object" ? assignedObj.userId : null;
+      const mentorObj = mentors.find(
+        (m: any) =>
+          m._id === b.assignedMentorId ||
+          m._id === assignedObj?._id ||
+          m.mentorId === assignedObj?._id ||
+          m.userId === populatedUser?._id ||
+          m.userId === assignedObj?.userId
+      );
+      mentorName =
+        populatedUser?.fullName ||
+        assignedObj?.fullName ||
+        assignedObj?.name ||
+        mentorObj?.name ||
+        "Assigned";
+      mentorId = assignedObj?._id || String(b.assignedMentorId);
     }
 
     return {
@@ -319,7 +332,7 @@ export default function AdminBatchesPage() {
     : mappedBatches;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Cohorts & Batches</h1>

@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -21,6 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Building2 } from "lucide-react";
+import {
+  useAdminRegistrations,
+  useUpdateAdminRegistration,
+  useDeleteAdminRegistration,
+} from "@/hooks/queries/useAdmin";
 
 interface Registration {
   id: string;
@@ -34,6 +38,15 @@ interface Registration {
   course_id: string | null;
   training_program_id: string | null;
   event_id: string | null;
+  item_type: string;
+  item_title: string;
+  selected_company?: {
+    companyName: string;
+    role?: string;
+    duration?: string;
+    stipend?: string;
+    mode?: string;
+  } | null;
   created_at: string;
 }
 
@@ -51,87 +64,33 @@ const paymentStatuses = [
   { value: "refunded", label: "Refunded" },
 ];
 
-const INITIAL_REGISTRATIONS: Registration[] = [
-  {
-    id: "1",
-    name: "Aarav Sharma",
-    email: "aarav.sharma@example.com",
-    phone: "+91 99887 76655",
-    status: "approved",
-    payment_status: "paid",
-    amount: 4999,
-    notes: "Completed onboarding call.",
-    course_id: "python-1",
-    training_program_id: null,
-    event_id: null,
-    created_at: new Date(Date.now() - 3600000 * 3).toISOString(),
-  },
-  {
-    id: "2",
-    name: "Sneha Patil",
-    email: "sneha.patil@example.com",
-    phone: "+91 88776 65544",
-    status: "pending",
-    payment_status: "pending",
-    amount: 39999,
-    notes: "Waiting for student to upload payment receipt.",
-    course_id: null,
-    training_program_id: "bootcamp-1",
-    event_id: null,
-    created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-  },
-  {
-    id: "3",
-    name: "Vikram Malhotra",
-    email: "vikram.m@example.com",
-    phone: "+91 77665 54433",
-    status: "cancelled",
-    payment_status: "refunded",
-    amount: 1999,
-    notes: "Refunded as student request before event started.",
-    course_id: null,
-    training_program_id: null,
-    event_id: "webinar-1",
-    created_at: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-  },
-];
-
 export default function AdminRegistrations() {
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const { data: regsRes, isLoading } = useAdminRegistrations();
+  const updateMutation = useUpdateAdminRegistration();
+  const deleteMutation = useDeleteAdminRegistration();
+
+  const registrations: Registration[] = regsRes?.data || [];
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [formData, setFormData] = useState({
     status: "pending",
     payment_status: "unpaid",
-    amount: "",
     notes: "",
   });
 
-  const fetchRegistrations = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API fetch delay
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setRegistrations(INITIAL_REGISTRATIONS);
-    } catch (error) {
-      console.error("Error fetching registrations:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
   };
-
-  useEffect(() => {
-    fetchRegistrations();
-  }, []);
 
   const handleView = (registration: Registration) => {
     setSelectedRegistration(registration);
     setFormData({
       status: registration.status,
       payment_status: registration.payment_status || "unpaid",
-      amount: registration.amount?.toString() || "",
       notes: registration.notes || "",
     });
     setIsDialogOpen(true);
@@ -141,10 +100,15 @@ export default function AdminRegistrations() {
     if (!confirm("Are you sure you want to delete this registration?")) return;
 
     try {
-      setRegistrations((prev) => prev.filter((r) => r.id !== registration.id));
-      toast.success("Registration deleted successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Error deleting registration");
+      await deleteMutation.mutateAsync({
+        id: registration.id,
+        itemType: registration.item_type,
+      });
+      if (paginatedRegistrations.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      }
+    } catch (error) {
+      console.error("Error deleting registration:", error);
     }
   };
 
@@ -154,24 +118,18 @@ export default function AdminRegistrations() {
     if (!selectedRegistration) return;
 
     try {
-      setRegistrations((prev) =>
-        prev.map((r) =>
-          r.id === selectedRegistration.id
-            ? {
-                ...r,
-                status: formData.status,
-                payment_status: formData.payment_status,
-                amount: formData.amount ? parseFloat(formData.amount) : null,
-                notes: formData.notes || null,
-              }
-            : r
-        )
-      );
-
-      toast.success("Registration updated successfully");
+      await updateMutation.mutateAsync({
+        id: selectedRegistration.id,
+        data: {
+          status: formData.status,
+          payment_status: formData.payment_status,
+          notes: formData.notes,
+          item_type: selectedRegistration.item_type,
+        },
+      });
       setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Error updating registration");
+    } catch (error) {
+      console.error("Error updating registration:", error);
     }
   };
 
@@ -206,16 +164,24 @@ export default function AdminRegistrations() {
   };
 
   const getRegistrationType = (reg: Registration) => {
-    if (reg.course_id) return "Course";
-    if (reg.training_program_id) return "Training";
-    if (reg.event_id) return "Event";
+    if (reg.item_type === "course") return "Course";
+    if (reg.item_type === "training-program") return "Training";
+    if (reg.item_type === "event") return "Event";
     return "Unknown";
   };
 
   const filteredRegistrations = registrations.filter((reg) =>
     reg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     reg.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    reg.item_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     getRegistrationType(reg).toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const pageSize = 15;
+  const totalPages = Math.ceil(filteredRegistrations.length / pageSize);
+  const paginatedRegistrations = filteredRegistrations.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
   );
 
   const columns = [
@@ -223,15 +189,49 @@ export default function AdminRegistrations() {
     { key: "email", label: "Email" },
     { key: "phone", label: "Phone", render: (value: string) => value || "-" },
     {
-      key: "course_id",
-      label: "Type",
-      render: (_: any, row: Registration) => <Badge variant="outline">{getRegistrationType(row)}</Badge>,
+      key: "item_title",
+      label: "Program/Course",
+      render: (value: string, row: Registration) => (
+        <div className="flex flex-col gap-1">
+          <span className="font-medium text-xs text-foreground line-clamp-1">{value}</span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+            {getRegistrationType(row)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "selected_company",
+      label: "Internship Partner",
+      render: (value: any, row: Registration) => {
+        if (row.item_type !== "training-program") return <span className="text-muted-foreground text-xs">—</span>;
+        if (!value || !value.companyName) {
+          return (
+            <span className="text-muted-foreground text-[11px] italic">
+              Not chosen
+            </span>
+          );
+        }
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-xs text-foreground flex items-center gap-1">
+              <Building2 className="h-3 w-3 text-emerald-600 shrink-0" />
+              {value.companyName}
+            </span>
+            {value.role && (
+              <span className="text-[10px] text-muted-foreground line-clamp-1">
+                {value.role}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "status",
       label: "Status",
       render: (value: string) => (
-        <Badge variant={getStatusBadgeVariant(value)} className="capitalize">
+        <Badge variant={getStatusBadgeVariant(value)} className="capitalize text-[10px] font-semibold py-0.5 px-2">
           {value}
         </Badge>
       ),
@@ -240,7 +240,7 @@ export default function AdminRegistrations() {
       key: "payment_status",
       label: "Payment",
       render: (value: string) => (
-        <Badge variant={getPaymentBadgeVariant(value || "unpaid")} className="capitalize">
+        <Badge variant={getPaymentBadgeVariant(value || "unpaid")} className="capitalize text-[10px] font-semibold py-0.5 px-2">
           {value || "Unpaid"}
         </Badge>
       ),
@@ -258,7 +258,7 @@ export default function AdminRegistrations() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Registrations</h1>
         <p className="text-muted-foreground mt-1">Manage course, training & event registrations</p>
@@ -266,16 +266,43 @@ export default function AdminRegistrations() {
 
       <DataTable
         columns={columns}
-        data={filteredRegistrations}
+        data={paginatedRegistrations}
         searchPlaceholder="Search registrations..."
-        onSearch={setSearchQuery}
+        onSearch={handleSearch}
         onView={handleView}
         onDelete={handleDelete}
         isLoading={isLoading}
       />
 
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-border pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredRegistrations.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
+            {Math.min(currentPage * pageSize, filteredRegistrations.length)} of {filteredRegistrations.length} registrations
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Registration Details</DialogTitle>
           </DialogHeader>
@@ -299,11 +326,49 @@ export default function AdminRegistrations() {
                   <Badge variant="outline">{getRegistrationType(selectedRegistration)}</Badge>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-muted-foreground">Title:</span>
+                  <span className="font-medium text-right max-w-[260px] line-clamp-2">
+                    {selectedRegistration.item_title}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount:</span>
+                  <span className="font-medium">
+                    {selectedRegistration.amount ? `₹${selectedRegistration.amount}` : "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-muted-foreground">Date:</span>
                   <span className="font-medium">
                     {new Date(selectedRegistration.created_at).toLocaleString()}
                   </span>
                 </div>
+
+                {selectedRegistration.item_type === "training-program" && selectedRegistration.selected_company && (
+                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5" /> Selected Internship Partner
+                      </span>
+                      <Badge variant="outline" className="bg-emerald-500/20 text-emerald-800 border-emerald-500/30 text-[10px]">
+                        Chosen at Enrollment
+                      </Badge>
+                    </div>
+                    <p className="font-bold text-sm text-emerald-950">
+                      {selectedRegistration.selected_company.companyName}
+                    </p>
+                    {selectedRegistration.selected_company.role && (
+                      <p className="text-xs text-emerald-800">
+                        Role: {selectedRegistration.selected_company.role}
+                      </p>
+                    )}
+                    {selectedRegistration.selected_company.stipend && (
+                      <p className="text-[11px] text-emerald-700">
+                        Perks: {selectedRegistration.selected_company.stipend}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4 pt-4 border-t">
@@ -346,15 +411,6 @@ export default function AdminRegistrations() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount (₹)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="notes">Internal Notes</Label>
                   <Textarea
                     id="notes"
@@ -368,7 +424,9 @@ export default function AdminRegistrations() {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Close
                   </Button>
-                  <Button type="submit">Update</Button>
+                  <Button type="submit" disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? "Updating..." : "Update"}
+                  </Button>
                 </div>
               </form>
             </div>

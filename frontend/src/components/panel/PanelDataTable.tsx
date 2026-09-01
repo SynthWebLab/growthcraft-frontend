@@ -23,10 +23,11 @@ interface PanelDataTableProps<T> {
   searchKey?: string;
   pageSize?: number;
   className?: string;
+  mobileRender?: (row: T) => React.ReactNode;
 }
 
 function PanelDataTable<T extends Record<string, any>>({
-  columns, data, searchKey, pageSize = 10, className,
+  columns, data, searchKey, pageSize = 10, className, mobileRender,
 }: PanelDataTableProps<T>) {
   const searchParams = useSearchParams();
   const querySearch = searchParams ? (searchParams.get("search") || searchParams.get("q") || "") : "";
@@ -81,41 +82,62 @@ function PanelDataTable<T extends Record<string, any>>({
           </div>
         </div>
       )}
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-marble">
-            {columns.map((col) => (
-              <TableHead key={col.key}>
-                {col.sortable ? (
-                  <button className="flex items-center gap-1 hover:text-foreground" onClick={() => toggleSort(col.key)}>
-                    {col.label}
-                    <ArrowUpDown className="h-3 w-3" />
-                  </button>
-                ) : col.label}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+
+      {/* Mobile Card/List View */}
+      {mobileRender ? (
+        <div className="block md:hidden p-4 space-y-4 bg-slate-50/40 rounded-b-xl border-t border-border">
           {paged.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground">
-                No data found
-              </TableCell>
-            </TableRow>
+            <div className="text-center py-8 text-muted-foreground text-xs bg-white rounded-xl border border-border">
+              No data found
+            </div>
           ) : (
             paged.map((row, i) => (
-              <TableRow key={i} className="hover:bg-marble/50">
-                {columns.map((col) => (
-                  <TableCell key={col.key}>
-                    {col.render ? col.render(row) : String(row[col.key] ?? "")}
-                  </TableCell>
-                ))}
-              </TableRow>
+              <div key={i} className="bg-white rounded-xl border border-border/80 p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+                {mobileRender(row)}
+              </div>
             ))
           )}
-        </TableBody>
-      </Table>
+        </div>
+      ) : null}
+
+      {/* Desktop Table View */}
+      <div className={cn(mobileRender && "hidden md:block")}>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-marble">
+              {columns.map((col) => (
+                <TableHead key={col.key}>
+                  {col.sortable ? (
+                    <button className="flex items-center gap-1 hover:text-foreground" onClick={() => toggleSort(col.key)}>
+                      {col.label}
+                      <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  ) : col.label}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paged.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground">
+                  No data found
+                </TableCell>
+              </TableRow>
+            ) : (
+              paged.map((row, i) => (
+                <TableRow key={i} className="hover:bg-marble/50">
+                  {columns.map((col) => (
+                    <TableCell key={col.key}>
+                      {col.render ? col.render(row) : String(row[col.key] ?? "")}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
       {totalPages > 1 && (
         <div className="flex items-center justify-between p-4 border-t border-border text-sm text-muted-foreground">
           <span>Page {page + 1} of {totalPages}</span>

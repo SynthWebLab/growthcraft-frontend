@@ -25,6 +25,8 @@ export interface CollegeDashboardData {
     cohortLimit: number | null;
     cohortRemaining: number | null;
   };
+  activeEventIds?: string[];
+  activeCourseIds?: string[];
   enrollmentTrend: {
     weekly: { label: string; students: number }[];
     monthly: { label: string; students: number }[];
@@ -38,6 +40,11 @@ export interface CollegeStudentRow {
   userId: string;
   name: string;
   email: string;
+  phone?: string;
+  enrollmentNumber?: string;
+  degree?: string;
+  branch?: string;
+  yearOfStudy?: number;
   courses: number;
   avgProgress: number;
   status: CollegeStudentStatus;

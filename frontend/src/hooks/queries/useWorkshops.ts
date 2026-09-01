@@ -42,7 +42,9 @@ export function useWorkshops(params?: WorkshopQueryParams) {
   return useQuery({
     queryKey: workshopKeys.list(params),
     queryFn: () => workshopService.getWorkshops(params),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -67,8 +69,11 @@ export function useRegisterWorkshop() {
       workshopId: string;
       data: WorkshopActionData;
     }) => workshopService.register(workshopId, data),
-    onSuccess: (data) => {
-      toast.success(data.message || "Workshop registration successful!");
+    onSuccess: (data: any) => {
+      const isConfirmed = data?.data?.enrollment?.status === "confirmed" || data?.data?.enrollment?.paymentStatus === "completed";
+      if (isConfirmed) {
+        toast.success(data.message || "Workshop registration successful!");
+      }
       queryClient.invalidateQueries({ queryKey: workshopKeys.all });
     },
     onError: (error) => {

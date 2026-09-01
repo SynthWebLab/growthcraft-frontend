@@ -93,6 +93,16 @@ export interface EnrollmentStatusResponse {
   };
 }
 
+export interface CourseMentor {
+  userId?: string;
+  mentorProfileId?: string;
+  name: string;
+  avatar?: string;
+  designation?: string;
+  areaOfExpertise?: string;
+  bio?: string;
+}
+
 export interface Course {
   _id: string;
   title: string;
@@ -109,6 +119,7 @@ export interface Course {
   enrollmentCount: number;
   isActive: boolean;
   isDraft: boolean;
+  isFeatured?: boolean;
   publishedAt?: string;
   type: "Course" | "Bootcamp";
   createdAt: string;
@@ -124,6 +135,7 @@ export interface Course {
   discountedPrice: number;
   instructor: CourseInstructor;
   instructorName: string;
+  mentors?: CourseMentor[];
   bootcampDetails?: BootcampDetails;
 }
 
@@ -146,6 +158,7 @@ export interface CourseFilters {
   category?: string;
   difficultyLevel?: string;
   type?: "Course" | "Bootcamp";
+  isFeatured?: boolean;
   page?: number;
   limit?: number;
   q?: string; // Search query (alternative)

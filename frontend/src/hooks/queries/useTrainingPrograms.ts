@@ -72,10 +72,29 @@ export function useEnrollInTrainingProgram() {
       data,
     }: {
       programId: string;
-      data: { fullName: string; email: string; phone: string; cohortId?: string };
+      data: {
+        fullName: string;
+        email: string;
+        phone: string;
+        cohortId?: string;
+        selectedCompany?: {
+          companyName: string;
+          role?: string;
+          duration?: string;
+          stipend?: string;
+          mode?: string;
+        };
+      };
     }) => enrollInTrainingProgram(programId, data),
     onSuccess: (data, variables) => {
-      toast.success(data.message || "Successfully enrolled in training program!");
+      const enrollment = data.data?.enrollment || data.data;
+      const status = enrollment?.status || enrollment?.paymentStatus;
+      const isConfirmed = status === "confirmed" || status === "completed" || status === "Completed" || status === "Active";
+
+      // Only show success toast if enrollment is actually confirmed/completed
+      if (isConfirmed) {
+        toast.success(data.message || "Successfully enrolled in training program!");
+      }
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["training-program", variables.programId] });
       queryClient.invalidateQueries({ queryKey: ["training-program-enrollment-status", variables.programId] });

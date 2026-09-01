@@ -6,13 +6,13 @@ import { cn } from "@/lib/utils";
 import PanelSidebar, { type NavSection } from "@/components/dashboard/PanelSidebar";
 import PanelTopbar from "@/components/dashboard/PanelTopbar";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/hooks/useAuth";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
 import {
   LayoutDashboard, BookOpen, Award, User, HelpCircle, Settings,
   GraduationCap, Users, Calendar, BarChart3, Building2,
   Briefcase, Search, FileText, Megaphone, DollarSign, Wrench, Trophy, Target,
-  Loader2
+  Loader2, Layers
 } from "lucide-react";
 
 type Role = "Student" | "College" | "Ambassador" | "Mentor" | "HiringPartner";
@@ -26,6 +26,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         label: "Main",
         items: [
           { icon: LayoutDashboard, label: "Dashboard", href: "dashboard" },
+          { icon: Layers, label: "My Batches", href: "batches" },
           { icon: BookOpen, label: "My Courses", href: "courses" },
           { icon: GraduationCap, label: "Bootcamps", href: "bootcamps" },
           { icon: Wrench, label: "Workshops", href: "workshops" },
@@ -81,6 +82,7 @@ const panelConfigs: Record<string, { role: Role; basePath: string; navSections: 
         label: "Main",
         items: [
           { icon: LayoutDashboard, label: "Dashboard", href: "dashboard" },
+          { icon: Layers, label: "Batches", href: "batches" },
           { icon: Calendar, label: "Sessions", href: "sessions" },
           { icon: Calendar, label: "Availability", href: "availability" },
           { icon: Users, label: "Students", href: "students" },
@@ -129,7 +131,7 @@ function getPanelKey(pathname: string): string {
 }
 
 const PanelLayout = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated } = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -240,14 +242,14 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
       />
 
       <div className={cn(
-        "flex-1 flex flex-col min-h-screen transition-all duration-300",
+        "flex-1 flex flex-col min-h-screen transition-all duration-300 overflow-x-hidden",
         !isMobile && (collapsed ? "ml-16" : "ml-64")
       )}>
         <PanelTopbar
           onMenuClick={handleMenuClick}
           basePath={config.basePath}
         />
-        <main className="flex-1 bg-marble p-4 md:p-8">
+        <main className="flex-1 bg-marble p-4 md:p-8 overflow-x-hidden">
           {children}
         </main>
       </div>

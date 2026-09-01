@@ -45,7 +45,7 @@ const DashboardSkeleton = () => (
       <div className="h-4 w-96 bg-muted/40 rounded" />
     </div>
     <div className="h-32 bg-muted/40 rounded-xl" />
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="h-24 bg-muted/40 rounded-xl" />
       ))}
@@ -60,7 +60,7 @@ const DashboardSkeleton = () => (
 export default function MentorDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<string>("Weekly");
   const { data: dashboardResponse, isLoading: isDbLoading } = useMentorDashboard(selectedPeriod.toLowerCase());
-  const { data: batchesResponse, isLoading: isBatchesLoading } = useMentorBatches({ status: "Active" });
+  const { data: batchesResponse, isLoading: isBatchesLoading } = useMentorBatches();
   const { data: statusResponse, isLoading: isStatusLoading } = useMentorCheckInStatus();
   
   const checkInMutation = useMentorCheckIn();
@@ -78,16 +78,18 @@ export default function MentorDashboard() {
     todaySessionsCount: 0,
   };
   const earningsTrend = summary?.earningsTrend || [];
-  const activeCheckIn = statusResponse?.data?.activeCheckIn;
+  const activeCheckIn = statusResponse?.data?.status;
   const batches = batchesResponse?.data?.batches ?? [];
   const recentReviews = summary?.recentReviews || [];
 
+  const activeCheckInBatchId = activeCheckIn?.batchId?._id || activeCheckIn?.batchId?.id;
+
   // Live Timer for Check-In duration
   useEffect(() => {
-    if (!activeCheckIn?.checkedInAt) return;
+    if (!activeCheckIn?.checkInTime) return;
     
     const interval = setInterval(() => {
-      const start = new Date(activeCheckIn.checkedInAt).getTime();
+      const start = new Date(activeCheckIn.checkInTime).getTime();
       const now = new Date().getTime();
       const diff = Math.max(0, now - start);
 
@@ -110,10 +112,9 @@ export default function MentorDashboard() {
   };
 
   const handleCheckOut = () => {
-    if (!activeCheckIn?.batchId?._id) return;
     checkOutMutation.mutate(
       {
-        batchId: activeCheckIn.batchId._id,
+        batchId: activeCheckInBatchId || "",
         notes: checkOutNotes.trim() || undefined,
       },
       {
@@ -129,49 +130,49 @@ export default function MentorDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 w-full min-w-0">
       <PageHeader
-        title="Welcome back, Mentor! 🧑‍🏫"
+        title="Welcome back, Mentor!"
         description="Your mentoring overview, session tracking, and offline class check-in dashboard."
       />
 
       {/* Check-In/Check-Out Interactive Banner */}
       <DataCard className="overflow-hidden border-magenta/20 bg-lavender/5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${activeCheckIn ? "bg-magenta text-white animate-pulse" : "bg-marble text-muted-foreground"}`}>
-              {activeCheckIn ? <Timer className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className={`h-10 w-10 md:h-12 md:w-12 rounded-full flex items-center justify-center shrink-0 ${activeCheckIn ? "bg-magenta text-white animate-pulse" : "bg-marble text-muted-foreground"}`}>
+              {activeCheckIn ? <Timer className="h-5 w-5 md:h-6 md:w-6" /> : <Play className="h-5 w-5 md:h-6 md:w-6" />}
             </div>
-            <div>
-              <h3 className="font-bold text-foreground text-base font-display">
+            <div className="min-w-0">
+              <h3 className="font-bold text-foreground text-sm md:text-base font-display">
                 {activeCheckIn ? "Active Mentoring Session" : "Offline Class Check-In"}
               </h3>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="text-xs md:text-sm text-muted-foreground mt-0.5 leading-relaxed">
                 {activeCheckIn
                   ? `Currently conducting session for Batch: ${activeCheckIn.batchId?.code || activeCheckIn.batchId?.batchName || "N/A"}`
                   : "Check in when you arrive at the campus batch session to track your mentoring hours."}
               </p>
               {activeCheckIn && (
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <Badge variant="secondary" className="font-mono bg-magenta/10 text-magenta border-none text-xs px-2 py-0.5">
                     Elapsed: {elapsedTime}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    Started at: {new Date(activeCheckIn.checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    Started at: {new Date(activeCheckIn.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+          <div className="flex flex-col gap-2 w-full">
             {activeCheckIn ? (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 w-full">
                 <Textarea
                   placeholder="Optional session notes / progress summary..."
                   value={checkOutNotes}
                   onChange={(e) => setCheckOutNotes(e.target.value)}
-                  className="h-14 min-w-[200px] text-xs bg-white"
+                  className="h-14 text-xs bg-white w-full"
                 />
                 <Button
                   onClick={handleCheckOut}
@@ -182,15 +183,15 @@ export default function MentorDashboard() {
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row gap-2 items-stretch">
+              <div className="flex flex-col gap-2 w-full">
                 <select
                   value={selectedBatchId}
                   onChange={(e) => setSelectedBatchId(e.target.value)}
-                  className="h-10 rounded-md border border-border bg-white px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-magenta min-w-[200px]"
+                  className="h-10 rounded-md border border-border bg-white px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-magenta w-full"
                 >
                   <option value="">-- Select Active Batch --</option>
                   {batches.map((b: any) => (
-                    <option key={b._id} value={b._id}>
+                    <option key={b.id} value={b.id}>
                       {b.code} - {b.title || b.batchName || "Program"}
                     </option>
                   ))}
@@ -198,7 +199,7 @@ export default function MentorDashboard() {
                 <Button
                   onClick={handleCheckIn}
                   disabled={checkInMutation.isPending || !selectedBatchId}
-                  className="bg-magenta hover:bg-magenta/90 text-white gap-1.5 h-10"
+                  className="bg-magenta hover:bg-magenta/90 text-white gap-1.5 h-10 w-full"
                 >
                   {checkInMutation.isPending ? "Checking in..." : "Check In"} <Play className="h-4 w-4" />
                 </Button>
@@ -209,7 +210,7 @@ export default function MentorDashboard() {
       </DataCard>
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <KpiCard label="Sessions Logged" value={counts.sessionsDelivered} />
         <KpiCard label="Total Earnings" value={counts.totalEarnings} prefix="₹" />
         <KpiCard label="Avg Rating" value={counts.avgRating} suffix="/5" />
@@ -237,17 +238,19 @@ export default function MentorDashboard() {
             <div className="space-y-3">
               {batches.slice(0, 5).map((batch: any, i: number) => (
                 <div
-                  key={batch._id || i}
-                  className="flex items-center justify-between py-3 border-b border-border last:border-0 last:pb-0"
+                  key={batch.id || i}
+                  className="flex items-center justify-between py-3 border-b border-border last:border-0 last:pb-0 gap-3"
                 >
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">{batch.code} - {batch.title || batch.batchName || "Program"}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm text-foreground truncate">
+                      {batch.code} - {batch.title || batch.batchName || "Program"}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {batch.studentCount || batch.studentsCount || 0} students
                     </p>
                   </div>
-                  <Link href={`/mentor/sessions?batchId=${batch._id}`}>
-                    <Button size="sm" variant="outline" className="text-xs hover:text-magenta hover:border-magenta">
+                  <Link href={`/mentor/sessions?batchId=${batch.id}`} className="shrink-0">
+                    <Button size="sm" variant="outline" className="text-xs hover:text-magenta hover:border-magenta whitespace-nowrap">
                       Manage Cohort
                     </Button>
                   </Link>
@@ -303,24 +306,26 @@ export default function MentorDashboard() {
             {recentReviews.map((r: any, i: number) => (
               <div
                 key={i}
-                className="flex items-start gap-3 pb-4 border-b border-border last:border-0 last:pb-0"
+                className="flex gap-3 pb-4 border-b border-border last:border-0 last:pb-0"
               >
-                <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                   {r.student
                     ?.split(" ")
                     ?.map((n: string) => n[0])
                     ?.join("")}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="font-medium text-sm text-foreground">{r.student}</span>
-                    <StarRating rating={r.rating} />
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm text-foreground">{r.student}</span>
+                      <StarRating rating={r.rating} />
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {r.date}
+                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground">{r.text}</p>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {r.date}
-                </span>
               </div>
             ))}
           </div>

@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/hooks/useAuth";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useLogout } from "@/hooks/queries/useAuthentication";
 import { cn } from "@/lib/utils";
 import { useSocket } from "@/hooks/useSocket";
@@ -22,6 +22,8 @@ import {
   useMarkAllNotificationsRead,
 } from "@/hooks/queries/useNotifications";
 
+import DynamicSearchBar from "@/components/dashboard/DynamicSearchBar";
+
 interface PanelTopbarProps {
   onMenuClick: () => void;
   basePath: string;
@@ -29,11 +31,10 @@ interface PanelTopbarProps {
 }
 
 const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) => {
-  const { user: profile } = useAuth();
+  const { user: profile } = useCurrentUser();
   const { mutate: signOut } = useLogout();
   const router = useRouter();
   const pathname = usePathname();
-  const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<string>("student");
 
   // Notifications integration
@@ -54,81 +55,26 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
     }
   }, [pathname]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const term = search.trim();
-    if (term) {
-      if (basePath === "/mentor") {
-        const lower = term.toLowerCase();
-        if (["dashboard", "home", "overview"].includes(lower)) {
-          router.push(`${basePath}/dashboard`);
-        } else if (["sessions", "session", "calendar", "meeting"].includes(lower)) {
-          router.push(`${basePath}/sessions`);
-        } else if (["availability", "schedule", "time", "slots", "rate", "hourly"].includes(lower)) {
-          router.push(`${basePath}/availability`);
-        } else if (["students", "student", "mentees", "mentee"].includes(lower)) {
-          router.push(`${basePath}/students`);
-        } else if (["earnings", "earning", "payout", "payouts", "money", "wallet", "withdraw"].includes(lower)) {
-          router.push(`${basePath}/earnings`);
-        } else if (["profile", "bio", "cv", "expert"].includes(lower)) {
-          router.push(`${basePath}/profile`);
-        } else if (["settings", "account", "password"].includes(lower)) {
-          router.push(`${basePath}/settings`);
-        } else if (["support", "help", "query", "faq", "contact", "ticket"].includes(lower)) {
-          router.push(`${basePath}/support`);
-        } else {
-          // Fallback to student search
-          router.push(`${basePath}/students?search=${encodeURIComponent(term)}`);
-        }
-      } else {
-        if (pathname.includes("/bootcamps")) {
-          router.push(`${basePath}/bootcamps?q=${encodeURIComponent(term)}`);
-        } else if (pathname.includes("/workshops")) {
-          router.push(`${basePath}/workshops?q=${encodeURIComponent(term)}`);
-        } else if (pathname.includes("/hackathons")) {
-          router.push(`${basePath}/hackathons?q=${encodeURIComponent(term)}`);
-        } else if (pathname.includes("/training-programs")) {
-          router.push(`${basePath}/training-programs?q=${encodeURIComponent(term)}`);
-        } else {
-          router.push(`${basePath}/courses?q=${encodeURIComponent(term)}`);
-        }
-      }
-      setSearch("");
-    }
-  };
-
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border bg-white px-4 md:px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 md:gap-4 border-b border-border bg-white px-3 md:px-8 w-full min-w-0">
       {/* Left */}
       <button
         onClick={onMenuClick}
-        className="text-muted-foreground hover:text-magenta transition-colors"
+        className="text-muted-foreground hover:text-magenta transition-colors shrink-0"
       >
         <Menu className="h-5 w-5" />
       </button>
       {breadcrumb && (
-        <span className="hidden md:block text-sm font-afacad text-muted-foreground">{breadcrumb}</span>
+        <span className="hidden md:block text-sm font-afacad text-muted-foreground shrink-0">{breadcrumb}</span>
       )}
 
       {/* Center — search */}
-      <div className="flex-1 flex justify-center">
-        <form onSubmit={handleSearch} className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={basePath === "/mentor" ? "Search pages, students..." : "Search courses..."}
-            className="pl-9 pr-12 h-9 bg-marble border-none"
-            aria-label={basePath === "/mentor" ? "Search pages or students" : "Search courses"}
-          />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono bg-white border border-border rounded px-1.5 py-0.5 text-muted-foreground">
-            ↵
-          </kbd>
-        </form>
+      <div className="flex-1 flex justify-center min-w-0">
+        <DynamicSearchBar basePath={basePath} roleOverride={profile?.role} />
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 md:gap-2 shrink-0">
         {profile?.role === "student" && profile?.isAmbassador && (
           <button
             onClick={() => {
@@ -151,71 +97,95 @@ const PanelTopbar = ({ onMenuClick, basePath, breadcrumb }: PanelTopbarProps) =>
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
+            <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none rounded-full hover:bg-muted/50">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-magenta text-[9px] font-bold text-white">
-                  {unreadCount}
+                <span className="absolute top-0.5 right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-magenta text-[10px] font-bold text-white shadow-sm animate-pulse">
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <div className="flex items-center justify-between p-3 border-b">
-              <span className="text-sm font-semibold">Notifications</span>
+          <DropdownMenuContent align="end" className="w-80 sm:w-96 p-0 shadow-xl border-border">
+            <div className="flex items-center justify-between p-3.5 border-b border-border bg-muted/20">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-foreground">Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] font-semibold bg-magenta/10 text-magenta px-2 py-0.5 rounded-full">
+                    {unreadCount} new
+                  </span>
+                )}
+              </div>
               {unreadCount > 0 && (
                 <button
                   onClick={() => markAllRead.mutate()}
-                  className="text-xs text-magenta hover:underline"
+                  disabled={markAllRead.isPending}
+                  className="text-xs text-magenta hover:underline font-medium transition-colors"
                 >
                   Mark all read
                 </button>
               )}
             </div>
-            <div className="max-h-[300px] overflow-y-auto">
+            <div className="max-h-[360px] overflow-y-auto divide-y divide-border">
               {recentNotifications.length > 0 ? (
-                recentNotifications.map((notif: any) => (
-                  <div
-                    key={notif._id}
-                    onClick={() => !notif.readAt && markRead.mutate(notif._id)}
-                    className={cn(
-                      "p-3 text-xs border-b border-border cursor-pointer hover:bg-muted/50 transition-colors space-y-1",
-                      !notif.readAt && "bg-lavender/5 font-medium"
-                    )}
-                  >
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="text-foreground">
-                        {notif.type === "enrollment.created" && "Enrollment Confirmed"}
-                        {notif.type === "batch.assigned" && "Batch Assigned"}
-                        {notif.type === "mentor.checkin.verified" && "Session Verified"}
-                        {notif.type === "referral.conversion" && "Referral Conversion"}
-                        {notif.type !== "enrollment.created" && notif.type !== "batch.assigned" && notif.type !== "mentor.checkin.verified" && notif.type !== "referral.conversion" && "New Alert"}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground shrink-0">
-                        {new Date(notif.createdAt).toLocaleDateString()}
-                      </span>
+                recentNotifications.map((notif: any) => {
+                  const isUnread = !notif.readAt;
+                  return (
+                    <div
+                      key={notif._id}
+                      onClick={() => isUnread && markRead.mutate(notif._id)}
+                      className={cn(
+                        "p-3.5 text-xs cursor-pointer hover:bg-muted/40 transition-all space-y-1.5 relative",
+                        isUnread ? "bg-magenta/[0.03]" : "opacity-80"
+                      )}
+                    >
+                      {isUnread && (
+                        <span className="absolute left-1.5 top-4 w-1.5 h-1.5 rounded-full bg-magenta" />
+                      )}
+                      <div className="flex justify-between items-start gap-2 pl-1.5">
+                        <span className="font-semibold text-foreground text-xs">
+                          {notif.type === "enrollment.created" && "🎓 Enrollment Confirmed"}
+                          {notif.type === "batch.assigned" && "📚 Batch Assigned"}
+                          {notif.type === "mentor.checkin.verified" && "✅ Session Verified"}
+                          {notif.type === "referral.conversion" && "🎉 Referral Conversion"}
+                          {notif.type !== "enrollment.created" &&
+                            notif.type !== "batch.assigned" &&
+                            notif.type !== "mentor.checkin.verified" &&
+                            notif.type !== "referral.conversion" &&
+                            "🔔 Notification"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground shrink-0 font-mono">
+                          {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground line-clamp-2 pl-1.5 leading-relaxed">
+                        {notif.type === "enrollment.created" && `Successfully enrolled in batch ${notif.data?.batchCode || ""}`}
+                        {notif.type === "batch.assigned" && `Assigned to batch ${notif.data?.batchCode || ""}`}
+                        {notif.type === "mentor.checkin.verified" && `Check-in verified: ${notif.data?.hoursWorked || 0} hrs worked`}
+                        {notif.type === "referral.conversion" && `Referral converted! Commission: INR ${notif.data?.commissionAmount || 0}`}
+                        {notif.type !== "enrollment.created" &&
+                          notif.type !== "batch.assigned" &&
+                          notif.type !== "mentor.checkin.verified" &&
+                          notif.type !== "referral.conversion" &&
+                          (notif.data?.message || "You have a new update.")}
+                      </p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground line-clamp-2">
-                      {notif.type === "enrollment.created" && `Enrolled in batch ${notif.data?.batchCode || ""}`}
-                      {notif.type === "batch.assigned" && `Assigned to batch ${notif.data?.batchCode || ""}`}
-                      {notif.type === "mentor.checkin.verified" && `Check-in verified: ${notif.data?.hoursWorked || 0} hrs worked`}
-                      {notif.type === "referral.conversion" && `Referral converted! Commission: INR ${notif.data?.commissionAmount || 0}`}
-                      {notif.type !== "enrollment.created" && notif.type !== "batch.assigned" && notif.type !== "mentor.checkin.verified" && notif.type !== "referral.conversion" && (notif.data?.message || "")}
-                    </p>
-                  </div>
-                ))
+                  );
+                })
               ) : (
-                <div className="p-4 text-sm text-muted-foreground text-center">
-                  No notifications
+                <div className="p-8 text-center space-y-2">
+                  <Bell className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+                  <p className="text-sm font-medium text-muted-foreground">No notifications yet</p>
+                  <p className="text-xs text-muted-foreground/70">You will receive updates here as activity occurs.</p>
                 </div>
               )}
             </div>
-            <div className="p-2 border-t text-center">
+            <div className="p-2.5 border-t border-border bg-muted/10 text-center">
               <Link
                 href={`${basePath}/notifications`}
                 className="text-xs text-magenta font-semibold hover:underline block w-full py-1"
               >
-                View all notifications
+                View all notifications →
               </Link>
             </div>
           </DropdownMenuContent>

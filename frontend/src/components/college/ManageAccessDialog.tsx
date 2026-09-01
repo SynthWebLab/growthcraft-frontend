@@ -187,30 +187,30 @@ export function ManageAccessDialog({
         </div>
 
         {/* Students List Table */}
-        <div className="relative border border-border rounded-lg overflow-hidden bg-marble/25 max-h-[300px] overflow-y-auto mt-4">
+        <div className="relative border border-border rounded-lg overflow-hidden bg-marble/25 max-h-[180px] sm:max-h-[300px] overflow-y-auto mt-4">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground text-sm">
+            <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground text-sm">
               <Loader2 className="h-6 w-6 animate-spin text-magenta" />
               Loading cohort students…
             </div>
           ) : filteredStudents.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground text-sm">
+            <div className="text-center py-10 text-muted-foreground text-sm">
               No students found matching your search.
             </div>
           ) : (
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-marble border-b border-border text-xs text-muted-foreground font-semibold uppercase">
-                  <th className="py-3 px-4 w-12 text-center">
+                  <th className="py-2.5 px-2 sm:px-4 w-10 text-center">
                     <Checkbox
                       checked={allFilteredSelected}
                       onCheckedChange={handleToggleSelectAll}
                       aria-label="Select all matching students"
                     />
                   </th>
-                  <th className="py-3 px-4">Student</th>
-                  <th className="py-3 px-4">Email</th>
-                  <th className="py-3 px-4 text-center w-24">Status</th>
+                  <th className="py-2.5 px-2 sm:px-4">Student</th>
+                  <th className="py-2.5 px-2 sm:px-4 hidden sm:table-cell">Email</th>
+                  <th className="py-2.5 px-2 sm:px-4 text-center w-20 sm:w-24">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -222,22 +222,27 @@ export function ManageAccessDialog({
                       onClick={() => handleToggleStudent(student.userId)}
                       className="hover:bg-marble/40 cursor-pointer transition-colors"
                     >
-                      <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-2.5 px-2 sm:px-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={isChecked}
                           onCheckedChange={() => handleToggleStudent(student.userId)}
                           aria-label={`Select ${student.name}`}
                         />
                       </td>
-                      <td className="py-3 px-4 font-medium text-foreground">
-                        {student.name}
+                      <td className="py-2.5 px-2 sm:px-4 font-medium text-foreground">
+                        <div className="truncate max-w-[120px] xs:max-w-[180px] sm:max-w-none">
+                          {student.name}
+                        </div>
+                        <div className="text-[10px] sm:hidden text-muted-foreground font-normal mt-0.5 truncate max-w-[120px] xs:max-w-[180px]">
+                          {student.email}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground">
+                      <td className="py-2.5 px-2 sm:px-4 text-muted-foreground hidden sm:table-cell">
                         {student.email}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-2.5 px-2 sm:px-4 text-center">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold select-none ${
+                          className={`inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold select-none whitespace-nowrap ${
                             isChecked
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
                               : "bg-muted text-muted-foreground border border-border"
@@ -245,7 +250,7 @@ export function ManageAccessDialog({
                         >
                           {isChecked ? (
                             <>
-                              <Check className="h-3 w-3" /> Enrolled
+                              <Check className="h-2.5 w-2.5" /> Enrolled
                             </>
                           ) : (
                             "No Access"
@@ -259,14 +264,14 @@ export function ManageAccessDialog({
             </table>
           )}
         </div>
-
-        <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2 border-t border-border pt-4">
+ 
+        <DialogFooter className="mt-6 flex flex-row gap-2 border-t border-border pt-4 justify-end">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={saving}
-            className="w-full sm:w-auto h-9 text-sm"
+            className="flex-1 sm:flex-none h-9 text-sm"
           >
             Cancel
           </Button>
@@ -274,7 +279,7 @@ export function ManageAccessDialog({
             type="button"
             onClick={handleSaveChanges}
             disabled={saving || isLoading}
-            className="w-full sm:w-auto bg-magenta hover:bg-magenta/90 text-white font-medium h-9 text-sm"
+            className="flex-1 sm:flex-none bg-magenta hover:bg-magenta/90 text-white font-medium h-9 text-sm"
           >
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Save Access

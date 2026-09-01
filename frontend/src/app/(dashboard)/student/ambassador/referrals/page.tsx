@@ -37,21 +37,21 @@ export default function AmbassadorReferralsPage() {
   const totalPages = Math.ceil(totalItems / 10) || 1;
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in p-4 sm:p-0">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 font-display">My Invites</h1>
-        <p className="text-muted-foreground mt-1">Track the journey of your referred friends and your commission status.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-display">My Invites</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">Track the journey of your referred friends and your commission status.</p>
       </div>
 
       {/* Filter and Content */}
-      <DataCard>
+      <DataCard className="p-4 sm:p-6">
         {/* Filters */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div className="flex items-center gap-2 text-sm text-slate-500 font-semibold">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 font-semibold">
             <Filter className="h-4 w-4" /> Filter Status
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {[
               { label: "All Statuses", val: "" },
               { label: "Invited", val: "sent" },
@@ -61,7 +61,7 @@ export default function AmbassadorReferralsPage() {
               <button
                 key={btn.val}
                 onClick={() => handleStatusFilterChange(btn.val)}
-                className={`text-xs px-3 py-1.5 rounded-lg font-semibold border transition-all ${
+                className={`text-[10px] sm:text-xs px-2.5 py-1.5 rounded-lg font-semibold border transition-all ${
                   status === btn.val
                     ? "bg-magenta text-white border-magenta shadow-sm"
                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -75,66 +75,68 @@ export default function AmbassadorReferralsPage() {
 
         {/* Ledger Table */}
         {referralsList.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b text-slate-400 font-medium">
-                  <th className="pb-3 font-medium">Email Address</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Invite Date</th>
-                  <th className="pb-3 font-medium">Commission Status</th>
-                  <th className="pb-3 font-medium text-right">Commission Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y text-slate-600">
-                {referralsList.map((ref: any) => (
-                  <tr key={ref._id} className="hover:bg-slate-50/50">
-                    <td className="py-4 font-medium text-slate-800">{ref.referredEmail}</td>
-                    <td className="py-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          ref.status === "enrolled"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : ref.status === "registered"
-                            ? "bg-indigo-50 text-indigo-700"
-                            : "bg-slate-50 text-slate-600"
-                        }`}
-                      >
-                        {ref.status}
-                      </span>
-                    </td>
-                    <td className="py-4 text-muted-foreground">
-                      {new Date(ref.createdAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="py-4">
-                      {ref.status === "enrolled" ? (
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+              <table className="min-w-full text-left text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b text-slate-400 font-medium">
+                    <th className="pb-3 font-medium">Email Address</th>
+                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium">Invite Date</th>
+                    <th className="pb-3 font-medium">Commission Status</th>
+                    <th className="pb-3 font-medium text-right">Commission Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y text-slate-600">
+                  {referralsList.map((ref: any) => (
+                    <tr key={ref._id} className="hover:bg-slate-50/50">
+                      <td className="py-4 font-medium text-slate-800 max-w-[150px] sm:max-w-none truncate pr-2">{ref.referredEmail}</td>
+                      <td className="py-4">
                         <span
-                          className={`inline-flex items-center text-xs font-semibold ${
-                            ref.commissionPaid ? "text-emerald-600" : "text-amber-600"
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold ${
+                            ref.status === "enrolled"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : ref.status === "registered"
+                              ? "bg-indigo-50 text-indigo-700"
+                              : "bg-slate-50 text-slate-600"
                           }`}
                         >
-                          ● {ref.commissionPaid ? "Paid Out" : "Pending Payout"}
+                          {ref.status}
                         </span>
-                      ) : (
-                        <span className="text-slate-400">-</span>
-                      )}
-                    </td>
-                    <td className="py-4 font-semibold text-slate-800 text-right">
-                      {ref.commissionAmount > 0 ? `₹${ref.commissionAmount}` : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="py-4 text-muted-foreground whitespace-nowrap">
+                        {new Date(ref.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="py-4 whitespace-nowrap">
+                        {ref.status === "enrolled" ? (
+                          <span
+                            className={`inline-flex items-center text-[11px] sm:text-xs font-semibold ${
+                              ref.commissionPaid ? "text-emerald-600" : "text-amber-600"
+                            }`}
+                          >
+                            ● {ref.commissionPaid ? "Paid Out" : "Pending Payout"}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </td>
+                      <td className="py-4 font-semibold text-slate-800 text-right whitespace-nowrap">
+                        {ref.commissionAmount > 0 ? `₹${ref.commissionAmount}` : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="flex justify-between items-center mt-6 pt-6 border-t">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
                   Page <strong>{page}</strong> of <strong>{totalPages}</strong> (<strong>{totalItems}</strong> items)
                 </span>
                 <div className="flex gap-2">
@@ -158,7 +160,7 @@ export default function AmbassadorReferralsPage() {
           </div>
         ) : (
           <div className="text-center py-16">
-            <p className="text-slate-400 text-sm">No invites found with this filter.</p>
+            <p className="text-slate-400 text-xs sm:text-sm">No invites found with this filter.</p>
           </div>
         )}
       </DataCard>

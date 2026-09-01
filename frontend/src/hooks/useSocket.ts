@@ -1,14 +1,19 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSocket } from "@/lib/socket";
-import { useAuth } from "./useAuth";
+import { useCurrentUser } from "./useCurrentUser";
 import { toast } from "sonner";
 import { notificationsKeys } from "./queries/useNotifications";
+import { authService } from "@/services/auth.service";
 
 // Map notification types to human readable messages for toasts
 const getNotificationToastMessage = (notification: any): string => {
   const data = notification.data || {};
   switch (notification.type) {
+    case "ambassador.activated":
+      return `🎉 Great news! You have been activated as a Campus Ambassador!`;
+    case "ambassador.deactivated":
+      return `Your Campus Ambassador status has been updated.`;
     case "enrollment.created":
       return `Successfully enrolled in batch ${data.batchCode || ""}`;
     case "batch.assigned":
@@ -23,7 +28,7 @@ const getNotificationToastMessage = (notification: any): string => {
 };
 
 export function useSocket() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useCurrentUser();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -39,7 +44,7 @@ export function useSocket() {
 
     const handleNotification = (notification: any) => {
       const msg = getNotificationToastMessage(notification);
-      
+
       toast.info(msg, {
         duration: 5000,
         action: {
@@ -55,37 +60,56 @@ export function useSocket() {
         }
       });
 
-      // Invalidate queries to refresh notifications
+      // Invalidate queries to refresh notifications and active dashboards in real time
       void queryClient.invalidateQueries({ queryKey: notificationsKeys.unread() });
       void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ["college"] });
+      void queryClient.invalidateQueries({ queryKey: ["student"] });
+      void queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      void queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+      void queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      void queryClient.invalidateQueries({ queryKey: ["events"] });
     };
 
     socket.on("notification", handleNotification);
 
+    const handleEventUpdate = (data: any) => {
+      console.log("Real-time event update received:", data);
+      void queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
+      void queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+      void queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      void queryClient.invalidateQueries({ queryKey: ["events"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+    };
+
+    socket.on("event.updated", handleEventUpdate);
+
     let isRefreshing = false;
 
     socket.on("connect_error", async (err) => {
-      console.warn("Socket connection error:", err.message);
+      console.debug("Socket connection error:", err.message);
       if (err.message.includes("Authentication error") && !isRefreshing) {
         isRefreshing = true;
         try {
-          // Try to refresh token if socket failed due to missing/expired token
-          const { authService } = await import("@/services/auth.service");
           await authService.refreshToken();
-          // Reconnect after a short delay to ensure cookies are updated
           setTimeout(() => {
             if (!socket.connected) socket.connect();
           }, 500);
         } catch (error) {
-          console.error("Socket token refresh failed:", error);
+          console.debug("Socket token refresh failed, disconnecting:", error);
+          socket.disconnect();
         } finally {
           isRefreshing = false;
         }
+      } else if (!err.message.includes("Authentication error")) {
+        // Non-auth errors (e.g. xhr poll error) — stop retrying
+        socket.disconnect();
       }
     });
 
     return () => {
       socket.off("notification", handleNotification);
+      socket.off("event.updated", handleEventUpdate);
       socket.disconnect();
     };
   }, [user, isAuthenticated, queryClient]);

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Target, Users, Heart, Lightbulb, ArrowRight, Linkedin, Twitter } from "lucide-react";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useEffect, useState } from "react";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
 
 // Static data
 const milestones = [
@@ -170,13 +171,15 @@ const AboutPage = () => {
 
       {/* Backers */}
       <Section variant="white">
-        <h2 className="text-2xl md:text-3xl font-extrabold mb-8 text-center">
-          Built by SYNTHWEB
-        </h2>
-        <p className="text-center text-muted-foreground max-w-2xl mx-auto">
-          GrowthCraft is built and maintained by SYNTHWEB, a team passionate about creating 
-          impactful tech education solutions. Based in Guwahati, Assam.
-        </p>
+        <div className="flex flex-col items-center justify-center text-center space-y-4 max-w-2xl mx-auto">
+          <PartnerLogo companyName="SynthWeb" size="xl" className="shadow-md p-3 rounded-2xl bg-white border-2 border-border" />
+          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">
+            Built & Powered by SYNTHWEB
+          </h2>
+          <p className="text-muted-foreground leading-relaxed">
+            GrowthCraft is built, operated, and maintained by SYNTHWEB, a product engineering organization passionate about creating impactful offline & industrial tech education solutions. Based in Guwahati, Assam.
+          </p>
+        </div>
       </Section>
 
       {/* Final CTA */}

@@ -1,160 +1,175 @@
-import { Calendar, Clock, MapPin, ArrowRight, Trophy } from "lucide-react";
+"use client";
+
+import { Calendar, ArrowRight, Flame, Loader2, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { EventCardFrame, getEventCardToneStyles } from "@/components/events/EventCardFrame";
+import { DataCard } from "@/components/ui/data-card";
 import type { Hackathon } from "@/types/hackathon";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserEnrollments } from "@/hooks/useUserEnrollments";
 
 interface HackathonCardProps {
   hackathon: Hackathon;
   onCTAClick: (hackathon: Hackathon) => void;
   onSecondaryCTAClick?: (hackathon: Hackathon) => void;
+  isProcessing?: boolean;
 }
 
-const formatEventDate = (date: string) =>
-  new Date(date).toLocaleDateString("en-GB");
+const formatEventDate = (date: string) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
 
-export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick }: HackathonCardProps) {
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Open":
+      return "bg-success/10 text-success";
+    case "Closed":
+      return "bg-danger/10 text-danger";
+    case "Completed":
+      return "bg-muted text-muted-foreground";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+};
+
+export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick, isProcessing }: HackathonCardProps) {
   const { data: user } = useCurrentUser();
+  const { isStudent, isEventEnrolled } = useUserEnrollments();
   const isMentor = user?.role === "mentor";
   const isEmployer = user?.role === "employer";
   const isRestrictedRole = isMentor || isEmployer;
-  const toneStyles = getEventCardToneStyles("orange");
-  
-  // Get CTAs from hackathon data
-  const primaryCTA = hackathon.primaryCTA || "Register Now";
-  const secondaryCTA = hackathon.secondaryCTA;
-  const isCallbackAction = primaryCTA.toLowerCase().includes("callback");
+
+  const enrolledFromUser = isEventEnrolled(hackathon.id) || isEventEnrolled(hackathon.slug) || isEventEnrolled((hackathon as any)._id);
+  const isEnrolled = isStudent
+    ? enrolledFromUser
+    : Boolean(
+        (hackathon as any).isEnrolled ||
+        hackathon.primaryCTA === "Already Enrolled" ||
+        hackathon.primaryCTA === "Interest Registered" ||
+        hackathon.primaryCTA === "Seat Reserved"
+      );
+
+  const rawPrimaryCTA = hackathon.primaryCTA || "Register Now";
+  const primaryCTA = isEnrolled ? "Seat Reserved" : (rawPrimaryCTA === "Seat Reserved" || rawPrimaryCTA === "Already Enrolled" ? "Reserve Seat" : rawPrimaryCTA);
   const isFinalizedStatus = hackathon.status === "Closed" || hackathon.status === "Completed";
   const primaryButtonLabel = isRestrictedRole ? "Students Only" : (isFinalizedStatus ? hackathon.status : primaryCTA);
   
-  // Only disable primary button if it's a registration action AND (seats full OR event completed)
-  // "Request Callback" buttons should always be enabled
-  const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve");
-  const isPrimaryDisabled = isRestrictedRole || isFinalizedStatus || (isRegistrationAction && (
+  const isRegistrationAction = primaryCTA.toLowerCase().includes("register") || primaryCTA.toLowerCase().includes("reserve") || isEnrolled;
+  const seatsAvailable = hackathon.availableSeats ?? ((hackathon.maxSeats || 50) - (hackathon.enrolledCount || 0));
+  const isPrimaryDisabled = Boolean(isProcessing) || isRestrictedRole || isFinalizedStatus || isEnrolled || (isRegistrationAction && (
     hackathon.status === "Completed" || 
-    hackathon.availableSeats === 0
+    seatsAvailable <= 0
   ));
-  const seatsAvailable = hackathon.availableSeats;
 
   return (
-    <Link href={`/events/${hackathon.slug}`} className="block">
-      <EventCardFrame
-        tone="orange"
-        banner={
-          <div className="text-center">
-            <MapPin className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-xs">{hackathon.mode}</p>
-          </div>
-        }
-        badgeRow={
-          <>
-            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${toneStyles.badge}`}>
-              Hackathon
+    <Link href={`/events/${hackathon.slug}`} className="group block h-full">
+      <DataCard className="h-full flex flex-col justify-between hover:border-primary/40 hover:shadow-lg transition-all duration-300 p-5 sm:p-6">
+        <div>
+          {/* Badge Row */}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            {Boolean((hackathon as any).isFeatured || (hackathon as any).is_featured || (hackathon as any).isFeatured === "true" || (hackathon as any).is_featured === "true") && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                <Flame className="h-3 w-3" /> Trending
+              </span>
+            )}
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-magenta/10 text-magenta flex items-center gap-1">
+              <Trophy className="h-3 w-3" /> Hackathon
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
+            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getStatusColor(hackathon.status)}`}>
               {hackathon.status}
             </span>
             <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
-              <Clock className="h-3 w-3 inline mr-1" />
               {hackathon.mode}
             </span>
-          </>
-        }
-        title={hackathon.title}
-        description={hackathon.description}
-        dateRow={
-          <>
-            <span className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              {formatEventDate(hackathon.startDate)} - {formatEventDate(hackathon.endDate)}
-            </span>
-            <span className="flex items-center gap-1 text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              {hackathon.mode}
-            </span>
-          </>
-        }
-        footerLeft={
-          <div>
-            {seatsAvailable > 0 && hackathon.status === "Open" && (
-              <p className="text-xs sm:text-sm font-bold text-primary mb-1">
-                {seatsAvailable} seat{seatsAvailable !== 1 ? "s" : ""} left of {hackathon.maxSeats}
-              </p>
-            )}
-            {seatsAvailable === 0 && hackathon.status === "Open" && (
-              <p className="text-xs sm:text-sm font-bold text-danger mb-1">Seats Full</p>
-            )}
-            <p className="text-xs text-muted-foreground">Entry Fee</p>
-            <p className="text-lg font-extrabold text-primary">
-              {hackathon.price === 0 ? "Free" : `₹${hackathon.price.toLocaleString()}`}
+          </div>
+
+          {/* Domain / Category */}
+          {hackathon.category && (
+            <p className="text-xs font-semibold text-primary/80 dark:text-lavender mb-1.5">
+              {hackathon.category}
             </p>
-          </div>
-        }
-        footerRight={
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {secondaryCTA && onSecondaryCTAClick && (
-              <Button
-                variant="outline"
-                size="default"
-                className="w-full sm:w-auto"
-                disabled={isRestrictedRole}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (!isRestrictedRole) onSecondaryCTAClick(hackathon);
-                }}
-              >
-                {isRestrictedRole ? "Students Only" : secondaryCTA}
-              </Button>
+          )}
+
+          {/* Title */}
+          <h3 className="text-lg font-bold text-foreground group-hover:text-magenta transition-colors mb-2 line-clamp-2">
+            {hackathon.title}
+          </h3>
+
+          {/* Description */}
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+            {hackathon.description}
+          </p>
+
+          {/* Date & Seats Info */}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
+              <Calendar className="h-3 w-3" />
+              {formatEventDate(hackathon.startDate)} — {formatEventDate(hackathon.endDate)}
+            </span>
+            {seatsAvailable > 0 && hackathon.status === "Open" && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success">
+                {seatsAvailable} seat{seatsAvailable !== 1 ? "s" : ""} left
+              </span>
             )}
-            <Button
-              className={`w-full sm:w-auto shadow-none ${
-                isFinalizedStatus || isCallbackAction || isRestrictedRole
-                  ? ""
-                  : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50"
-              }`}
-              size="default"
-              variant={isFinalizedStatus || isCallbackAction || isRestrictedRole ? "outline" : "default"}
-              disabled={isPrimaryDisabled}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!isPrimaryDisabled && !isRestrictedRole) onCTAClick(hackathon);
-              }}
-            >
-              <span className="hidden sm:inline">
-                {primaryButtonLabel}
-              </span>
-              <span className="sm:hidden">
-                {isFinalizedStatus
-                  ? primaryButtonLabel
-                  : primaryCTA === "Register Now"
-                  ? "Register"
-                  : primaryCTA}
-              </span>
-              {!isPrimaryDisabled && <ArrowRight className="ml-2 h-4 w-4" />}
-            </Button>
           </div>
-        }
-      >
-        <div className="mb-3">
-          <div className="text-xs text-muted-foreground mb-1">Domain</div>
-          <div className="text-sm font-medium text-foreground">{hackathon.category}</div>
+
+          {/* Key Tools / Skills */}
+          {hackathon.skillsCovered && hackathon.skillsCovered.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {hackathon.skillsCovered.slice(0, 4).map((tool, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground"
+                >
+                  {tool}
+                </span>
+              ))}
+              {hackathon.skillsCovered.length > 4 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
+                  +{hackathon.skillsCovered.length - 4}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          <span className="text-xs text-muted-foreground">Key Tools:</span>
-          {hackathon.skillsCovered.map((tool) => (
-            <span
-              key={tool}
-              className={`px-2 py-0.5 rounded text-[10px] font-medium border ${toneStyles.chip}`}
-            >
-              {tool}
+        {/* Footer with Price and CTA */}
+        <div className="flex items-center justify-between pt-4 border-t border-border mt-2">
+          <div>
+            <span className="text-lg font-extrabold text-magenta">
+              {hackathon.price === 0 ? "Free Entry" : `₹${hackathon.price.toLocaleString()}`}
             </span>
-          ))}
+          </div>
+
+          <Button
+            size="sm"
+            className={`${
+              isFinalizedStatus || isRestrictedRole
+                ? ""
+                : "bg-magenta text-white hover:bg-magenta/90 disabled:bg-magenta disabled:text-white disabled:opacity-50"
+            }`}
+            variant={isFinalizedStatus || isRestrictedRole ? "outline" : "default"}
+            disabled={isPrimaryDisabled}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!isPrimaryDisabled && !isRestrictedRole) onCTAClick(hackathon);
+            }}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <span>{primaryButtonLabel}</span>
+                {!isPrimaryDisabled && <ArrowRight className="ml-1.5 h-3.5 w-3.5" />}
+              </>
+            )}
+          </Button>
         </div>
-      </EventCardFrame>
+      </DataCard>
     </Link>
   );
 }

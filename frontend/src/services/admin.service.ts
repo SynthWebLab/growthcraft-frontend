@@ -91,6 +91,14 @@ export const adminService = {
     return apiClient.post<any>(API_ENDPOINTS.admin.recordPayout(mentorId), data);
   },
 
+  approvePayout: async (payoutId: string, data?: { notes?: string }): Promise<any> => {
+    return apiClient.patch<any>(`/admin/mentor-payouts/${payoutId}/approve`, data || {});
+  },
+
+  confirmPayout: async (payoutId: string, razorpayPaymentId: string): Promise<any> => {
+    return apiClient.patch<any>(`/admin/mentor-payouts/${payoutId}/confirm`, { razorpayPaymentId });
+  },
+
   getGlobalPayouts: async (month?: string): Promise<any> => {
     const url = month ? `${API_ENDPOINTS.admin.globalPayouts}?month=${month}` : API_ENDPOINTS.admin.globalPayouts;
     return apiClient.get<any>(url);
@@ -221,6 +229,10 @@ export const adminService = {
   },
 
   // --- Course Admin CRUD ---
+  getCourses: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.admin.courses);
+  },
+
   createCourse: async (data: any): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.admin.courses, data);
   },
@@ -238,6 +250,15 @@ export const adminService = {
   },
 
   // --- Training Program Admin CRUD ---
+  getAdminTrainingPrograms: async (params?: { page?: number; limit?: number; search?: string }): Promise<any> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.search) query.set("search", params.search);
+    const qs = query.toString();
+    return apiClient.get<any>(`${API_ENDPOINTS.admin.trainingPrograms}${qs ? `?${qs}` : ""}`);
+  },
+
   createTrainingProgram: async (data: any): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.admin.trainingPrograms, data);
   },
@@ -246,17 +267,38 @@ export const adminService = {
     return apiClient.put<any>(API_ENDPOINTS.admin.trainingProgramDetail(id), data);
   },
 
+  publishTrainingProgram: async (id: string): Promise<any> => {
+    return apiClient.patch<any>(API_ENDPOINTS.admin.trainingProgramPublish(id), {});
+  },
+
   deleteTrainingProgram: async (id: string): Promise<any> => {
     return apiClient.delete<any>(API_ENDPOINTS.admin.trainingProgramDetail(id));
   },
 
   // --- Event Admin CRUD ---
+  getAdminEvents: async (params?: { page?: number; limit?: number; search?: string }): Promise<any> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.search) query.set("search", params.search);
+    const qs = query.toString();
+    return apiClient.get<any>(`${API_ENDPOINTS.admin.events}${qs ? `?${qs}` : ""}`);
+  },
+
   createEvent: async (data: any): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.admin.events, data);
   },
 
   updateEvent: async (id: string, data: any): Promise<any> => {
     return apiClient.put<any>(API_ENDPOINTS.admin.eventDetail(id), data);
+  },
+
+  publishEvent: async (id: string): Promise<any> => {
+    return apiClient.patch<any>(API_ENDPOINTS.admin.eventPublish(id), {});
+  },
+
+  toggleEventStatus: async (id: string, status?: string): Promise<any> => {
+    return apiClient.patch<any>(`${API_ENDPOINTS.admin.events}/${id}/status`, { status });
   },
 
   deleteEvent: async (id: string): Promise<any> => {
@@ -272,5 +314,36 @@ export const adminService = {
         "Content-Type": "multipart/form-data",
       },
     });
+  },
+
+  // --- Enquiries & Lead Callbacks ---
+  getEnquiries: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.admin.enquiries);
+  },
+
+  updateEnquiry: async (id: string, data: { status: string; notes?: string; enquiry_type: string }): Promise<any> => {
+    return apiClient.patch<any>(API_ENDPOINTS.admin.enquiryDetail(id), data);
+  },
+
+  deleteEnquiry: async (id: string, enquiryType: string): Promise<any> => {
+    return apiClient.delete<any>(`${API_ENDPOINTS.admin.enquiryDetail(id)}?enquiry_type=${encodeURIComponent(enquiryType)}`);
+  },
+
+  // --- Registrations ---
+  getRegistrations: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.admin.registrations);
+  },
+
+  updateRegistration: async (
+    id: string,
+    data: { status: string; payment_status: string; notes?: string; item_type: string }
+  ): Promise<any> => {
+    return apiClient.patch<any>(API_ENDPOINTS.admin.registrationDetail(id), data);
+  },
+
+  deleteRegistration: async (id: string, itemType: string): Promise<any> => {
+    return apiClient.delete<any>(
+      `${API_ENDPOINTS.admin.registrationDetail(id)}?item_type=${encodeURIComponent(itemType)}`
+    );
   },
 };

@@ -42,7 +42,9 @@ export function useHackathons(params?: HackathonQueryParams) {
   return useQuery({
     queryKey: hackathonKeys.list(params),
     queryFn: () => hackathonService.getHackathons(params),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic sync
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -67,8 +69,11 @@ export function useRegisterHackathon() {
       hackathonId: string;
       data: HackathonActionData;
     }) => hackathonService.register(hackathonId, data),
-    onSuccess: (data) => {
-      toast.success(data.message || "Hackathon registration successful!");
+    onSuccess: (data: any) => {
+      const isConfirmed = data?.data?.enrollment?.status === "confirmed" || data?.data?.enrollment?.paymentStatus === "completed";
+      if (isConfirmed) {
+        toast.success(data.message || "Hackathon registration successful!");
+      }
       queryClient.invalidateQueries({ queryKey: hackathonKeys.all });
     },
     onError: (error) => {

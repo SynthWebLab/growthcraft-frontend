@@ -78,37 +78,37 @@ export default function CollegeSettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8 p-4 sm:p-0">
       <PageHeader title="Settings" description="Manage your account preferences" />
 
-      <Tabs defaultValue="account">
-        <TabsList>
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="password">Password</TabsTrigger>
+      <Tabs defaultValue="account" className="w-full">
+        <TabsList className="w-full justify-start overflow-x-auto scrollbar-hide flex flex-row flex-nowrap h-11 bg-slate-100 p-1 rounded-xl gap-1">
+          <TabsTrigger value="account" className="text-xs sm:text-sm shrink-0 rounded-lg font-semibold px-4">Account</TabsTrigger>
+          <TabsTrigger value="notifications" className="text-xs sm:text-sm shrink-0 rounded-lg font-semibold px-4">Notifications</TabsTrigger>
+          <TabsTrigger value="password" className="text-xs sm:text-sm shrink-0 rounded-lg font-semibold px-4">Password</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account" className="mt-4 space-y-4">
-          <DataCard>
-            <h3 className="font-bold text-foreground mb-4">Account Information</h3>
+          <DataCard className="p-4 sm:p-6 border-border/60">
+            <h3 className="text-sm sm:text-base font-bold text-foreground mb-4">Account Information</h3>
             <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label>Institution Name</Label>
-                  <Input value={institutionName} onChange={(e) => setInstitutionName(e.target.value)} className="mt-1.5" />
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs sm:text-sm text-slate-700 font-semibold">Institution Name</Label>
+                  <Input value={institutionName} onChange={(e) => setInstitutionName(e.target.value)} className="mt-1 h-10 focus-visible:ring-magenta rounded-xl text-xs sm:text-sm" />
                 </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input value={settings?.email ?? ""} type="email" className="mt-1.5" disabled readOnly />
-                  <p className="text-xs text-muted-foreground mt-1">Email cannot be changed here.</p>
+                <div className="space-y-1.5">
+                  <Label className="text-xs sm:text-sm text-slate-700 font-semibold">Email</Label>
+                  <Input value={settings?.email ?? ""} type="email" className="mt-1 h-10 focus-visible:ring-magenta rounded-xl text-xs sm:text-sm bg-slate-50 border-slate-200" disabled readOnly />
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium">Email cannot be changed here.</p>
                 </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" className="mt-1.5" />
+                <div className="space-y-1.5">
+                  <Label className="text-xs sm:text-sm text-slate-700 font-semibold">Phone</Label>
+                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" className="mt-1 h-10 focus-visible:ring-magenta rounded-xl text-xs sm:text-sm" />
                 </div>
               </div>
               <Button
-                className="bg-magenta text-white hover:bg-magenta/90"
+                className="bg-magenta text-white hover:bg-magenta/90 w-full sm:w-auto h-10 rounded-xl font-semibold text-xs sm:text-sm px-5"
                 onClick={handleSaveAccount}
                 disabled={updateAccount.isPending}
               >
@@ -119,19 +119,20 @@ export default function CollegeSettingsPage() {
         </TabsContent>
 
         <TabsContent value="notifications" className="mt-4">
-          <DataCard>
-            <h3 className="font-bold text-foreground mb-4">Notification Preferences</h3>
+          <DataCard className="p-4 sm:p-6 border-border/60">
+            <h3 className="text-sm sm:text-base font-bold text-foreground mb-4">Notification Preferences</h3>
             <div className="space-y-4">
               {NOTIFICATION_ITEMS.map((item) => (
-                <div key={item.key} className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                <div key={item.key} className="flex items-center justify-between gap-4 py-2 border-b border-border/30 last:border-0 pb-3 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-foreground truncate">{item.label}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-relaxed">{item.desc}</p>
                   </div>
                   <Switch
                     checked={settings?.notificationPreferences?.[item.key] ?? false}
                     onCheckedChange={(v) => handleToggle(item.key, v === true)}
                     disabled={!settings || updateNotifications.isPending}
+                    className="shrink-0 data-[state=checked]:bg-magenta"
                   />
                 </div>
               ))}
@@ -140,25 +141,25 @@ export default function CollegeSettingsPage() {
         </TabsContent>
 
         <TabsContent value="password" className="mt-4">
-          <DataCard>
-            <h3 className="font-bold text-foreground mb-4">Change Password</h3>
+          <DataCard className="p-4 sm:p-6 border-border/60">
+            <h3 className="text-sm sm:text-base font-bold text-foreground mb-4">Change Password</h3>
             <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label>Current Password</Label>
-                  <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="mt-1.5" />
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs sm:text-sm text-slate-700 font-semibold">Current Password</Label>
+                  <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="mt-1 h-10 focus-visible:ring-magenta rounded-xl text-xs sm:text-sm" />
                 </div>
-                <div>
-                  <Label>New Password</Label>
-                  <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="mt-1.5" />
+                <div className="space-y-1.5">
+                  <Label className="text-xs sm:text-sm text-slate-700 font-semibold">New Password</Label>
+                  <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="mt-1 h-10 focus-visible:ring-magenta rounded-xl text-xs sm:text-sm" />
                 </div>
-                <div>
-                  <Label>Confirm New Password</Label>
-                  <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="mt-1.5" />
+                <div className="space-y-1.5">
+                  <Label className="text-xs sm:text-sm text-slate-700 font-semibold">Confirm New Password</Label>
+                  <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="mt-1 h-10 focus-visible:ring-magenta rounded-xl text-xs sm:text-sm" />
                 </div>
               </div>
               <Button
-                className="bg-magenta text-white hover:bg-magenta/90"
+                className="bg-magenta text-white hover:bg-magenta/90 w-full sm:w-auto h-10 rounded-xl font-semibold text-xs sm:text-sm px-5"
                 onClick={handleUpdatePassword}
                 disabled={!currentPassword || !newPassword || !confirmPassword || changePassword.isPending}
               >

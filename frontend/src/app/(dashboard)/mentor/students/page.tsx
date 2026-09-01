@@ -41,6 +41,40 @@ const StudentsSkeleton = () => (
 const MentorStudents = () => {
   const { data: studentsResponse, isLoading, error } = useMentorStudents();
 
+  const mobileRender = (row: MentorStudent) => {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+            {row.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")}
+          </div>
+          <div className="min-w-0">
+            <span className="font-semibold text-sm text-foreground block truncate">{row.name}</span>
+            <span className="text-xs text-muted-foreground block truncate">{row.course}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-border/40">
+          <div>
+            <span className="text-muted-foreground block text-[10px] uppercase">Sessions</span>
+            <span className="font-semibold text-foreground">{row.sessionsCompleted}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground block text-[10px] uppercase">Last Session</span>
+            <span className="font-medium text-foreground">{row.lastSession || "-"}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground block text-[10px] uppercase">Next Session</span>
+            <span className="font-medium text-foreground">{row.nextSession || "-"}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading) {
     return <StudentsSkeleton />;
   }
@@ -64,7 +98,12 @@ const MentorStudents = () => {
         title="My Students"
         description="Students assigned to you for mentoring"
       />
-      <PanelDataTable columns={columns} data={mentees} searchKey="name" />
+      <PanelDataTable
+        columns={columns}
+        data={mentees}
+        searchKey="name"
+        mobileRender={mobileRender}
+      />
     </div>
   );
 };

@@ -99,7 +99,7 @@ export default function AdminUsers() {
       render: (value: string, row: UserProfile) => (
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleView(row)}>
           <Avatar className="h-8 w-8">
-            <AvatarImage src={row.avatar || ""} />
+            <AvatarImage src={row.avatar || undefined} />
             <AvatarFallback className="text-xs">
               {(row.fullName || row.email)?.[0]?.toUpperCase()}
             </AvatarFallback>
@@ -149,7 +149,7 @@ export default function AdminUsers() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Users</h1>
         <p className="text-muted-foreground mt-1">Manage all registered users and roles</p>
@@ -189,7 +189,7 @@ export default function AdminUsers() {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={viewUser.avatar || ""} />
+                  <AvatarImage src={viewUser.avatar || undefined} />
                   <AvatarFallback className="text-xl">
                     {(viewUser.fullName || viewUser.email)?.[0]?.toUpperCase()}
                   </AvatarFallback>

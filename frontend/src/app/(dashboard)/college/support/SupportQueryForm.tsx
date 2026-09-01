@@ -34,19 +34,25 @@ const SupportQueryForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 text-xs sm:text-sm">
       <Input
         placeholder="Subject"
         value={subject}
         onChange={(e) => setSubject(e.target.value)}
+        className="text-xs sm:text-sm h-10 focus-visible:ring-magenta rounded-xl"
       />
       <Textarea
         placeholder="Describe your issue or question..."
         rows={4}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
+        className="text-xs sm:text-sm focus-visible:ring-magenta rounded-xl p-3 sm:p-4"
       />
-      <Button type="submit" disabled={isPending}>
+      <Button
+        type="submit"
+        disabled={isPending}
+        className="bg-magenta hover:bg-magenta/90 text-white w-full sm:w-auto h-10 rounded-xl font-semibold px-5"
+      >
         {isPending ? "Sending..." : "Send Message"}
       </Button>
     </form>

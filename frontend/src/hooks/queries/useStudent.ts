@@ -39,7 +39,9 @@ export function useStudentDashboard() {
   return useQuery({
     queryKey: studentKeys.dashboard(),
     queryFn: () => studentService.getDashboard(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -48,7 +50,9 @@ export function useStudentProfile() {
   return useQuery({
     queryKey: studentKeys.profile(),
     queryFn: () => studentService.getProfile(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -57,7 +61,9 @@ export function useStudentCourses() {
   return useQuery({
     queryKey: studentKeys.courses(),
     queryFn: () => studentService.getCourses(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -66,7 +72,9 @@ export function useStudentBootcamps() {
   return useQuery({
     queryKey: studentKeys.bootcamps(),
     queryFn: () => studentService.getBootcamps(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -75,7 +83,9 @@ export function useStudentWorkshops() {
   return useQuery({
     queryKey: studentKeys.workshops(),
     queryFn: () => studentService.getWorkshops(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -84,7 +94,9 @@ export function useStudentHackathons() {
   return useQuery({
     queryKey: studentKeys.hackathons(),
     queryFn: () => studentService.getHackathons(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -93,7 +105,9 @@ export function useStudentTrainingPrograms() {
   return useQuery({
     queryKey: studentKeys.trainingPrograms(),
     queryFn: () => studentService.getTrainingPrograms(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -102,7 +116,9 @@ export function useStudentCertificates() {
   return useQuery({
     queryKey: studentKeys.certificates(),
     queryFn: () => studentService.getCertificates(),
-    staleTime: STALE,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -240,6 +256,189 @@ export function useUpdateAccount(userId?: string) {
     },
     onError: (error: any) => {
       toast.error("Update failed", { description: extractApiError(error, "Please try again.") });
+    },
+  });
+}
+
+/** Fetch the student's enrolled cohort batches. */
+export function useStudentBatches() {
+  return useQuery({
+    queryKey: ["student", "batches"],
+    queryFn: () => studentService.getBatches(),
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+}
+
+/** Fetch the student's hackathon workspace details (assigned mentors, attendance, submission). */
+export function useStudentHackathonWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "hackathons", "workspace", slug],
+    queryFn: () => studentService.getHackathonWorkspace(slug),
+    enabled: !!slug,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+}
+
+/** Submit or update hackathon project details. */
+export function useSubmitHackathonProject(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitHackathonProject(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Project submission saved", {
+          description: "Your submission has been updated for mentor evaluation.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "hackathons", "workspace", slug] });
+        queryClient.invalidateQueries({ queryKey: studentKeys.all });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
+    },
+  });
+}
+
+/** Fetch the student's workshop workspace details (assigned mentors, attendance, assignment). */
+export function useStudentWorkshopWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "workshops", "workspace", slug],
+    queryFn: () => studentService.getWorkshopWorkspace(slug),
+    enabled: !!slug,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+}
+
+/** Submit or update workshop assignment details. */
+export function useSubmitWorkshopAssignment(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitWorkshopAssignment(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Assignment submission saved", {
+          description: "Your workshop exercise submission has been saved.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "workshops", "workspace", slug] });
+        queryClient.invalidateQueries({ queryKey: studentKeys.all });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
+    },
+  });
+}
+
+/** Fetch the student's bootcamp workspace details (assigned mentors, attendance, capstone project). */
+export function useStudentBootcampWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "bootcamps", "workspace", slug],
+    queryFn: () => studentService.getBootcampWorkspace(slug),
+    enabled: !!slug,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+}
+
+/** Submit or update bootcamp capstone project details. */
+export function useSubmitBootcampProject(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitBootcampProject(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Capstone project submission saved", {
+          description: "Your bootcamp capstone project submission has been saved.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "bootcamps", "workspace", slug] });
+        queryClient.invalidateQueries({ queryKey: studentKeys.all });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
+    },
+  });
+}
+
+/** Fetch the student's course workspace details. */
+export function useStudentCourseWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "courses", "workspace", slug],
+    queryFn: () => studentService.getCourseWorkspace(slug),
+    enabled: !!slug,
+    staleTime: 0,
+    refetchInterval: 5000, // Real-time 5-second automatic background sync
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+}
+
+/** Submit or update course project details. */
+export function useSubmitCourseProject(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitCourseProject(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Course project submission saved", {
+          description: "Your course capstone project submission has been saved.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "courses", "workspace", slug] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
+    },
+  });
+}
+
+/** Fetch the student's training program workspace details. */
+export function useStudentTrainingProgramWorkspace(slug: string) {
+  return useQuery({
+    queryKey: ["student", "training-programs", "workspace", slug],
+    queryFn: () => studentService.getTrainingProgramWorkspace(slug),
+    enabled: !!slug,
+    staleTime: STALE,
+    retry: 1,
+  });
+}
+
+/** Submit or update training program capstone project. */
+export function useSubmitTrainingProgramProject(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }) =>
+      studentService.submitTrainingProgramProject(slug, data),
+    onSuccess: (response) => {
+      if (response.success || response.projectTitle || response.data) {
+        toast.success("Industrial capstone submission saved", {
+          description: "Your industrial training capstone project submission has been saved.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["student", "training-programs", "workspace", slug] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Submission failed", { description: extractApiError(error, "Please check fields and try again.") });
     },
   });
 }

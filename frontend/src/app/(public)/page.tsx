@@ -11,12 +11,6 @@ import { Outcomes } from "@/components/public/Outcomes";
 import { HiringPartners } from "@/components/public/HiringPartners";
 import { FAQ } from "@/components/public/FAQ";
 import { FinalCTA } from "@/components/public/FinalCTA";
-import { AboutSection } from "@/components/public/AboutSection";
-import { CourseCategories } from "@/components/public/CourseCategories";
-import { BootcampsSection } from "@/components/public/BootcampsSection";
-import { AudienceSection } from "@/components/public/AudienceSection";
-import { PhilosophySection } from "@/components/public/PhilosophySection";
-import { NewsletterSection } from "@/components/public/NewsletterSection";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SEO_CONFIG } from "@/config/seo.config";
 
@@ -79,12 +73,6 @@ export default function Home() {
       <HiringPartners />
       <FAQ />
       <FinalCTA />
-      {/* <AboutSection />
-      <CourseCategories />
-      <BootcampsSection />
-      <AudienceSection />
-      <PhilosophySection />
-      <NewsletterSection /> */}
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { EventSection } from "@/components/events/EventSection";
+import { Section } from "@/components/ui/section";
 import { Loader2 } from "lucide-react";
 import {
   Pagination,
@@ -15,6 +15,7 @@ import {
 import { EventFilters } from "@/components/events/EventFilters";
 import { WorkshopCard } from "@/components/events/WorkshopCard";
 import { useWorkshops } from "@/hooks/queries/useWorkshops";
+import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { FormType } from "@/lib/ctaPolicy";
 import type { Workshop, WorkshopMode, WorkshopStatus } from "@/types/workshop";
 
@@ -24,15 +25,17 @@ interface WorkshopEventsProps {
     title?: string,
     courseIdParam?: string,
     courseTitleParam?: string,
-    itemTypeParam?: "course" | "workshop"
+    itemTypeParam?: "course" | "workshop",
+    priceParam?: number
   ) => void;
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 9;
 const WORKSHOP_MODES = ["Online", "Offline", "Hybrid"] as const;
 const WORKSHOP_STATUSES = ["Open", "Closed", "Completed"] as const;
 
 export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
+  const { checkout, isProcessing, processingItemId } = useDirectCheckout();
   const [workshopMode, setWorkshopMode] = useState<(typeof WORKSHOP_MODES)[number] | null>(null);
   const [workshopStatus, setWorkshopStatus] = useState<(typeof WORKSHOP_STATUSES)[number] | null>("Open");
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,7 +47,17 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
     status: workshopStatus as WorkshopStatus | undefined,
   });
 
-  const pageItems = data?.items || [];
+  const rawItems = data?.items || [];
+  const pageItems = [...rawItems].sort((a: any, b: any) => {
+    const aFeatured = a.isFeatured || a.is_featured ? 1 : 0;
+    const bFeatured = b.isFeatured || b.is_featured ? 1 : 0;
+    if (bFeatured !== aFeatured) {
+      return bFeatured - aFeatured;
+    }
+    const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
   const totalItems = data?.pagination.total || 0;
   const totalPages = data?.pagination.totalPages || 1;
   const hasNextPage = currentPage < totalPages;
@@ -54,21 +67,26 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
     const ctaText = workshop.primaryCTA || "Reserve Seat";
 
     if (ctaText.toLowerCase().includes("callback")) {
-      onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+      onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price ?? 0);
       return;
     }
 
     if (ctaText.toLowerCase().includes("interest")) {
-      onOpenForm("register-interest", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+      onOpenForm("register-interest", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price ?? 0);
       return;
     }
 
-    onOpenForm("reserve-seat", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+    checkout({
+      itemId: workshop.id,
+      itemType: "workshop",
+      itemTitle: workshop.title,
+      price: workshop.price ?? 0,
+    });
   };
 
   const handleWorkshopSecondaryCTA = (workshop: Workshop) => {
     const ctaText = workshop.secondaryCTA || "Request Callback";
-    onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop");
+    onOpenForm("callback", `${ctaText} - ${workshop.title}`, workshop.id, workshop.title, "workshop", workshop.price ?? 0);
   };
 
   const clearWorkshopFilters = () => {
@@ -93,37 +111,37 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
 
   if (isLoading && !pageItems.length) {
     return (
-      <EventSection variant="white">
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-magenta" />
+      <Section variant="white">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-magenta mb-4" />
         </div>
-      </EventSection>
+      </Section>
     );
   }
 
   if (error) {
     return (
-      <EventSection variant="white">
+      <Section variant="white">
         <div className="text-center py-16">
           <p className="text-danger mb-4">Failed to load workshops. Please try again.</p>
           <Button onClick={() => refetch()}>Retry</Button>
         </div>
-      </EventSection>
+      </Section>
     );
   }
 
   return (
-    <>
-      <EventSection variant="white">
-        <div className="mb-6">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-3">
-            Live Workshops
-          </h2>
-          <p className="text-muted-foreground max-w-2xl">
-            Hands-on sessions designed to build practical skills and help you ship faster.
-          </p>
-        </div>
+    <Section variant="white" className="!py-4 sm:!py-6">
+      <div className="mb-6">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-2">
+          Live Workshops
+        </h2>
+        <p className="text-sm md:text-base text-muted-foreground max-w-2xl">
+          Hands-on sessions designed to build practical skills and help you ship faster.
+        </p>
+      </div>
 
+      <div className="flex flex-col gap-4 mb-6">
         <EventFilters
           groups={[
             {
@@ -151,37 +169,39 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
           ]}
           onClearAll={clearWorkshopFilters}
         />
-        <div className="text-sm text-muted-foreground">
-          Showing {pageItems.length} of {totalItems} workshops
-          {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
-        </div>
-      </EventSection>
+        {totalItems > 0 && (
+          <div className="text-sm text-muted-foreground">
+            Showing {pageItems.length} of {totalItems} workshop{totalItems !== 1 ? "s" : ""}
+            {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
+          </div>
+        )}
+      </div>
 
       {pageItems.length > 0 ? (
-        pageItems.map((workshop, i) => (
-          <EventSection key={workshop.id} variant={i % 2 === 0 ? "white" : "marble"}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {pageItems.map((workshop) => (
             <WorkshopCard
+              key={workshop.id}
               workshop={workshop}
               onCTAClick={handleWorkshopCTA}
               onSecondaryCTAClick={handleWorkshopSecondaryCTA}
+              isProcessing={isProcessing && processingItemId === workshop.id}
             />
-          </EventSection>
-        ))
+          ))}
+        </div>
       ) : (
-        <EventSection variant="white">
-          <div className="text-center py-16">
-            <p className="text-muted-foreground mb-4">
-              No upcoming workshops match the current filters.
-            </p>
-            <Button variant="outline" onClick={clearWorkshopFilters}>
-              Clear Filters
-            </Button>
-          </div>
-        </EventSection>
+        <div className="text-center py-16">
+          <p className="text-muted-foreground mb-4">
+            No upcoming workshops match the current filters.
+          </p>
+          <Button variant="outline" onClick={clearWorkshopFilters}>
+            Clear Filters
+          </Button>
+        </div>
       )}
 
       {totalPages > 1 && (
-        <EventSection variant="white" className="pt-8 pb-12 md:pt-10 md:pb-16">
+        <div className="pt-4 pb-8">
           <Pagination>
             <PaginationContent>
               {hasPreviousPage && (
@@ -225,8 +245,8 @@ export function WorkshopEvents({ onOpenForm }: WorkshopEventsProps) {
               )}
             </PaginationContent>
           </Pagination>
-        </EventSection>
+        </div>
       )}
-    </>
+    </Section>
   );
 }

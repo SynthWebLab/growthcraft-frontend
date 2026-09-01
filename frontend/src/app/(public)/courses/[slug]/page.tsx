@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { DataCard } from "@/components/ui/data-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Accordion,
   AccordionContent,
@@ -29,13 +30,18 @@ import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
 import { toast } from "sonner";
-import { useCourseBySlug, useEnrollmentStatus, useEnrollCourse, useRequestCallback } from "@/hooks/queries/useCourses";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCourseBySlug, useEnrollmentStatus, useEnrollCourse, useRequestCallback, courseKeys } from "@/hooks/queries/useCourses";
+import { RazorpayPayButton } from "@/components/payment/RazorpayPayButton";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+
 
 export default function CourseDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const queryClient = useQueryClient();
   const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } = usePopupForm();
   const { data: user, isLoading: userLoading } = useCurrentUser();
 
@@ -58,7 +64,9 @@ export default function CourseDetailPage({
 
   // Enrollment and callback mutations - must be called unconditionally (Rules of Hooks)
   const enrollMutation = useEnrollCourse();
+  const { openCheckout, isLoading: checkoutLoading } = useRazorpayCheckout();
   const callbackMutation = useRequestCallback("callback"); // Default context
+
   const registerInterestMutation = useRequestCallback("register-interest");
   const notifyBatchMutation = useRequestCallback("notify-next-batch");
 
@@ -175,7 +183,7 @@ export default function CourseDetailPage({
     // Auto-enroll using user data (no form popup)
     if (user && course) {
       try {
-        await enrollMutation.mutateAsync({
+        const response = await enrollMutation.mutateAsync({
           courseId: course._id,
           data: {
             fullName: user.fullName,
@@ -183,6 +191,31 @@ export default function CourseDetailPage({
             phone: user.phone,
           },
         });
+
+        if (response?.data?.enrollment?._id) {
+          openCheckout({
+            amount: course.price ?? 0,
+            itemType: "course",
+            itemId: response.data.enrollment._id,
+            title: course.title,
+            description: `Enrollment fee for ${course.title}`,
+            prefill: {
+              name: user.fullName,
+              email: user.email,
+              contact: user.phone,
+            },
+            onSuccess: (paymentId) => {
+              toast.success("Payment completed!", {
+                description: `Payment ID: ${paymentId}. You are now enrolled!`,
+              });
+              // Invalidate cache to immediately show active enrollment
+              queryClient.invalidateQueries({ queryKey: courseKeys.all });
+            },
+            onError: (err) => {
+              toast.error(err || "Payment failed. Please try again from your dashboard.");
+            },
+          });
+        }
       } catch (error) {
         // Error handling is done in the mutation hook
         console.error("Enrollment error:", error);
@@ -230,6 +263,7 @@ export default function CourseDetailPage({
   // Determine button states
   const isPrimaryButtonDisabled = 
     (isAuthenticated && isRestrictedRole) ||
+    checkoutLoading ||
     (isPrimaryEnrollment 
       ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryRegisterInterest
@@ -276,41 +310,76 @@ export default function CourseDetailPage({
         <div className="grid lg:grid-cols-12 gap-8">
           {/* Main content */}
           <div className="lg:col-span-8 space-y-8">
-            {/* Banner */}
-            <div className="aspect-video bg-graphite rounded-xl flex items-center justify-center overflow-hidden">
-              <div className="text-center text-white/50">
-                <PlayCircle className="h-16 w-16 mx-auto mb-2" />
-                <p className="text-sm">Course Preview</p>
-              </div>
+            {/* Course Preview Section */}
+            <div className="aspect-video bg-graphite rounded-2xl flex items-center justify-center overflow-hidden relative shadow-md group">
+              {(course as any).thumbnail ? (
+                <img
+                  src={(course as any).thumbnail}
+                  alt={course.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center text-white/50 group-hover:text-white/70 transition-colors">
+                  <PlayCircle className="h-16 w-16 mx-auto mb-2 text-white/40 group-hover:text-magenta transition-colors" />
+                  <p className="text-sm font-medium">Course Preview</p>
+                </div>
+              )}
             </div>
+            
 
             {/* Title area */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-magenta/10 text-magenta">
                   {course.category}
                 </span>
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-lavender/10 text-lavender">
                   {course.difficultyLevel}
                 </span>
+                {(course.isFeatured || (course as any).is_featured) && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs flex items-center gap-1">
+                    🔥 Trending Now
+                  </span>
+                )}
               </div>
 
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
                 {course.title}
               </h1>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <img
-                  src={course.instructor?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
-                  alt=""
-                  className="h-8 w-8 rounded-full"
-                />
-                <span>{course.instructorName}</span>
-                <span className="flex items-center gap-1">
-                  <Star className="h-4 w-4 text-warning" />
-                  {course.rating}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8 border">
+                    <AvatarImage
+                      src={
+                        course.mentors && course.mentors[0]?.avatar
+                          ? course.mentors[0].avatar
+                          : course.instructor?.avatar || undefined
+                      }
+                    />
+                    <AvatarFallback className="text-xs font-bold">
+                      {(
+                        (course.mentors && course.mentors[0]?.name) ||
+                        course.instructorName ||
+                        "M"
+                      )
+                        .charAt(0)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-foreground">
+                    {course.mentors && course.mentors.length > 0
+                      ? course.mentors.map((m) => m.name).join(", ")
+                      : course.instructorName || "GrowthCraft Team"}
+                  </span>
+                </div>
+                <span className="flex items-center gap-1 font-medium">
+                  <Star className="h-4 w-4 text-warning fill-warning" />
+                  {course.rating ? course.rating.toFixed(1) : "New"}
                 </span>
-                <span>{course.enrollmentCount.toLocaleString()} enrolled</span>
+                <span className="font-medium">
+                  {(course.enrollmentCount || 0).toLocaleString()} enrolled
+                </span>
               </div>
             </div>
 
@@ -406,37 +475,68 @@ export default function CourseDetailPage({
                 </Accordion>
               </TabsContent>
 
-              <TabsContent value="instructor" className="pt-6">
-                <DataCard>
-                  <div className="flex items-start gap-4">
-                    <img
-                      src={instructorDetails?.avatar || course.instructor?.avatar}
-                      alt={instructorDetails?.name}
-                      className="h-16 w-16 rounded-full"
-                    />
-                    <div>
-                      <h3 className="text-lg font-bold">
-                        {instructorDetails?.name || course.instructorName}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {instructorDetails?.bio || "Senior Engineer with 8+ years of industry experience. Previously at top tech companies, now dedicated to training the next wave of developers."}
-                      </p>
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Star className="h-3 w-3 text-warning" />
-                          {instructorDetails?.rating || course.rating} rating
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {instructorDetails?.studentsCount || course.enrollmentCount} students
-                        </span>
-                        {instructorDetails?.coursesCount && (
-                          <span>{instructorDetails.coursesCount} courses</span>
-                        )}
+              <TabsContent value="instructor" className="pt-6 space-y-4">
+                {course.mentors && course.mentors.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {course.mentors.map((m, idx) => (
+                      <DataCard key={m.userId || idx}>
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-14 w-14 border border-primary/20">
+                            <AvatarImage src={m.avatar || undefined} />
+                            <AvatarFallback className="font-bold text-lg">
+                              {(m.name || "M").charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="text-base font-bold">{m.name}</h3>
+                            {m.designation && (
+                              <p className="text-xs font-semibold text-magenta mb-1">{m.designation}</p>
+                            )}
+                            {m.areaOfExpertise && (
+                              <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded bg-magenta/10 text-magenta mb-2">
+                                {m.areaOfExpertise}
+                              </span>
+                            )}
+                            <p className="text-xs text-muted-foreground line-clamp-3">
+                              {m.bio || "Industry mentor guiding GrowthCraft students through campus training sessions, code reviews, and career mentorship."}
+                            </p>
+                          </div>
+                        </div>
+                      </DataCard>
+                    ))}
+                  </div>
+                ) : (
+                  <DataCard>
+                    <div className="flex items-start gap-4">
+                      <img
+                        src={instructorDetails?.avatar || course.instructor?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(instructorDetails?.name || course.instructorName || 'Instructor')}`}
+                        alt={instructorDetails?.name || course.instructorName || ''}
+                        className="h-16 w-16 rounded-full"
+                      />
+                      <div>
+                        <h3 className="text-lg font-bold">
+                          {instructorDetails?.name || course.instructorName}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {instructorDetails?.bio || "Senior Engineer with 8+ years of industry experience. Previously at top tech companies, now dedicated to training the next wave of developers."}
+                        </p>
+                        <div className="flex gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Star className="h-3 w-3 text-warning" />
+                            {instructorDetails?.rating || course.rating} rating
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {instructorDetails?.studentsCount || course.enrollmentCount} students
+                          </span>
+                          {instructorDetails?.coursesCount && (
+                            <span>{instructorDetails.coursesCount} courses</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </DataCard>
+                  </DataCard>
+                )}
               </TabsContent>
 
               <TabsContent value="faq" className="pt-6">
@@ -476,6 +576,7 @@ export default function CourseDetailPage({
                 </div>
 
                 {/* Primary CTA */}
+
                 <Button
                   className="w-full bg-magenta text-white hover:bg-magenta/90 mb-3"
                   size="lg"

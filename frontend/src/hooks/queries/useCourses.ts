@@ -54,9 +54,16 @@ export function useEnrollCourse() {
       courseService.enrollInCourse(courseId, data),
     onSuccess: (response) => {
       if (response.success) {
-        toast.success("Enrollment successful!", {
-          description: response.message || "You have been enrolled in the course.",
-        });
+        const enrollment = response.data?.enrollment || response.data;
+        const status = enrollment?.status || (enrollment as any)?.paymentStatus;
+        const isConfirmed = status === "confirmed" || status === "completed" || status === "Completed" || status === "Active";
+        
+        // Only show success toast if enrollment is actually confirmed/completed
+        if (isConfirmed) {
+          toast.success("Enrollment successful!", {
+            description: response.message || "You have been enrolled in the course.",
+          });
+        }
         
         // Invalidate courses cache to refetch updated data
         queryClient.invalidateQueries({ queryKey: courseKeys.all });

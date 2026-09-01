@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { useState, use, useMemo } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Check,
   Star,
   ArrowLeft,
@@ -25,24 +33,55 @@ import {
   Loader2,
   Calendar,
   Clock,
+  Flame,
+  Building2,
+  Briefcase,
+  ShieldCheck,
+  CheckCircle2,
+  Sparkles,
+  MapPin,
+  Lock,
+  Shield,
+  Zap,
+  Award,
+  TrendingUp,
+  ExternalLink,
 } from "lucide-react";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useTrainingProgramBySlug,
   useTrainingProgramEnrollmentStatus,
   useEnrollInTrainingProgram,
   useRequestTrainingProgramCallback,
 } from "@/hooks/queries/useTrainingPrograms";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+
+
+function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMM dd, yyyy"): string {
+  if (!dateStr) return "";
+  const dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return "";
+  try {
+    return format(dateObj, formatPattern);
+  } catch (err) {
+    return "";
+  }
+}
 
 export default function TrainingProgramDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } =
+  const queryClient = useQueryClient();
+  const { isOpen, formType, formTitle, courseId, courseTitle, price, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
 
@@ -53,7 +92,12 @@ export default function TrainingProgramDetailPage({
   const program = programData?.data?.program;
   const overview = programData?.data?.overview;
   const syllabus = programData?.data?.syllabus || [];
-  const mentors = programData?.data?.mentors || [];
+  const mentors =
+    (programData?.data?.mentors && programData.data.mentors.length > 0)
+      ? programData.data.mentors
+      : (program?.mentors && program.mentors.length > 0)
+      ? program.mentors
+      : [];
   const faqs = programData?.data?.faqs || [];
 
   // Check enrollment status (only if user is authenticated)
@@ -65,7 +109,70 @@ export default function TrainingProgramDetailPage({
 
   // Mutations for enrollment and callback
   const enrollMutation = useEnrollInTrainingProgram();
+  const { openCheckout, isLoading: checkoutLoading } = useRazorpayCheckout();
   const callbackMutation = useRequestTrainingProgramCallback();
+
+
+  // Modal state
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [selectedPartnerIndex, setSelectedPartnerIndex] = useState(0);
+
+  // Derive Internship Partners (defaults to SynthWeb and Social Stories if not configured)
+  const internshipPartners = useMemo(() => {
+    const partners = programData?.data?.internshipPartners || (program as any)?.internshipPartners || [];
+    if (Array.isArray(partners) && partners.length > 0) return partners;
+    return [
+      {
+        companyName: "SynthWeb",
+        role: `${program?.title || "Industrial"} Software Intern`,
+        duration: `${program?.duration || 60} Days Internship`,
+        mode: "Hybrid / Campus Hub",
+        stipend: "Performance-based Stipend + PPO Opportunity",
+        description: "Work on live enterprise client software, microservices architecture, and high-performance backend systems.",
+      },
+      {
+        companyName: "Social Stories",
+        role: "Product Engineering & Growth Intern",
+        duration: `${program?.duration || 60} Days Internship`,
+        mode: "Hybrid / Remote",
+        stipend: "Performance-based Stipend + Co-branded Certificate",
+        description: "Build modern user-facing web applications, responsive workflows, and digital growth tooling.",
+      },
+    ];
+  }, [programData, program]);
+
+  // Derive dynamic prerequisites from program or overview
+  const resolvedPrerequisites: string[] = useMemo(() => {
+    const rawPrereqs = program?.prerequisites || (programData?.data as any)?.program?.prerequisites;
+    if (Array.isArray(rawPrereqs) && rawPrereqs.length > 0) {
+      return rawPrereqs.map((p: any) => (typeof p === "string" ? p : p.text || String(p))).filter(Boolean);
+    }
+    if (Array.isArray(overview?.prerequisites) && overview.prerequisites.length > 0) {
+      return overview.prerequisites.map((p: any) => (typeof p === "string" ? p : p.text || String(p))).filter(Boolean);
+    }
+    return [];
+  }, [programData, program, overview]);
+
+  // Derive dynamic What You'll Learn
+  const resolvedWhatYouWillLearn: string[] = useMemo(() => {
+    if (Array.isArray(overview?.whatYouWillLearn) && overview.whatYouWillLearn.length > 0) {
+      return overview.whatYouWillLearn
+        .map((item: any) => (typeof item === "string" ? item : item.text || String(item)))
+        .filter(Boolean);
+    }
+    const progAny = program as any;
+    if (Array.isArray(progAny?.whatYouWillLearn) && progAny.whatYouWillLearn.length > 0) {
+      return progAny.whatYouWillLearn
+        .map((item: any) => (typeof item === "string" ? item : item.text || String(item)))
+        .filter(Boolean);
+    }
+    return [
+      `Hands-on practical development in ${program?.domain || "industrial software"}`,
+      "Real-world enterprise client project architecture",
+      "Mentored code reviews and weekly milestone reviews",
+      "Industry internship completion and co-branded verification",
+    ];
+  }, [overview?.whatYouWillLearn, program]);
 
   // Loading state
   if (isLoading) {
@@ -99,7 +206,7 @@ export default function TrainingProgramDetailPage({
   // Use backend-provided CTAs
   const primaryCTA = program.primaryCTA || "Enroll Now";
   const secondaryCTA = program.secondaryCTA;
-  const displayRating = (value: number) => value.toFixed(1);
+  const displayRating = (value?: number) => (value && value > 0 ? value.toFixed(1) : "New");
 
   // Determine CTA behavior
   const isPrimaryCallback = primaryCTA.toLowerCase().includes("callback");
@@ -125,7 +232,8 @@ export default function TrainingProgramDetailPage({
           `${primaryCTA} - ${program.title}`,
           program._id,
           program.title,
-          "training-program"
+          "training-program",
+          program.price || 0
         );
         return;
       }
@@ -158,7 +266,8 @@ export default function TrainingProgramDetailPage({
           `${primaryCTA} - ${program.title}`,
           program._id,
           program.title,
-          "training-program"
+          "training-program",
+          program.price || 0
         );
         return;
       }
@@ -200,15 +309,61 @@ export default function TrainingProgramDetailPage({
       return;
     }
 
+    // Open Company Selection Modal so the student chooses their internship partner company!
+    setIsCompanyModalOpen(true);
+  };
+
+  // Handle confirming company selection and launching Razorpay checkout
+  const handleConfirmCompanyAndPay = async () => {
+    const chosenPartner = internshipPartners[selectedPartnerIndex] || internshipPartners[0];
     try {
-      await enrollMutation.mutateAsync({
+      const response = await enrollMutation.mutateAsync({
         programId: program._id,
         data: {
           fullName: user.fullName,
           email: user.email,
           phone: user.phone || "",
+          selectedCompany: {
+            companyName: chosenPartner.companyName,
+            role: chosenPartner.role,
+            duration: chosenPartner.duration,
+            stipend: chosenPartner.stipend,
+            mode: chosenPartner.mode,
+          },
         },
       });
+
+      setIsCompanyModalOpen(false);
+
+      if (response?.data?.enrollment?._id) {
+        openCheckout({
+          amount: program.price || 9999,
+          itemType: "training-program",
+          itemId: response.data.enrollment._id,
+          title: program.title,
+          description: `Enrollment fee for ${program.title} • Internship Partner: ${chosenPartner.companyName}`,
+          prefill: {
+            name: user.fullName,
+            email: user.email,
+            contact: user.phone,
+          },
+          onSuccess: (paymentId) => {
+            toast.success("Payment completed!", {
+              description: `Payment ID: ${paymentId}. You are now enrolled under ${chosenPartner.companyName}!`,
+            });
+            // Invalidate queries to immediately show active enrollment status
+            queryClient.invalidateQueries({ queryKey: ["training-program", program._id] });
+            queryClient.invalidateQueries({ queryKey: ["training-program-enrollment-status", program._id] });
+            queryClient.invalidateQueries({ queryKey: ["training-programs"] });
+          },
+          onError: (err) => {
+            toast.error(err || "Payment cancelled or failed. You can click Enroll Now to try again anytime.");
+            queryClient.invalidateQueries({ queryKey: ["training-program", program._id] });
+            queryClient.invalidateQueries({ queryKey: ["training-program-enrollment-status", program._id] });
+            queryClient.invalidateQueries({ queryKey: ["training-programs"] });
+          },
+        });
+      }
     } catch (err) {
       console.error("Enrollment error:", err);
     }
@@ -255,6 +410,7 @@ export default function TrainingProgramDetailPage({
   // Button states and labels
   const isPrimaryButtonDisabled =
     (isAuthenticated && isRestrictedRole) ||
+    checkoutLoading ||
     (isPrimaryEnrollment
       ? (isAuthenticated && !isStudent) || isEnrolled || enrollMutation.isPending
       : isPrimaryCallback
@@ -262,6 +418,7 @@ export default function TrainingProgramDetailPage({
       : isPrimaryRegisterInterest
       ? hasCallbackRequest || callbackMutation.isPending
       : callbackMutation.isPending);
+
 
   const isSecondaryButtonDisabled = hasCallbackRequest || callbackMutation.isPending || (isAuthenticated && isRestrictedRole);
   const primaryButtonClasses = isPrimaryCallback
@@ -310,6 +467,7 @@ export default function TrainingProgramDetailPage({
         courseId={courseId}
         courseTitle={courseTitle}
         itemType="training-program"
+        price={price}
       />
 
       <Section variant="white" className="overflow-hidden">
@@ -323,17 +481,31 @@ export default function TrainingProgramDetailPage({
         <div className="grid lg:grid-cols-12 gap-8 overflow-hidden">
           {/* Main content */}
           <div className="lg:col-span-8 space-y-8 min-w-0">
-            {/* Banner */}
-            <div className="aspect-video bg-graphite rounded-xl flex items-center justify-center overflow-hidden">
-              <div className="text-center text-white/50">
-                <PlayCircle className="h-16 w-16 mx-auto mb-2" />
-                <p className="text-sm">Program Preview</p>
-              </div>
+            {/* Program Preview Section */}
+            <div className="aspect-video bg-graphite rounded-2xl flex items-center justify-center overflow-hidden relative shadow-md group">
+              {program.thumbnail ? (
+                <img
+                  src={program.thumbnail}
+                  alt={program.programName || program.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center text-white/50 group-hover:text-white/70 transition-colors">
+                  <PlayCircle className="h-16 w-16 mx-auto mb-2 text-white/40 group-hover:text-magenta transition-colors" />
+                  <p className="text-sm font-medium">Program Preview</p>
+                </div>
+              )}
             </div>
+            
 
             {/* Title area */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {(program.isFeatured || program.is_featured) && (
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                    <Flame className="h-3.5 w-3.5" /> Trending Now
+                  </span>
+                )}
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-magenta/10 text-magenta">
                   {program.domain}
                 </span>
@@ -343,18 +515,47 @@ export default function TrainingProgramDetailPage({
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-graphite/10 text-graphite">
                   {program.duration} days
                 </span>
+                {internshipPartners.length > 0 && (
+                  <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 flex items-center gap-1.5 max-w-full">
+                    <Building2 className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Internship Partners: {internshipPartners.map((p: any) => p.companyName).join(", ")}</span>
+                  </span>
+                )}
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 break-words">
-                {program.title}
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 break-words">
+                {program.programName || program.title}
               </h1>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Star className="h-4 w-4 text-warning" />
+              {program.fullTitle && (
+                <p className="text-lg md:text-xl font-medium text-muted-foreground mb-4">
+                  {program.fullTitle}
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                {mentors.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2 overflow-hidden">
+                      {mentors.map((mentor: any, index: number) => (
+                        <Avatar key={index} className="h-8 w-8 border-2 border-background">
+                          <AvatarImage src={mentor.avatar} alt={mentor.name} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                            {(mentor.name || mentor.fullName || "M").charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                    </div>
+                    <span className="font-medium text-foreground">
+                      {mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                )}
+                <span className="flex items-center gap-1 font-medium">
+                  <Star className="h-4 w-4 text-warning fill-warning" />
                   {displayRating(program.rating)}
                 </span>
-                <span>{program.enrollmentCount.toLocaleString()} enrolled</span>
+                <span className="font-medium">{(program.enrollmentCount || 0).toLocaleString()} enrolled</span>
               </div>
             </div>
 
@@ -362,6 +563,10 @@ export default function TrainingProgramDetailPage({
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="w-full justify-start bg-muted overflow-x-auto">
                 <TabsTrigger value="overview" className="flex-shrink-0">Overview</TabsTrigger>
+                <TabsTrigger value="internships" className="flex-shrink-0 flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-magenta" />
+                  <span>Internship Partners ({internshipPartners.length})</span>
+                </TabsTrigger>
                 <TabsTrigger value="syllabus" className="flex-shrink-0">Syllabus</TabsTrigger>
                 <TabsTrigger value="cohorts" className="flex-shrink-0">Cohorts</TabsTrigger>
                 <TabsTrigger value="mentor" className="flex-shrink-0">{mentors.length > 1 ? "Mentors" : "Mentor"}</TabsTrigger>
@@ -379,10 +584,10 @@ export default function TrainingProgramDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">What you'll learn</h2>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {overview?.whatYouWillLearn?.map((item) => (
-                      <div key={item._id} className="flex items-start gap-2">
+                    {resolvedWhatYouWillLearn.map((item: string, idx: number) => (
+                      <div key={idx} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-magenta mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-foreground">{item.text}</span>
+                        <span className="text-sm text-foreground">{item}</span>
                       </div>
                     ))}
                   </div>
@@ -404,14 +609,78 @@ export default function TrainingProgramDetailPage({
 
                 <div>
                   <h2 className="text-xl font-bold mb-4">Prerequisites</h2>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    {overview?.prerequisites?.map((item) => (
-                      <li key={item._id} className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-lavender mt-0.5" />
-                        {item.text}
+                  {resolvedPrerequisites.length > 0 ? (
+                    <ul className="space-y-2.5 text-sm text-muted-foreground">
+                      {resolvedPrerequisites.map((item: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="h-4 w-4 text-lavender mt-0.5 shrink-0" />
+                          <span className="text-foreground">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-lavender mt-0.5 shrink-0" />
+                        <span className="text-foreground">Basic computer and internet literacy; no prior coding experience required.</span>
                       </li>
-                    ))}
-                  </ul>
+                    </ul>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Internship Partners Tab */}
+              <TabsContent value="internships" className="pt-6 space-y-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="p-1.5 rounded-lg bg-magenta text-white">
+                      <Building2 className="h-4 w-4" />
+                    </span>
+                    <h2 className="text-xl font-bold">Industry Internship Partners</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    All students enrolled in this training program will undergo hands-on practical project internship with one of our certified partner companies:
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {internshipPartners.map((partner: any, idx: number) => (
+                    <DataCard key={idx} className="space-y-4 hover:border-magenta/40 transition-all border shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <PartnerLogo
+                            companyName={partner.companyName}
+                            logoUrl={partner.logoUrl}
+                            size="lg"
+                          />
+                          <div>
+                            <h3 className="text-lg font-bold text-foreground">{partner.companyName}</h3>
+                            <p className="text-xs font-semibold text-magenta">{partner.role}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] font-bold uppercase">
+                          Certified Partner
+                        </Badge>
+                      </div>
+
+                      {partner.description && (
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {partner.description}
+                        </p>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t text-xs">
+                        <div className="bg-muted/50 p-2 rounded-lg">
+                          <span className="text-[10px] font-medium text-muted-foreground block">Internship Mode</span>
+                          <span className="font-semibold text-foreground">{partner.mode || "Hybrid / Campus Hub"}</span>
+                        </div>
+                        <div className="bg-muted/50 p-2 rounded-lg">
+                          <span className="text-[10px] font-medium text-muted-foreground block">Duration</span>
+                          <span className="font-semibold text-foreground">{partner.duration || `${program.duration || 60} Days`}</span>
+                        </div>
+                      </div>
+                    </DataCard>
+                  ))}
                 </div>
               </TabsContent>
 
@@ -459,7 +728,7 @@ export default function TrainingProgramDetailPage({
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
-                                {format(new Date(cohort.startDate), "MMM dd, yyyy")}
+                                {safeFormatDate(cohort.startDate, "MMM dd, yyyy")}
                               </span>
                               <span>
                                 {cohort.maxSeats - cohort.enrolledCount} seats left
@@ -500,56 +769,71 @@ export default function TrainingProgramDetailPage({
 
               <TabsContent value="mentor" className="pt-6 space-y-4">
                 {mentors.length > 0 ? (
-                  mentors.map((mentor, index) => (
-                    <DataCard key={index}>
-                      <div className="flex items-start gap-4">
-                        <img
-                          src={mentor.avatar}
-                          alt={mentor.name}
-                          className="h-16 w-16 rounded-full object-cover"
-                        />
-                        <div>
-                          <h3 className="text-lg font-bold">
-                            {mentor.name}
-                          </h3>
-                          {mentor.designation && (
+                  mentors.map((mentor: any, index: number) => {
+                    const mentorName = mentor.name || mentor.fullName || "Mentor";
+                    const designation = mentor.designation || mentor.areaOfExpertise || "Industry Mentor";
+                    const company = mentor.company || mentor.currentOrganization;
+                    const expertiseList = Array.isArray(mentor.expertise)
+                      ? mentor.expertise
+                      : typeof mentor.areaOfExpertise === "string"
+                      ? [mentor.areaOfExpertise]
+                      : [];
+
+                    return (
+                      <DataCard key={index}>
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-16 w-16 border">
+                            <AvatarImage src={mentor.avatar} alt={mentorName} />
+                            <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">
+                              {mentorName.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold">{mentorName}</h3>
                             <p className="text-sm font-medium text-magenta mb-1">
-                              {mentor.designation} {mentor.company ? `at ${mentor.company}` : ""}
+                              {designation} {company ? `at ${company}` : ""}
                             </p>
-                          )}
-                          <p className="text-sm text-muted-foreground mb-3">
-                            {mentor.bio}
-                          </p>
-                          <div className="flex gap-4 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Star className="h-3 w-3 text-warning" />
-                              {mentor.rating.toFixed(1)} rating
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {mentor.studentsCount.toLocaleString()} students
-                            </span>
-                          </div>
-                          {mentor.expertise && mentor.expertise.length > 0 && (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {mentor.expertise.map((exp, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-2 py-1 rounded text-xs bg-muted"
-                                >
-                                  {exp}
+                            {mentor.bio && (
+                              <p className="text-sm text-muted-foreground mb-3">
+                                {mentor.bio}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                              {mentor.rating != null && (
+                                <span className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 text-warning fill-warning" />
+                                  {Number(mentor.rating).toFixed(1)} rating
                                 </span>
-                              ))}
+                              )}
+                              {mentor.studentsCount != null && (
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {Number(mentor.studentsCount).toLocaleString()} students mentored
+                                </span>
+                              )}
                             </div>
-                          )}
+                            {expertiseList.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {expertiseList.map((exp: string, idx: number) => (
+                                  <span
+                                    key={idx}
+                                    className="px-2 py-1 rounded text-xs bg-muted font-medium text-muted-foreground"
+                                  >
+                                    {exp}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </DataCard>
-                  ))
+                      </DataCard>
+                    );
+                  })
                 ) : (
                   <DataCard>
                     <div className="text-center py-8 text-muted-foreground">
-                      No mentor details available.
+                      <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No mentors assigned yet for this training program.</p>
                     </div>
                   </DataCard>
                 )}
@@ -632,6 +916,21 @@ export default function TrainingProgramDetailPage({
                     </div>
                   ))}
                 </div>
+
+                {/* Prerequisites highlight in sidebar */}
+                <div className="mt-4 pt-3.5 border-t border-border/80 text-xs space-y-1.5">
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck className="h-4 w-4 text-magenta shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-foreground block">Prerequisites:</span>
+                      <span className="text-muted-foreground leading-relaxed">
+                        {resolvedPrerequisites.length > 0
+                          ? resolvedPrerequisites.join("; ")
+                          : "No prior coding required (Beginner friendly)"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </DataCard>
 
               {/* Share */}
@@ -688,6 +987,138 @@ export default function TrainingProgramDetailPage({
           </div>
         </div>
       </Section>
+
+      {/* Company Selection Dialog (During Enrollment) */}
+      <Dialog open={isCompanyModalOpen} onOpenChange={setIsCompanyModalOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-2xl bg-card border border-border shadow-2xl rounded-2xl p-4 sm:p-6 md:p-7 overflow-hidden max-h-[90vh] flex flex-col">
+          <DialogHeader className="pb-3 border-b border-border/60 shrink-0">
+            <div className="flex items-start gap-3 sm:gap-3.5">
+              <div className="p-2.5 sm:p-3 rounded-2xl bg-magenta/10 text-magenta shrink-0">
+                <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <div className="space-y-0.5 sm:space-y-1 min-w-0">
+                <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight text-foreground font-display leading-tight">
+                  Choose Your Internship Partner
+                </DialogTitle>
+                <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Select which partner company you would like to complete your practical internship under for{" "}
+                  <strong className="text-foreground">{program.title}</strong>:
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Info callout strip */}
+          <div className="flex items-center gap-2 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-magenta/5 border border-magenta/15 text-[11px] sm:text-xs text-foreground/80 my-1 shrink-0">
+            <Sparkles className="h-4 w-4 text-magenta shrink-0" />
+            <span className="leading-snug">
+              <strong>Guaranteed Internship Track:</strong> Practical training, live project deliverables, and certificates are co-issued with your chosen partner.
+            </span>
+          </div>
+
+          {/* Cards List */}
+          <div className="space-y-2.5 sm:space-y-3 my-1 overflow-y-auto pr-1 flex-1 min-h-0">
+            {internshipPartners.map((partner: any, idx: number) => {
+              const isSelected = selectedPartnerIndex === idx;
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedPartnerIndex(idx)}
+                  className={`p-3.5 sm:p-4.5 rounded-2xl border-2 transition-all cursor-pointer space-y-2 sm:space-y-2.5 ${
+                    isSelected
+                      ? "border-magenta bg-magenta/[0.04] shadow-sm ring-1 ring-magenta/40"
+                      : "border-border hover:border-magenta/40 bg-card hover:bg-muted/30"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                      <PartnerLogo
+                        companyName={partner.companyName}
+                        logoUrl={partner.logoUrl}
+                        size="md"
+                        className={isSelected ? "ring-2 ring-magenta/40" : ""}
+                      />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <h4 className="font-bold text-sm sm:text-base text-foreground leading-snug truncate">
+                            {partner.companyName}
+                          </h4>
+                          <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Partner
+                          </span>
+                        </div>
+                        <p className="text-[11px] sm:text-xs font-semibold text-magenta mt-0.5 truncate">
+                          {partner.role}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 pt-0.5">
+                      <div
+                        className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? "border-magenta bg-magenta text-white shadow-sm"
+                            : "border-muted-foreground/30 bg-background"
+                        }`}
+                      >
+                        {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {partner.description && (
+                    <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed sm:pl-[52px]">
+                      {partner.description}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-medium sm:pl-[52px] pt-0.5">
+                    {partner.mode && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-muted text-foreground border border-border/50">
+                        <MapPin className="h-3 w-3 text-muted-foreground" /> {partner.mode}
+                      </span>
+                    )}
+                    {partner.duration && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-muted text-foreground border border-border/50">
+                        <Clock className="h-3 w-3 text-muted-foreground" /> {partner.duration}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border mt-2 shrink-0">
+            <div className="text-xs text-muted-foreground w-full sm:w-auto text-left">
+              Selected: <strong className="text-foreground">{internshipPartners[selectedPartnerIndex]?.companyName || "Partner"}</strong> ({internshipPartners[selectedPartnerIndex]?.role || "Internship"})
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCompanyModalOpen(false)}
+                disabled={enrollMutation.isPending}
+                className="w-full sm:w-auto rounded-xl h-10 sm:h-9"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmCompanyAndPay}
+                disabled={enrollMutation.isPending}
+                className="bg-magenta hover:bg-magenta/90 text-white font-bold w-full sm:w-auto rounded-xl shadow-md shadow-magenta/20 h-10 sm:h-9"
+              >
+                {enrollMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Confirm & Pay ₹{program.price.toLocaleString()}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

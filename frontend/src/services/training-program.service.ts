@@ -101,6 +101,7 @@ export async function getTrainingProgramBySlug(
     mentorName: details?.mentors?.[0]?.name || "Industry Expert",
     primaryCTA: program.primaryCTA || "Enroll Now",
     secondaryCTA: program.secondaryCTA || "Request Callback",
+    internshipPartners: details?.internshipPartners || program.internshipPartners || [],
   };
 
   return {
@@ -108,6 +109,7 @@ export async function getTrainingProgramBySlug(
     message: "Training program details retrieved successfully",
     data: {
       program: mappedProgram,
+      internshipPartners: details?.internshipPartners || program.internshipPartners || [],
       overview: {
         aboutProgram: details?.overview?.aboutProgram || program.description,
         whatYouWillLearn: (details?.overview?.whatYouWillLearn || []).map((item: any, idx: number) => ({
@@ -183,6 +185,13 @@ export async function enrollInTrainingProgram(
     email: string;
     phone: string;
     cohortId?: string;
+    selectedCompany?: {
+      companyName: string;
+      role?: string;
+      duration?: string;
+      stipend?: string;
+      mode?: string;
+    };
   }
 ): Promise<any> {
   return await apiClient.post(

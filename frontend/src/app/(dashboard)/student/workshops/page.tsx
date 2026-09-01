@@ -8,18 +8,26 @@ import { resolveRef } from "@/lib/student-dashboard.utils";
 export default function StudentWorkshopsPage() {
   const { data, isLoading, isError } = useStudentWorkshops();
 
-  const items: EnrollmentGridItem[] = (data?.data?.workshops ?? []).map((e) => {
-    const event = resolveRef(e.eventId);
-    return {
-      id: e._id,
-      title: event?.title ?? e.title,
-      subtitle: event?.mode || event?.domain,
-      status: e.status,
-      enrollmentDate: e.enrollmentDate,
-      href: event?.slug ? `/events/${event.slug}` : undefined,
-      emoji: "🛠️",
-    };
-  });
+  const items: EnrollmentGridItem[] = (data?.data?.workshops ?? [])
+    .filter((e) => {
+      const isPaid = e.paymentStatus === "completed" || e.status === "confirmed";
+      return isPaid && e.paymentStatus !== "pending" && e.status !== "pending";
+    })
+    .map((e) => {
+      const event = resolveRef(e.eventId);
+      const slug = event?.slug || "fullstack-ai-workshop-2026";
+      return {
+        id: e._id,
+        title: event?.title ?? e.title,
+        subtitle: event?.mode || event?.domain,
+        status: e.status,
+        paymentStatus: e.paymentStatus || (e.status === "confirmed" ? "completed" : "pending"),
+        enrollmentDate: e.enrollmentDate,
+        href: `/events/${slug}`,
+        workspaceHref: `/student/workshops/${slug}`,
+        emoji: "🛠️",
+      };
+    });
 
   return (
     <StudentEnrollmentGrid
@@ -31,7 +39,7 @@ export default function StudentWorkshopsPage() {
       icon={<Presentation className="h-12 w-12" />}
       emptyTitle="No workshops yet"
       emptyDescription="You haven't registered for any workshops."
-      browseHref="/events"
+      browseHref="/events?tab=workshops"
       browseLabel="Browse Workshops"
     />
   );

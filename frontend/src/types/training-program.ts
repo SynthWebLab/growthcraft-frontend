@@ -12,9 +12,23 @@ export interface CohortDate {
   status: "Open" | "Closed" | "Completed";
 }
 
+export interface InternshipPartner {
+  _id?: string;
+  companyName: string;
+  logo?: string;
+  role: string;
+  duration?: string;
+  mode?: string;
+  stipend?: string;
+  description?: string;
+  availableSeats?: number;
+}
+
 export interface TrainingProgram {
   _id: string;
   title: string;
+  programName?: string;
+  fullTitle?: string;
   slug: string;
   description: string;
   domain: string;
@@ -31,6 +45,26 @@ export interface TrainingProgram {
   mentorName: string;
   primaryCTA: string;
   secondaryCTA: string | null;
+  isFeatured?: boolean;
+  is_featured?: boolean;
+  internshipPartners?: InternshipPartner[];
+  mentors?: Array<{
+    userId?: string;
+    mentorProfileId?: string;
+    name?: string;
+    fullName?: string;
+    avatar?: string;
+    designation?: string;
+    areaOfExpertise?: string;
+    company?: string;
+    currentOrganization?: string;
+    bio?: string;
+    rating?: number;
+    studentsCount?: number;
+    expertise?: string[];
+  }>;
+  prerequisites?: string[];
+  careerOutcomes?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -83,6 +117,7 @@ export interface TrainingProgramDetailResponse {
   message: string;
   data: {
     program: TrainingProgram;
+    internshipPartners?: InternshipPartner[];
     overview: {
       aboutProgram: string;
       whatYouWillLearn: Array<{ text: string; _id: string }>;

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo, useSyncExternalStore } from "react";
+import { use, useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -25,11 +25,18 @@ import {
   Calendar,
   Clock,
   MapPin,
+  Flame,
+  Loader2,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserEnrollments } from "@/hooks/useUserEnrollments";
 import { useWorkshopDetails } from "@/hooks/queries/useWorkshops";
 import { useHackathonDetails } from "@/hooks/queries/useHackathons";
+import { useEventBySlug } from "@/hooks/queries/useEvents";
+import { useBootcampBySlug } from "@/hooks/queries/useBootcamps";
+import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getEventDetailBySlug } from "@/data/events-detail.mock";
@@ -38,110 +45,174 @@ import type { HackathonDetailResponse } from "@/types/hackathon";
 
 type EventDetailResponse = WorkshopDetailResponse | HackathonDetailResponse;
 
-const subscribeToClientSnapshot = () => () => {};
-const getClientSnapshot = () => true;
-const getServerSnapshot = () => false;
+function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMMM dd, yyyy"): string {
+  if (!dateStr) return "";
+  const dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return "";
+  try {
+    return format(dateObj, formatPattern);
+  } catch (err) {
+    return "";
+  }
+}
 
-function getEventDuration(startDate: string, endDate: string, durationDays?: number) {
+function getEventDuration(startDate?: string, endDate?: string, durationDays?: number) {
   if (durationDays && durationDays > 1) return durationDays * 24;
+  if (!startDate || !endDate) return 1;
 
-  const durationMs = new Date(endDate).getTime() - new Date(startDate).getTime();
+  const start = new Date(startDate).getTime();
+  const end = new Date(endDate).getTime();
+  if (isNaN(start) || isNaN(end)) return 1;
+
+  const durationMs = end - start;
   return Math.max(1, Math.round(durationMs / (1000 * 60 * 60)));
 }
 
-function mapEventDetailToEventData(response: EventDetailResponse) {
-  const details = response.data.eventDetails;
-  const event = details.eventId;
-  const primaryCTA = event.primaryCTA || details.primaryCTA || (
-    event.status === "Open" && event.availableSeats > 0 ? "Reserve Seat" : "Request Callback"
+function mapEventDetailToEventData(response: any) {
+  if (!response) return null;
+  
+  const rawData = response?.data || response;
+  const details = rawData?.eventDetails || rawData;
+  const event = 
+    (typeof details?.eventId === "object" && details?.eventId !== null ? details.eventId : null) ||
+    (typeof rawData?.event === "object" && rawData?.event !== null ? rawData.event : null) ||
+    (typeof details?.event === "object" && details?.event !== null ? details.event : null) ||
+    details ||
+    {};
+
+  const title = event?.title || details?.title || rawData?.title || "Event Details";
+  const type = event?.type || details?.type || rawData?.type || "Bootcamp";
+  const price = event?.price ?? details?.price ?? rawData?.price ?? 0;
+  const originalPrice = event?.originalPrice ?? details?.originalPrice ?? rawData?.originalPrice ?? 0;
+  const status = event?.status || details?.status || rawData?.status || "Open";
+  const mode = event?.mode || details?.venue?.mode || details?.mode || rawData?.mode || "Online";
+  const startDate = event?.startDate || details?.startDate || rawData?.startDate;
+  const endDate = event?.endDate || details?.endDate || rawData?.endDate;
+  const rating = event?.rating || details?.rating || rawData?.rating || 4.9;
+  const tools = event?.skillsCovered || event?.keyTools || details?.tools || details?.overview?.whatYouWillLearn?.map((w: any) => typeof w === "string" ? w : w.text) || [];
+  const mentors = 
+    (Array.isArray(event?.mentors) && event.mentors.length > 0) ? event.mentors :
+    (Array.isArray(details?.mentors) && details.mentors.length > 0) ? details.mentors :
+    (Array.isArray(rawData?.mentors) && rawData.mentors.length > 0) ? rawData.mentors :
+    [];
+  
+  const mentorName = 
+    Array.isArray(event?.mentorNames) ? event.mentorNames.join(", ") :
+    mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ") ||
+    event?.mentorName || details?.mentorName || "";
+
+  const maxSeats = Number(event?.maxSeats ?? event?.maxCapacity ?? details?.maxSeats ?? details?.capacity ?? 50);
+  const enrolledCount = Number(event?.enrolledCount ?? details?.enrolledCount ?? 0);
+  const availableSeats = (event?.availableSeats && Number(event.availableSeats) > 0) ? Number(event.availableSeats) : Math.max(0, maxSeats - enrolledCount);
+  const statusStr = String(status || "").toLowerCase().trim();
+  const isFinalized = statusStr === "closed" || statusStr === "completed";
+  const isSeatsOpen = !isFinalized && availableSeats > 0;
+
+  const isBackendEnrolled = Boolean(
+    response?.isEnrolled || 
+    response?.data?.isEnrolled || 
+    details?.isEnrolled || 
+    event?.isEnrolled ||
+    rawData?.isEnrolled
   );
-  const secondaryCTA = event.secondaryCTA ?? details.secondaryCTA ?? (
-    primaryCTA === "Reserve Seat" ? "Request Callback" : null
-  );
-  const venue = details.venue
+
+  const primaryCTA = isBackendEnrolled
+    ? "Already Enrolled"
+    : (rawData?.primaryCTA || details?.primaryCTA || (isSeatsOpen ? "Reserve Seat" : "Request Callback"));
+  const secondaryCTA = isBackendEnrolled ? null : (rawData?.secondaryCTA || details?.secondaryCTA || (isSeatsOpen ? "Request Callback" : null));
+
+  const venue = details?.venue || event?.venue
     ? {
-        name: details.venue.name || details.venue.mode || details.venue.type,
-        address: details.venue.description,
-        city: details.venue.city || details.venue.country || "",
-        state: details.venue.state || "",
-        zipCode: details.venue.zipCode,
-        googleMapsLink: details.venue.googleMapsLink,
+        name: details?.venue?.name || event?.venue?.name || mode,
+        address: details?.venue?.description || details?.venue?.address || event?.venue?.address || "",
+        city: details?.venue?.city || event?.venue?.city || "",
+        state: details?.venue?.state || event?.venue?.state || "",
+        zipCode: details?.venue?.zipCode || event?.venue?.zipCode,
+        googleMapsLink: details?.venue?.googleMapsLink || event?.venue?.googleMapsLink,
       }
     : undefined;
 
   return {
-    success: response.success,
-    message: response.message,
+    success: response?.success ?? true,
+    message: response?.message ?? "",
     data: {
       event: {
-        _id: event._id,
-        title: event.title,
-        slug: event.slug,
-        description: event.description,
-        type: event.type,
-        category: event.category,
+        _id: event?._id || event?.id || details?._id || "",
+        title,
+        slug: event?.slug || details?.slug || "",
+        description: event?.description || details?.overview?.aboutEvent || details?.description || "",
+        type,
+        category: event?.category || event?.domain || details?.category || "Web Development",
         level: "Beginner" as const,
-        duration: getEventDuration(event.startDate, event.endDate, event.durationDays),
-        price: event.price,
-        originalPrice: event.originalPrice,
-        mode: event.mode,
+        duration: getEventDuration(startDate || new Date().toISOString(), endDate || new Date().toISOString(), event?.durationDays),
+        price,
+        originalPrice,
+        mode,
         venue,
         zoomLink: undefined,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        maxSeats: event.maxSeats,
-        enrolledCount: event.enrolledCount,
-        status: event.status,
-        rating: event.rating,
-        tools: event.skillsCovered,
-        mentorName: event.mentorNames.join(", "),
-        thumbnail: event.banner,
+        startDate,
+        endDate,
+        maxSeats,
+        enrolledCount,
+        availableSeats,
+        status,
+        rating,
+        tools,
+        mentorName,
+        thumbnail: event?.banner || event?.thumbnail || details?.banner || "",
         primaryCTA,
         secondaryCTA,
-        createdAt: event.createdAt,
-        updatedAt: event.updatedAt,
+        isEnrolled: isBackendEnrolled,
+        isFeatured: Boolean(event?.isFeatured || event?.is_featured || details?.isFeatured),
+        mentors,
+        createdAt: event?.createdAt || new Date().toISOString(),
+        updatedAt: event?.updatedAt || new Date().toISOString(),
       },
       overview: {
-        aboutEvent: details.overview.aboutEvent,
-        whatYouWillLearn: details.overview.whatYouWillLearn.map((item, index) => ({
-          ...item,
-          _id: `learn-${index}`,
-        })),
-        prerequisites: details.overview.prerequisites.map((item, index) => ({
-          ...item,
-          _id: `prerequisite-${index}`,
-        })),
-        whatsIncluded: details.overview.whatsIncluded.map((item, index) => ({
-          ...item,
-          icon: "Check",
-          _id: `included-${index}`,
-        })),
+        aboutEvent: details?.overview?.aboutEvent || event?.description || details?.description || "",
+        whatYouWillLearn: details?.overview?.whatYouWillLearn && Array.isArray(details.overview.whatYouWillLearn)
+          ? details.overview.whatYouWillLearn.map((item: any, index: number) => ({
+              text: typeof item === "string" ? item : item.text,
+              _id: `learn-${index}`,
+            }))
+          : tools.map((tool: string, index: number) => ({
+              text: `Build practical skills with ${tool}`,
+              _id: `learn-${index}`,
+            })),
+        prerequisites: details?.overview?.prerequisites && Array.isArray(details.overview.prerequisites)
+          ? details.overview.prerequisites.map((item: any, index: number) => ({
+              text: typeof item === "string" ? item : item.text,
+              _id: `prerequisite-${index}`,
+            }))
+          : [
+              { text: "Basic programming knowledge", _id: "prereq-1" },
+              { text: "A laptop with the required software installed", _id: "prereq-2" },
+            ],
+        whatsIncluded: details?.overview?.whatsIncluded && Array.isArray(details.overview.whatsIncluded)
+          ? details.overview.whatsIncluded.map((item: any, index: number) => ({
+              text: typeof item === "string" ? item : item.text || "Key module feature",
+              icon: "Check",
+              _id: `included-${index}`,
+            }))
+          : [
+              { text: "Focused practical learning", icon: "Check", _id: "inc-1" },
+              { text: "Hands-on practice sessions", icon: "Check", _id: "inc-2" },
+              { text: "Certificate of participation", icon: "Check", _id: "inc-3" },
+            ],
       },
-      agenda: details.agenda.map((session, index) => ({
-        sessionNumber: session.step,
-        title: session.title,
-        topics: session.topics.map((topic, topicIndex) => ({
-          text: topic,
-          _id: `agenda-${index}-topic-${topicIndex}`,
-        })),
-        duration: session.duration,
-        _id: `agenda-${index}`,
+      agenda: details?.agenda || [],
+      mentorDetails: mentors.map((m: any, index: number) => ({
+        name: m.name || m.fullName || "GrowthCraft Mentor",
+        avatar: m.avatar || "",
+        bio: m.bio || "Industry expert with extensive experience in training and mentorship.",
+        designation: m.designation || "Event Mentor",
+        rating: m.rating || rating || 5,
+        studentsCount: m.studentsCount || enrolledCount || 0,
+        expertise: m.expertise || tools || [],
       })),
-      mentorDetails: details.mentors.map((mentor, index) => ({
-        name: mentor.name || event.mentorNames[index] || "GrowthCraft Mentor",
-        avatar: mentor.avatar || "",
-        bio: mentor.bio || "Industry expert with extensive experience in training and mentorship.",
-        designation: mentor.designation || "Event Mentor",
-        rating: mentor.rating || event.rating,
-        studentsCount: mentor.studentsCount || event.enrolledCount,
-        expertise: mentor.expertise || event.skillsCovered,
-      })),
-      faqs: details.faqs.map((faq, index) => ({
-        ...faq,
-        _id: `faq-${index}`,
-      })),
+      faqs: details?.faqs || [],
     },
-    meta: response.meta,
+    meta: response?.meta,
   };
 }
 
@@ -150,39 +221,64 @@ export default function EventDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } =
+  const { isOpen, formType, formTitle, courseId, courseTitle, price, openForm, closeForm } =
     usePopupForm();
   const { data: user } = useCurrentUser();
-  const hasMounted = useSyncExternalStore(
-    subscribeToClientSnapshot,
-    getClientSnapshot,
-    getServerSnapshot
-  );
+  const { isEventEnrolled } = useUserEnrollments();
+  const { checkout, isProcessing: isDirectCheckoutProcessing } = useDirectCheckout();
+  const [isMounted, setIsMounted] = useState(false);
+  const [hasJustEnrolled, setHasJustEnrolled] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const { slug } = use(params);
+  const normalizedSlug = useMemo(() => slug?.replace(/_/g, "-") || "", [slug]);
   
-  // First, try to get the event data from mock to determine type
-  const mockEventData = getEventDetailBySlug(slug);
-  const eventType = mockEventData?.data?.event?.type;
+  // 1. Fetch from unified event detail endpoint
+  const { data: unifiedEventData } = useEventBySlug(normalizedSlug);
+
+  // 2. Mock fallback for determining type or rendering mock details
+  const mockEventData = useMemo(() => getEventDetailBySlug(normalizedSlug) || getEventDetailBySlug(slug), [normalizedSlug, slug]);
+  const eventType = (unifiedEventData as any)?.data?.type || (unifiedEventData as any)?.data?.event?.type || (unifiedEventData as any)?.event?.type || mockEventData?.data?.event?.type;
   
-  // Fetch from appropriate API based on event type
+  // 3. Fetch from specific type endpoints if needed
   const { data: workshopDetailData } = useWorkshopDetails(
-    slug, 
-    hasMounted && eventType === "Workshop"
+    normalizedSlug, 
+    isMounted && (eventType === "Workshop" || !eventType)
   );
   const { data: hackathonDetailData } = useHackathonDetails(
-    slug, 
-    hasMounted && eventType === "Hackathon"
+    normalizedSlug, 
+    isMounted && (eventType === "Hackathon" || !eventType)
   );
+  const { data: bootcampDetailData } = useBootcampBySlug(normalizedSlug);
 
   const eventData = useMemo(
     () => {
-      // Prioritize API data over mock data
-      if (workshopDetailData) return mapEventDetailToEventData(workshopDetailData);
-      if (hackathonDetailData) return mapEventDetailToEventData(hackathonDetailData);
-      return mockEventData;
+      const isValidResponse = (res: any) => {
+        if (!res || res.success === false) return false;
+        const d = res.data || res;
+        return Boolean(d && (d.title || d._id || d.event || d.eventDetails));
+      };
+
+      if (isValidResponse(unifiedEventData)) return mapEventDetailToEventData(unifiedEventData as any);
+      if (isValidResponse(workshopDetailData)) return mapEventDetailToEventData(workshopDetailData);
+      if (isValidResponse(hackathonDetailData)) return mapEventDetailToEventData(hackathonDetailData);
+      if (isValidResponse(bootcampDetailData)) {
+        const d = (bootcampDetailData as any).data || bootcampDetailData;
+        const bootcampObj = d?.event || d?.eventDetails || d;
+        if (bootcampObj && (bootcampObj.title || bootcampObj._id)) {
+          return mapEventDetailToEventData({
+            success: true,
+            message: "Bootcamp fetched",
+            data: { event: bootcampObj, eventDetails: bootcampObj }
+          } as any);
+        }
+      }
+      return mapEventDetailToEventData(mockEventData);
     },
-    [slug, workshopDetailData, hackathonDetailData, mockEventData]
+    [normalizedSlug, unifiedEventData, workshopDetailData, hackathonDetailData, bootcampDetailData, mockEventData]
   );
   const event = eventData?.data?.event;
   const overview = eventData?.data?.overview;
@@ -207,14 +303,33 @@ export default function EventDetailPage({
     }
   };
 
-  // Check if user is logged in and verified
-  const isAuthenticated = user && user.isEmailVerified;
-  const isStudent = user?.role === "student";
-  const isRestrictedRole = user?.role === "mentor" || user?.role === "employer";
+  const isAuthenticated = isMounted && Boolean(user && user.isEmailVerified);
+  const isStudent = isMounted && user?.role === "student";
+  const isCollege = isMounted && user?.role === "college";
+  const isRestrictedRole = isMounted && (user?.role === "mentor" || user?.role === "employer");
 
-  // Use backend-provided CTAs
-  const primaryCTA = event.primaryCTA || "Register Now";
-  const secondaryCTA = event.secondaryCTA;
+  const enrolledFromUser = isEventEnrolled(normalizedSlug) || isEventEnrolled(slug) || (event?._id ? isEventEnrolled(event._id) : false);
+
+  // Use backend-provided CTAs or student enrollment cache
+  const isEnrolled = isStudent
+    ? (hasJustEnrolled || enrolledFromUser)
+    : Boolean(
+        hasJustEnrolled ||
+        enrolledFromUser ||
+        (event as any).isEnrolled || 
+        event.primaryCTA === "Already Enrolled" || 
+        event.primaryCTA === "Interest Registered" ||
+        event.primaryCTA === "Seat Reserved"
+      );
+
+  const maxSeats = Number(event.maxSeats ?? (event as any).maxCapacity ?? 50);
+  const enrolledCount = Number(event.enrolledCount ?? 0);
+  const seatsAvail = (event.availableSeats && Number(event.availableSeats) > 0) ? Number(event.availableSeats) : Math.max(0, maxSeats - enrolledCount);
+  const statusStr = String(event.status || "").toLowerCase().trim();
+  const isFinalized = statusStr === "closed" || statusStr === "completed";
+  const isSeatsOpen = !isFinalized && seatsAvail > 0;
+  const primaryCTA = isEnrolled ? "Seat Reserved" : (isSeatsOpen ? "Reserve Seat" : "Request Callback");
+  const secondaryCTA = isEnrolled ? null : (isSeatsOpen ? "Request Callback" : null);
   const displayRating = useMemo(() => event.rating.toFixed(1), [event.rating]);
 
   // Determine CTA behavior
@@ -235,7 +350,8 @@ export default function EventDetailPage({
       `${label} - ${event.title}`,
       event._id,
       event.title,
-      "workshop"
+      "workshop",
+      event.price || 0
     );
   };
 
@@ -256,7 +372,8 @@ export default function EventDetailPage({
         `${label} - ${event.title}`,
         event._id,
         event.title,
-        "bootcamp"
+        "bootcamp",
+        event.price || 0
       );
       return;
     }
@@ -272,7 +389,8 @@ export default function EventDetailPage({
         `${label} - ${event.title}`,
         event._id,
         event.title,
-        "hackathon"
+        "hackathon",
+        event.price || 0
       );
     }
   };
@@ -316,29 +434,32 @@ export default function EventDetailPage({
       return;
     }
 
-    // For "Register Now" - require login
+    // For "Register Now" / "Reserve Seat" — require login, then direct checkout
     if (!isAuthenticated) {
       if (typeof window !== "undefined") {
         const currentUrl = window.location.pathname;
-        toast.info("Please register to join this event");
-        window.location.href = `/register/student?callbackUrl=${encodeURIComponent(
+        toast.info("Please register or login to join this event");
+        window.location.href = `/login?callbackUrl=${encodeURIComponent(
           currentUrl
         )}`;
       }
       return;
     }
 
-    if (!isStudent) {
-      toast.error("Please login as a student to register");
+    if (!isStudent && !isCollege) {
+      toast.error("Students & Colleges Only");
       return;
     }
 
-    if (isWorkshopEvent || isBootcampEvent || isHackathonEvent) {
-      openEventActionForm("reserve-seat");
-      return;
-    }
-
-    toast.success("Registration successful! Check your email for details.");
+    // Direct checkout — skip the popup form
+    const directItemType = isWorkshopEvent ? "workshop" : isBootcampEvent ? "bootcamp" : isHackathonEvent ? "hackathon" : "course";
+    checkout({
+      itemId: event._id,
+      itemType: directItemType as any,
+      itemTitle: event.title,
+      price: event.price ?? 0,
+      onEnrolled: () => setHasJustEnrolled(true),
+    });
   };
 
   // Handle secondary CTA click
@@ -377,16 +498,18 @@ export default function EventDetailPage({
     primaryCTA.toLowerCase().includes("reserve") || 
     primaryCTA.toLowerCase().includes("enroll");
   const isPrimaryButtonDisabled = 
+    isDirectCheckoutProcessing ||
     isFinalizedStatus || 
+    isEnrolled ||
     (isAuthenticated && isRestrictedRole) ||
-    (isRegistrationAction && isAuthenticated && !isStudent) ||
+    (isRegistrationAction && isAuthenticated && !isStudent && !isCollege) ||
     (isRegistrationAction && (isSeatsFull || event.status === "Completed"));
   const isSecondaryButtonDisabled = isAuthenticated && isRestrictedRole;
   const primaryButtonLabel = isFinalizedStatus 
     ? eventStatus 
     : (isAuthenticated && isRestrictedRole)
     ? "Students Only"
-    : (isRegistrationAction && isAuthenticated && !isStudent)
+    : (isRegistrationAction && isAuthenticated && !isStudent && !isCollege)
     ? "Students Only"
     : primaryCTA;
   const primaryButtonClasses = isFinalizedStatus || isPrimaryCallback
@@ -407,6 +530,7 @@ export default function EventDetailPage({
         courseId={courseId}
         courseTitle={courseTitle}
         itemType={isWorkshopEvent ? "workshop" : isBootcampEvent ? "bootcamp" : isHackathonEvent ? "hackathon" : "course"}
+        price={price}
       />
 
       <Section variant="white" className="overflow-hidden">
@@ -420,17 +544,31 @@ export default function EventDetailPage({
         <div className="grid lg:grid-cols-12 gap-8 overflow-hidden">
           {/* Main content */}
           <div className="lg:col-span-8 space-y-8 min-w-0">
-            {/* Banner */}
-            <div className="aspect-video bg-graphite rounded-xl flex items-center justify-center overflow-hidden">
-              <div className="text-center text-white/50">
-                <PlayCircle className="h-16 w-16 mx-auto mb-2" />
-                <p className="text-sm">Event Preview</p>
-              </div>
+            {/* Event Preview Section */}
+            <div className="aspect-video bg-graphite rounded-2xl flex items-center justify-center overflow-hidden relative shadow-md group">
+              {(event as any).thumbnail || (event as any).banner ? (
+                <img
+                  src={(event as any).thumbnail || (event as any).banner}
+                  alt={event.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center text-white/50 group-hover:text-white/70 transition-colors">
+                  <PlayCircle className="h-16 w-16 mx-auto mb-2 text-white/40 group-hover:text-magenta transition-colors" />
+                  <p className="text-sm font-medium">Event Preview</p>
+                </div>
+              )}
             </div>
+            
 
             {/* Title area */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {((event as any).isFeatured || (event as any).is_featured) && (
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                    <Flame className="h-3.5 w-3.5" /> Trending Now
+                  </span>
+                )}
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-magenta/10 text-magenta">
                   {event.type}
                 </span>
@@ -457,13 +595,30 @@ export default function EventDetailPage({
                 {event.title}
               </h1>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Star className="h-4 w-4 text-warning" />
-                  {displayRating}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                {(event as any).mentors && (event as any).mentors.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2 overflow-hidden">
+                      {(event as any).mentors.map((mentor: any, index: number) => (
+                        <Avatar key={index} className="h-8 w-8 border-2 border-background">
+                          <AvatarImage src={mentor.avatar} alt={mentor.name} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                            {(mentor.name || mentor.fullName || "M").charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                    </div>
+                    <span className="font-medium text-foreground">
+                      {(event as any).mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                )}
+                <span className="flex items-center gap-1 font-medium" suppressHydrationWarning>
+                  <Star className="h-4 w-4 text-warning fill-warning" />
+                  {event.rating && event.rating > 0 ? event.rating.toFixed(1) : "New"}
                 </span>
-                <span>
-                  {event.enrolledCount} / {event.maxSeats} registered
+                <span className="font-medium">
+                  {(event.enrolledCount || 0).toLocaleString()} / {(event.maxSeats || 50).toLocaleString()} registered
                 </span>
               </div>
             </div>
@@ -489,10 +644,10 @@ export default function EventDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">What you&apos;ll learn</h2>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {overview?.whatYouWillLearn?.map((item) => (
-                      <div key={item._id} className="flex items-start gap-2">
+                    {overview?.whatYouWillLearn?.map((item: any, idx: number) => (
+                      <div key={item._id || item.id || `learn-${idx}`} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-magenta mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-foreground">{item.text}</span>
+                        <span className="text-sm text-foreground">{typeof item === "string" ? item : item.text}</span>
                       </div>
                     ))}
                   </div>
@@ -501,7 +656,7 @@ export default function EventDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">Tools & Technologies</h2>
                   <div className="flex flex-wrap gap-2">
-                    {event.tools.map((tool, idx) => (
+                    {event.tools.map((tool: any, idx: number) => (
                       <span
                         key={idx}
                         className="px-3 py-1 rounded-full text-xs font-medium bg-lavender/10 text-lavender"
@@ -515,10 +670,10 @@ export default function EventDetailPage({
                 <div>
                   <h2 className="text-xl font-bold mb-4">Prerequisites</h2>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    {overview?.prerequisites?.map((item) => (
-                      <li key={item._id} className="flex items-start gap-2">
+                    {overview?.prerequisites?.map((item: any, idx: number) => (
+                      <li key={item._id || item.id || `prereq-${idx}`} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-lavender mt-0.5" />
-                        {item.text}
+                        {typeof item === "string" ? item : item.text}
                       </li>
                     ))}
                   </ul>
@@ -528,12 +683,12 @@ export default function EventDetailPage({
               <TabsContent value="agenda" className="pt-6">
                 <h2 className="text-xl font-bold mb-4">Event Agenda</h2>
                 <div className="space-y-3">
-                  {agenda.map((session) => (
-                    <DataCard key={session._id}>
+                  {agenda.map((session: any, idx: number) => (
+                    <DataCard key={session._id || session.id || `session-${idx}`}>
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-magenta/10 flex items-center justify-center">
                           <span className="text-lg font-bold text-magenta">
-                            {session.sessionNumber}
+                            {session.sessionNumber || idx + 1}
                           </span>
                         </div>
                         <div className="flex-1">
@@ -543,13 +698,13 @@ export default function EventDetailPage({
                             {session.duration}
                           </p>
                           <ul className="space-y-1">
-                            {session.topics.map((topic) => (
+                            {session.topics?.map((topic: any, tIdx: number) => (
                               <li
-                                key={topic._id}
+                                key={topic._id || topic.id || `topic-${idx}-${tIdx}`}
                                 className="flex items-start gap-2 text-sm"
                               >
                                 <Check className="h-3 w-3 text-magenta mt-0.5 flex-shrink-0" />
-                                <span className="text-muted-foreground">{topic.text}</span>
+                                <span className="text-muted-foreground">{typeof topic === "string" ? topic : topic.text}</span>
                               </li>
                             ))}
                           </ul>
@@ -623,14 +778,14 @@ export default function EventDetailPage({
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-magenta" />
                       <span>
-                        {format(new Date(event.startDate), "MMMM dd, yyyy")}
+                        {safeFormatDate(event.startDate, "MMMM dd, yyyy")}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-magenta" />
                       <span>
-                        {format(new Date(event.startDate), "h:mm a")} -{" "}
-                        {format(new Date(event.endDate), "h:mm a")}
+                        {safeFormatDate(event.startDate, "h:mm a")} -{" "}
+                        {safeFormatDate(event.endDate, "h:mm a")}
                       </span>
                     </div>
                   </div>
@@ -642,117 +797,71 @@ export default function EventDetailPage({
                   <h2 className="text-xl font-bold mb-4">Meet Your Mentors</h2>
                   <div className="space-y-4">
                     {mentorDetails && Array.isArray(mentorDetails) && mentorDetails.length > 0 ? (
-                      mentorDetails.map((mentor, index) => (
-                        <DataCard key={index}>
-                          <div className="flex items-start gap-4">
-                            {mentor.avatar && (
-                              <img
-                                src={mentor.avatar}
-                                alt={mentor.name}
-                                className="h-16 w-16 rounded-full object-cover flex-shrink-0"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-lg font-bold">
-                                {mentor.name}
-                              </h3>
-                              {mentor.designation && (
-                                <p className="text-sm text-magenta mb-2">
-                                  {mentor.designation}
+                      mentorDetails.map((mentor: any, index: number) => {
+                        const mentorName = mentor.name || mentor.fullName || "Event Mentor";
+                        const designation = mentor.designation || mentor.areaOfExpertise || "Industry Mentor";
+                        const company = mentor.company || mentor.currentOrganization;
+                        const expertiseList = Array.isArray(mentor.expertise)
+                          ? mentor.expertise
+                          : typeof mentor.areaOfExpertise === "string"
+                          ? [mentor.areaOfExpertise]
+                          : [];
+
+                        return (
+                          <DataCard key={index}>
+                            <div className="flex items-start gap-4">
+                              <Avatar className="h-16 w-16 border flex-shrink-0">
+                                <AvatarImage src={mentor.avatar} alt={mentorName} />
+                                <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">
+                                  {mentorName.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-lg font-bold">{mentorName}</h3>
+                                <p className="text-sm font-medium text-magenta mb-1">
+                                  {designation} {company ? `at ${company}` : ""}
                                 </p>
-                              )}
-                              <p className="text-sm text-muted-foreground mb-3">
-                                {mentor.bio}
-                              </p>
-                              <div className="flex gap-4 text-xs text-muted-foreground mb-3">
-                                <span className="flex items-center gap-1">
-                                  <Star className="h-3 w-3 text-warning" />
-                                  {mentor.rating?.toFixed(1) || displayRating} rating
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {mentor.studentsCount || event.enrolledCount} students
-                                </span>
-                              </div>
-                              {mentor.expertise && mentor.expertise.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                  {mentor.expertise.map((exp, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="px-2 py-1 rounded text-xs bg-muted"
-                                    >
-                                      {exp}
+                                {mentor.bio && (
+                                  <p className="text-sm text-muted-foreground mb-3">
+                                    {mentor.bio}
+                                  </p>
+                                )}
+                                <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mb-3">
+                                  {mentor.rating != null && (
+                                    <span className="flex items-center gap-1">
+                                      <Star className="h-3 w-3 text-warning fill-warning" />
+                                      {Number(mentor.rating).toFixed(1)} rating
                                     </span>
-                                  ))}
+                                  )}
+                                  {mentor.studentsCount != null && (
+                                    <span className="flex items-center gap-1">
+                                      <Users className="h-3 w-3" />
+                                      {Number(mentor.studentsCount).toLocaleString()} students mentored
+                                    </span>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                        </DataCard>
-                      ))
-                    ) : mentorDetails && !Array.isArray(mentorDetails) ? (
-                      <DataCard>
-                        <div className="flex items-start gap-4">
-                          {mentorDetails.avatar && (
-                            <img
-                              src={mentorDetails.avatar}
-                              alt={mentorDetails.name}
-                              className="h-16 w-16 rounded-full object-cover flex-shrink-0"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold">
-                              {mentorDetails.name}
-                            </h3>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              {mentorDetails.bio}
-                            </p>
-                            <div className="flex gap-4 text-xs text-muted-foreground mb-3">
-                              <span className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-warning" />
-                                {mentorDetails.rating?.toFixed(1) || displayRating} rating
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                {mentorDetails.studentsCount || event.enrolledCount} students
-                              </span>
-                            </div>
-                            {mentorDetails.expertise && mentorDetails.expertise.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {mentorDetails.expertise.map((exp, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="px-2 py-1 rounded text-xs bg-muted"
-                                  >
-                                    {exp}
-                                  </span>
-                                ))}
+                                {expertiseList.length > 0 && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {expertiseList.map((exp: string, idx: number) => (
+                                      <span
+                                        key={idx}
+                                        className="px-2 py-1 rounded text-xs bg-muted font-medium text-muted-foreground"
+                                      >
+                                        {exp}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </DataCard>
+                            </div>
+                          </DataCard>
+                        );
+                      })
                     ) : (
                       <DataCard>
-                        <div className="flex items-start gap-4">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold">
-                              {event.mentorName}
-                            </h3>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              Industry expert with extensive experience in training and mentorship.
-                            </p>
-                            <div className="flex gap-4 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-warning" />
-                                {displayRating} rating
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                {event.enrolledCount} students
-                              </span>
-                            </div>
-                          </div>
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No mentors assigned yet for this event.</p>
                         </div>
                       </DataCard>
                     )}
@@ -762,20 +871,23 @@ export default function EventDetailPage({
 
               <TabsContent value="faq" className="pt-6">
                 <Accordion type="single" collapsible className="space-y-2">
-                  {faqs.map((item) => (
-                    <AccordionItem
-                      key={item._id}
-                      value={`faq-${item._id}`}
-                      className="border rounded-lg px-4"
-                    >
-                      <AccordionTrigger className="text-sm font-semibold">
-                        {item.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-sm text-muted-foreground">
-                        {item.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
+                  {faqs.map((item: any, idx: number) => {
+                    const itemId = item._id || item.id || idx;
+                    return (
+                      <AccordionItem
+                        key={itemId}
+                        value={`faq-${itemId}`}
+                        className="border rounded-lg px-4"
+                      >
+                        <AccordionTrigger className="text-sm font-semibold">
+                          {item.question}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-sm text-muted-foreground">
+                          {item.answer}
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
                 </Accordion>
               </TabsContent>
             </Tabs>
@@ -804,7 +916,14 @@ export default function EventDetailPage({
                   onClick={handlePrimaryCTAClick}
                   disabled={isPrimaryButtonDisabled}
                 >
-                  {primaryButtonLabel}
+                  {isDirectCheckoutProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                      Checking Payment...
+                    </>
+                  ) : (
+                    primaryButtonLabel
+                  )}
                 </Button>
 
                 {/* Secondary CTA */}
@@ -820,13 +939,13 @@ export default function EventDetailPage({
 
                 <div className="mt-6 space-y-3 text-sm">
                   <h4 className="font-semibold">What&apos;s included</h4>
-                  {overview?.whatsIncluded?.map((item) => (
+                  {overview?.whatsIncluded?.map((item: any, idx: number) => (
                     <div
-                      key={item._id}
+                      key={item._id || item.id || `inc-${idx}`}
                       className="flex items-center gap-2 text-muted-foreground"
                     >
                       <Check className="h-4 w-4 text-magenta flex-shrink-0" />
-                      <span>{item.text}</span>
+                      <span>{typeof item === "string" ? item : item.text}</span>
                     </div>
                   ))}
                 </div>

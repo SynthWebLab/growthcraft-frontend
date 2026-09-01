@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { EventSection } from "@/components/events/EventSection";
+import { Section } from "@/components/ui/section";
 import { Loader2 } from "lucide-react";
 import {
   Pagination,
@@ -15,6 +15,7 @@ import {
 import { EventFilters } from "@/components/events/EventFilters";
 import { HackathonCard } from "@/components/events/HackathonCard";
 import { useHackathons } from "@/hooks/queries/useHackathons";
+import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { FormType } from "@/lib/ctaPolicy";
 import type { Hackathon, HackathonMode, HackathonStatus } from "@/types/hackathon";
 
@@ -24,15 +25,17 @@ interface HackathonEventsProps {
     title?: string,
     courseIdParam?: string,
     courseTitleParam?: string,
-    itemTypeParam?: "course" | "workshop" | "hackathon"
+    itemTypeParam?: "course" | "workshop" | "hackathon",
+    priceParam?: number
   ) => void;
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 9;
 const HACKATHON_MODES = ["Online", "Offline", "Hybrid"] as const;
 const HACKATHON_STATUSES = ["Open", "Closed", "Completed"] as const;
 
 export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
+  const { checkout, isProcessing, processingItemId } = useDirectCheckout();
   const [hackathonMode, setHackathonMode] = useState<typeof HACKATHON_MODES[number] | null>(null);
   const [hackathonStatus, setHackathonStatus] = useState<typeof HACKATHON_STATUSES[number] | null>("Open");
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,7 +47,17 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
     status: hackathonStatus as HackathonStatus | undefined,
   });
 
-  const pageItems = data?.items || [];
+  const rawItems = data?.items || [];
+  const pageItems = [...rawItems].sort((a: any, b: any) => {
+    const aFeatured = a.isFeatured || a.is_featured ? 1 : 0;
+    const bFeatured = b.isFeatured || b.is_featured ? 1 : 0;
+    if (bFeatured !== aFeatured) {
+      return bFeatured - aFeatured;
+    }
+    const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
   const totalItems = data?.pagination.total || 0;
   const totalPages = data?.pagination.totalPages || 1;
   const hasNextPage = currentPage < totalPages;
@@ -54,21 +67,26 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
     const ctaText = hackathon.primaryCTA || "Register Now";
 
     if (ctaText.toLowerCase().includes("callback")) {
-      onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+      onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price ?? 0);
       return;
     }
 
     if (ctaText.toLowerCase().includes("interest")) {
-      onOpenForm("register-interest", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+      onOpenForm("register-interest", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price ?? 0);
       return;
     }
 
-    onOpenForm("reserve-seat", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+    checkout({
+      itemId: hackathon.id,
+      itemType: "hackathon",
+      itemTitle: hackathon.title,
+      price: hackathon.price ?? 0,
+    });
   };
 
   const handleHackathonSecondaryCTA = (hackathon: Hackathon) => {
     const ctaText = hackathon.secondaryCTA || "Request Callback";
-    onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon");
+    onOpenForm("callback", `${ctaText} - ${hackathon.title}`, hackathon.id, hackathon.title, "hackathon", hackathon.price ?? 0);
   };
 
   const clearHackathonFilters = () => {
@@ -93,37 +111,37 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
 
   if (isLoading && !pageItems.length) {
     return (
-      <EventSection variant="white">
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-magenta" />
+      <Section variant="white">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-magenta mb-4" />
         </div>
-      </EventSection>
+      </Section>
     );
   }
 
   if (error) {
     return (
-      <EventSection variant="white">
+      <Section variant="white">
         <div className="text-center py-16">
           <p className="text-danger mb-4">Failed to load hackathons. Please try again.</p>
           <Button onClick={() => refetch()}>Retry</Button>
         </div>
-      </EventSection>
+      </Section>
     );
   }
 
   return (
-    <>
-      <EventSection variant="white">
-        <div className="mb-6">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-3">
-            Live Hackathons
-          </h2>
-          <p className="text-muted-foreground max-w-2xl">
-            Competitive, project-driven events where teams build, ship, and showcase ideas fast.
-          </p>
-        </div>
+    <Section variant="white" className="!py-4 sm:!py-6">
+      <div className="mb-6">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-2">
+          Live Hackathons
+        </h2>
+        <p className="text-sm md:text-base text-muted-foreground max-w-2xl">
+          Competitive, project-driven events where teams build, ship, and showcase ideas fast.
+        </p>
+      </div>
 
+      <div className="flex flex-col gap-4 mb-6">
         <EventFilters
           groups={[
             {
@@ -151,37 +169,39 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
           ]}
           onClearAll={clearHackathonFilters}
         />
-        <div className="text-sm text-muted-foreground">
-          Showing {pageItems.length} of {totalItems} hackathons
-          {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
-        </div>
-      </EventSection>
+        {totalItems > 0 && (
+          <div className="text-sm text-muted-foreground">
+            Showing {pageItems.length} of {totalItems} hackathon{totalItems !== 1 ? "s" : ""}
+            {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
+          </div>
+        )}
+      </div>
 
       {pageItems.length > 0 ? (
-        pageItems.map((hackathon, i) => (
-          <EventSection key={hackathon.id} variant={i % 2 === 0 ? "white" : "marble"}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {pageItems.map((hackathon) => (
             <HackathonCard
+              key={hackathon.id}
               hackathon={hackathon}
               onCTAClick={handleHackathonCTA}
               onSecondaryCTAClick={handleHackathonSecondaryCTA}
+              isProcessing={isProcessing && processingItemId === hackathon.id}
             />
-          </EventSection>
-        ))
+          ))}
+        </div>
       ) : (
-        <EventSection variant="white">
-          <div className="text-center py-16">
-            <p className="text-muted-foreground mb-4">
-              No upcoming hackathons match the current filters.
-            </p>
-            <Button variant="outline" onClick={clearHackathonFilters}>
-              Clear Filters
-            </Button>
-          </div>
-        </EventSection>
+        <div className="text-center py-16">
+          <p className="text-muted-foreground mb-4">
+            No upcoming hackathons match the current filters.
+          </p>
+          <Button variant="outline" onClick={clearHackathonFilters}>
+            Clear Filters
+          </Button>
+        </div>
       )}
 
       {totalPages > 1 && (
-        <EventSection variant="white" className="pt-8 pb-12 md:pt-10 md:pb-16">
+        <div className="pt-4 pb-8">
           <Pagination>
             <PaginationContent>
               {hasPreviousPage && (
@@ -225,8 +245,8 @@ export function HackathonEvents({ onOpenForm }: HackathonEventsProps) {
               )}
             </PaginationContent>
           </Pagination>
-        </EventSection>
+        </div>
       )}
-    </>
+    </Section>
   );
 }

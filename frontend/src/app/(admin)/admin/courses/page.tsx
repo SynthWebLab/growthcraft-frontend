@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useCourses } from "@/hooks/queries/useCourses";
 import {
+  useAdminCourses,
   useCreateCourse,
   useUpdateCourse,
   useDeleteCourse,
   usePublishCourse,
+  useAdminMentors,
 } from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -28,35 +30,53 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Plus, Trash2, Edit, Globe, EyeOff, Check, User as UserIcon } from "lucide-react";
 
 interface Course {
   id: string;
   title: string;
   category: string;
-  description: string | null;
-  duration: number | null;
-  level: string | null;
-  price: number | null;
-  originalPrice: number | null;
-  instructorName: string | null;
-  tags: string;
+  description?: string | null;
+  duration?: number | null;
+  lessonsCount?: number | null;
+  level?: string | null;
+  price?: number | null;
+  originalPrice?: number | null;
+  instructorName?: string | null;
+  mentors?: any[];
+  tags?: string | null;
   is_published: boolean;
   is_featured: boolean;
   created_at: string;
 }
 
-const CATEGORIES = ["MERN", "UI/UX", "DataScience", "DevOps", "Other"];
-const LEVELS = ["Beginner", "Intermediate", "Advanced"];
+const CATEGORIES = [
+  "Programming",
+  "Data Science",
+  "Web Development",
+  "Mobile Development",
+  "Cloud Computing",
+  "Cybersecurity",
+  "AI/ML",
+  "DevOps",
+  "Design",
+  "Business",
+  "Other",
+];
+
+const DIFFICULTY_LEVELS = ["Beginner", "Intermediate", "Advanced"];
 
 const EMPTY_FORM = {
   title: "",
   description: "",
-  category: "MERN",
+  category: "Web Development",
   difficultyLevel: "Beginner",
-  duration: "",
+  duration: "20",
+  lessonsCount: "10",
   price: "",
   originalPrice: "",
-  instructorName: "",
+  instructorName: "GrowthCraft Team",
+  selectedMentorIds: [] as string[],
   tags: "",
   is_published: false,
   is_featured: false,
@@ -68,24 +88,41 @@ export default function AdminCourses() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
 
-  const { data: coursesData, isLoading } = useCourses();
+  const { data: coursesData, isLoading } = useAdminCourses();
+  const { data: mentorsData } = useAdminMentors({ limit: 100 });
   const createMutation = useCreateCourse();
   const updateMutation = useUpdateCourse();
   const deleteMutation = useDeleteCourse();
   const publishMutation = usePublishCourse();
 
-  const rawCourses = coursesData?.data || [];
+  const rawMentors =
+    (mentorsData as any)?.data?.items ||
+    (mentorsData as any)?.data?.mentors ||
+    (mentorsData as any)?.items ||
+    (mentorsData as any)?.mentors ||
+    (Array.isArray((mentorsData as any)?.data) ? (mentorsData as any).data : []);
+  const registeredMentors = Array.isArray(rawMentors) ? rawMentors : [];
+
+  // Extract raw courses from API response (supports array or wrapper object)
+  const rawCourses = Array.isArray(coursesData?.data)
+    ? coursesData.data
+    : Array.isArray(coursesData)
+    ? coursesData
+    : [];
+
   const courses: Course[] = rawCourses.map((c: any) => ({
     id: c._id || c.id,
-    title: c.title,
-    category: c.category,
+    title: c.title || "",
+    category: c.category || "Other",
     description: c.description || null,
-    duration: c.duration || c.durationHours || null,
+    duration: c.duration || c.totalHours || null,
+    lessonsCount: c.lessonsCount || null,
     level: c.difficultyLevel || c.level || null,
     price: c.price ?? null,
     originalPrice: c.originalPrice ?? null,
-    instructorName: c.instructorName || c.instructor?.name || null,
-    tags: Array.isArray(c.tags) ? c.tags.join(", ") : (c.tags || ""),
+    instructorName: c.instructor?.name || c.instructorName || null,
+    mentors: c.mentors || [],
+    tags: Array.isArray(c.tags) ? c.tags.join(", ") : c.tags || "",
     is_published: !!c.isPublished,
     is_featured: !!c.isFeatured,
     created_at: c.createdAt || new Date().toISOString(),
@@ -99,15 +136,18 @@ export default function AdminCourses() {
 
   const handleEdit = (course: Course) => {
     setEditingCourse(course);
+    const existingMentorIds = course.mentors?.map((m: any) => m.userId || m.id).filter(Boolean) || [];
     setFormData({
       title: course.title,
       description: course.description || "",
-      category: course.category || "MERN",
+      category: course.category || "Web Development",
       difficultyLevel: course.level || "Beginner",
-      duration: course.duration?.toString() || "",
+      duration: course.duration?.toString() || "20",
+      lessonsCount: course.lessonsCount?.toString() || "10",
       price: course.price?.toString() || "",
       originalPrice: course.originalPrice?.toString() || "",
-      instructorName: course.instructorName || "",
+      instructorName: course.instructorName || "GrowthCraft Team",
+      selectedMentorIds: existingMentorIds,
       tags: course.tags || "",
       is_published: course.is_published,
       is_featured: course.is_featured,
@@ -116,7 +156,7 @@ export default function AdminCourses() {
   };
 
   const handleDelete = (course: Course) => {
-    if (!confirm(`Delete "${course.title}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete course "${course.title}"? This action soft-deletes the course.`)) return;
     deleteMutation.mutate(course.id);
   };
 
@@ -132,10 +172,12 @@ export default function AdminCourses() {
       description: formData.description.trim(),
       category: formData.category,
       difficultyLevel: formData.difficultyLevel,
-      duration: formData.duration ? parseInt(formData.duration) : undefined,
+      duration: formData.duration ? parseInt(formData.duration) : 20,
+      lessonsCount: formData.lessonsCount ? parseInt(formData.lessonsCount) : 10,
       price: formData.price ? parseFloat(formData.price) : 0,
       originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
-      instructorName: formData.instructorName.trim() || undefined,
+      instructorName: formData.instructorName.trim() || "GrowthCraft Team",
+      mentorIds: formData.selectedMentorIds,
       tags: formData.tags
         ? formData.tags.split(",").map((t) => t.trim()).filter(Boolean)
         : [],
@@ -158,7 +200,8 @@ export default function AdminCourses() {
   const filteredCourses = courses.filter(
     (c) =>
       c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.category.toLowerCase().includes(searchQuery.toLowerCase())
+      c.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.instructorName && c.instructorName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const columns = [
@@ -171,6 +214,11 @@ export default function AdminCourses() {
       render: (v: number) => (v ? `${v} hrs` : "—"),
     },
     {
+      key: "lessonsCount",
+      label: "Lessons",
+      render: (v: number) => (v ? `${v} lessons` : "—"),
+    },
+    {
       key: "price",
       label: "Price",
       render: (v: number) => (v ? `₹${v.toLocaleString()}` : "Free"),
@@ -178,24 +226,58 @@ export default function AdminCourses() {
     {
       key: "is_published",
       label: "Status",
-      render: (v: boolean) => (
-        <Badge variant={v ? "default" : "secondary"}>
-          {v ? "Published" : "Draft"}
-        </Badge>
+      render: (v: boolean, row: Course) => (
+        <Button
+          variant={v ? "default" : "outline"}
+          size="sm"
+          className="h-7 text-xs gap-1"
+          onClick={() => handlePublish(row)}
+          disabled={publishMutation.isPending}
+          title={v ? "Click to unpublish" : "Click to publish"}
+        >
+          {v ? (
+            <>
+              <Globe className="h-3 w-3" /> Published
+            </>
+          ) : (
+            <>
+              <EyeOff className="h-3 w-3 text-muted-foreground" /> Draft
+            </>
+          )}
+        </Button>
       ),
     },
     {
       key: "is_featured",
       label: "Featured",
-      render: (v: boolean) =>
-        v ? <Badge variant="outline">⭐ Featured</Badge> : null,
+      render: (v: boolean, row: Course) => (
+        <Button
+          variant={v ? "secondary" : "outline"}
+          size="sm"
+          className={`h-7 text-xs gap-1 font-semibold ${
+            v
+              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
+              : "text-muted-foreground"
+          }`}
+          onClick={() =>
+            updateMutation.mutate({
+              id: row.id,
+              data: { isFeatured: !v },
+            })
+          }
+          disabled={updateMutation.isPending}
+          title={v ? "Click to un-feature" : "Click to feature as Trending"}
+        >
+          {v ? "🔥 Trending" : "+ Feature"}
+        </Button>
+      ),
     },
   ];
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Courses</h1>
         <p className="text-muted-foreground mt-1">
@@ -206,7 +288,7 @@ export default function AdminCourses() {
       <DataTable
         columns={columns}
         data={filteredCourses}
-        searchPlaceholder="Search courses by title or category..."
+        searchPlaceholder="Search courses by title, category, or instructor..."
         onSearch={setSearchQuery}
         onAdd={handleAdd}
         onEdit={handleEdit}
@@ -285,7 +367,7 @@ export default function AdminCourses() {
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {LEVELS.map((l) => (
+                    {DIFFICULTY_LEVELS.map((l) => (
                       <SelectItem key={l} value={l}>{l}</SelectItem>
                     ))}
                   </SelectContent>
@@ -301,7 +383,20 @@ export default function AdminCourses() {
                   min={1}
                   value={formData.duration}
                   onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  placeholder="e.g. 60"
+                  placeholder="e.g. 40"
+                />
+              </div>
+
+              {/* Lessons Count */}
+              <div className="space-y-2">
+                <Label htmlFor="lessonsCount">Total Lessons</Label>
+                <Input
+                  id="lessonsCount"
+                  type="number"
+                  min={1}
+                  value={formData.lessonsCount}
+                  onChange={(e) => setFormData({ ...formData, lessonsCount: e.target.value })}
+                  placeholder="e.g. 20"
                 />
               </div>
 
@@ -334,15 +429,70 @@ export default function AdminCourses() {
                 />
               </div>
 
-              {/* Instructor Name */}
-              <div className="space-y-2">
-                <Label htmlFor="instructorName">Instructor Name</Label>
-                <Input
-                  id="instructorName"
-                  value={formData.instructorName}
-                  onChange={(e) => setFormData({ ...formData, instructorName: e.target.value })}
-                  placeholder="e.g. Arjun Mehta"
-                />
+              {/* Assigned Mentors & Instructor */}
+              <div className="space-y-3 md:col-span-2">
+                <Label>Assign Real Mentors (Select one or multiple)</Label>
+                {registeredMentors.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto p-2 border rounded-md bg-muted/20">
+                    {registeredMentors.map((mentor: any) => {
+                      const mentorId = mentor._id || mentor.id;
+                      const mentorName = mentor.name || mentor.fullName || mentor.email;
+                      const isSelected = formData.selectedMentorIds.includes(mentorId);
+                      return (
+                        <div
+                          key={mentorId}
+                          onClick={() => {
+                            const newIds = isSelected
+                              ? formData.selectedMentorIds.filter((id) => id !== mentorId)
+                              : [...formData.selectedMentorIds, mentorId];
+                            const selectedNames = registeredMentors
+                              .filter((m: any) => newIds.includes(m._id || m.id))
+                              .map((m: any) => m.name || m.fullName || m.email);
+                            setFormData({
+                              ...formData,
+                              selectedMentorIds: newIds,
+                              instructorName: selectedNames.join(", ") || formData.instructorName,
+                            });
+                          }}
+                          className={`flex items-center gap-2.5 p-2 rounded-md cursor-pointer border transition-all text-xs ${
+                            isSelected
+                              ? "bg-primary/10 border-primary text-primary font-semibold"
+                              : "bg-background border-border hover:bg-accent"
+                          }`}
+                        >
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={mentor.avatar || undefined} />
+                            <AvatarFallback className="text-[10px]">
+                              {(mentorName || "M").charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate font-medium">{mentorName}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {mentor.areaOfExpertise || mentor.currentOrganization || mentor.email}
+                            </p>
+                          </div>
+                          {isSelected && <Check className="h-4 w-4 text-primary shrink-0" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">No registered mentors found in database.</p>
+                )}
+
+                <div className="pt-1">
+                  <Label htmlFor="instructorName" className="text-xs text-muted-foreground">
+                    Display Name / Custom Fallback
+                  </Label>
+                  <Input
+                    id="instructorName"
+                    value={formData.instructorName}
+                    onChange={(e) => setFormData({ ...formData, instructorName: e.target.value })}
+                    placeholder="e.g. Arjun Mehta, Sneha Patel"
+                    className="h-8 text-xs mt-1"
+                  />
+                </div>
               </div>
             </div>
 

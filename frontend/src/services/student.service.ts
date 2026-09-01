@@ -112,5 +112,38 @@ export const studentService = {
     formData.append("resume", file);
     return apiClient.post<any>(API_ENDPOINTS.students.uploadResume, formData);
   },
+  getBatches: async (): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.batches);
+  },
+  getHackathonWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.hackathonWorkspace(slug));
+  },
+  submitHackathonProject: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.submitHackathonProject(slug), data);
+  },
+  getWorkshopWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.workshopWorkspace(slug));
+  },
+  submitWorkshopAssignment: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.submitWorkshopAssignment(slug), data);
+  },
+  getBootcampWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.bootcampWorkspace(slug));
+  },
+  submitBootcampProject: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.submitBootcampProject(slug), data);
+  },
+  getCourseWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.courseWorkspace(slug));
+  },
+  submitCourseProject: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.submitCourseProject(slug), data);
+  },
+  getTrainingProgramWorkspace: async (slug: string): Promise<any> => {
+    return apiClient.get<any>(API_ENDPOINTS.students.trainingProgramWorkspace(slug));
+  },
+  submitTrainingProgramProject: async (slug: string, data: { projectTitle: string; repoUrl: string; demoUrl?: string; techStack?: string; notes?: string }): Promise<any> => {
+    return apiClient.post<any>(API_ENDPOINTS.students.submitTrainingProgramProject(slug), data);
+  },
 };
 

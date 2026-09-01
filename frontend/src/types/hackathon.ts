@@ -22,6 +22,8 @@ export interface Hackathon {
   skillsCovered: string[];
   mentorNames: string[];
   status: HackathonStatus;
+  isFeatured?: boolean;
+  mentors?: any[];
   canRegister: boolean;
   primaryCTA: string;
   secondaryCTA: string | null;

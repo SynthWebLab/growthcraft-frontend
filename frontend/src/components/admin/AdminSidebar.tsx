@@ -72,9 +72,15 @@ const SidebarNavigation = ({
   onNavigate?: () => void;
   userRole?: string;
 }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const isSuperAdmin = userRole === "super_admin";
   const visibleItems = menuItems.filter(
-    (item) => !(item as any).superAdminOnly || isSuperAdmin
+    (item) => !(item as any).superAdminOnly || (mounted && isSuperAdmin)
   );
   const pathname = usePathname();
   const searchParams = useSearchParams();

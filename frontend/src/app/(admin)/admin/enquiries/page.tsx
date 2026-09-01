@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  useAdminEnquiries,
+  useUpdateAdminEnquiry,
+  useDeleteAdminEnquiry,
+} from "@/hooks/queries/useAdmin";
 
 interface Enquiry {
   id: string;
@@ -42,49 +46,15 @@ const statuses = [
   { value: "closed", label: "Closed" },
 ];
 
-const INITIAL_ENQUIRIES: Enquiry[] = [
-  {
-    id: "1",
-    name: "Aman Gupta",
-    email: "aman.g@gmail.com",
-    phone: "+91 99887 76655",
-    message: "I want to know if there's any job placement support after the Full-Stack Web Development Bootcamp.",
-    enquiry_type: "bootcamp_inquiry",
-    source_page: "/bootcamps/full-stack-web-dev",
-    status: "new",
-    notes: null,
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: "2",
-    name: "Karan Johar",
-    email: "karan.johar@dharmaprod.com",
-    phone: "+91 98989 89898",
-    message: "We would like to hire 15+ React/Node developers through your placement drives.",
-    enquiry_type: "hiring_inquiry",
-    source_page: "/employers",
-    status: "contacted",
-    notes: "Emailed them details of our talent pool and scheduled a call for tomorrow.",
-    created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    id: "3",
-    name: "Sheela Dixit",
-    email: "sheela.dixit@vit.ac.in",
-    phone: "+91 88776 65544",
-    message: "Requesting details on establishing a student training program tie-up with our university.",
-    enquiry_type: "partnership_inquiry",
-    source_page: "/colleges",
-    status: "in_progress",
-    notes: "Sent proposal draft, waiting for response from the Dean.",
-    created_at: new Date(Date.now() - 3600000 * 24 * 3).toISOString(),
-  },
-];
-
 export default function AdminEnquiries() {
-  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  const { data: enquiriesRes, isLoading } = useAdminEnquiries();
+  const updateMutation = useUpdateAdminEnquiry();
+  const deleteMutation = useDeleteAdminEnquiry();
+
+  const enquiries: Enquiry[] = enquiriesRes?.data || [];
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
   const [formData, setFormData] = useState({
@@ -92,22 +62,10 @@ export default function AdminEnquiries() {
     notes: "",
   });
 
-  const fetchEnquiries = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API fetch delay
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setEnquiries(INITIAL_ENQUIRIES);
-    } catch (error) {
-      console.error("Error fetching enquiries:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
   };
-
-  useEffect(() => {
-    fetchEnquiries();
-  }, []);
 
   const handleView = (enquiry: Enquiry) => {
     setSelectedEnquiry(enquiry);
@@ -122,10 +80,16 @@ export default function AdminEnquiries() {
     if (!confirm("Are you sure you want to delete this enquiry?")) return;
 
     try {
-      setEnquiries((prev) => prev.filter((e) => e.id !== enquiry.id));
-      toast.success("Enquiry deleted successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Error deleting enquiry");
+      await deleteMutation.mutateAsync({
+        id: enquiry.id,
+        enquiryType: enquiry.enquiry_type,
+      });
+      // Reset page if needed after deletion
+      if (paginatedEnquiries.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      }
+    } catch (error) {
+      console.error("Error deleting enquiry:", error);
     }
   };
 
@@ -135,22 +99,17 @@ export default function AdminEnquiries() {
     if (!selectedEnquiry) return;
 
     try {
-      setEnquiries((prev) =>
-        prev.map((e) =>
-          e.id === selectedEnquiry.id
-            ? {
-                ...e,
-                status: formData.status,
-                notes: formData.notes || null,
-              }
-            : e
-        )
-      );
-
-      toast.success("Enquiry updated successfully");
+      await updateMutation.mutateAsync({
+        id: selectedEnquiry.id,
+        data: {
+          status: formData.status,
+          notes: formData.notes,
+          enquiry_type: selectedEnquiry.enquiry_type,
+        },
+      });
       setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Error updating enquiry");
+    } catch (error) {
+      console.error("Error updating enquiry:", error);
     }
   };
 
@@ -177,6 +136,13 @@ export default function AdminEnquiries() {
     (enquiry.message && enquiry.message.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const pageSize = 15;
+  const totalPages = Math.ceil(filteredEnquiries.length / pageSize);
+  const paginatedEnquiries = filteredEnquiries.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   const columns = [
     { key: "name", label: "Name" },
     { key: "email", label: "Email" },
@@ -185,7 +151,7 @@ export default function AdminEnquiries() {
       key: "enquiry_type",
       label: "Type",
       render: (value: string) => (
-        <Badge variant="outline" className="capitalize">
+        <Badge variant="outline" className="capitalize text-[10px] font-semibold py-0.5 px-2">
           {value.replace(/_/g, " ")}
         </Badge>
       ),
@@ -194,7 +160,7 @@ export default function AdminEnquiries() {
       key: "status",
       label: "Status",
       render: (value: string) => (
-        <Badge variant={getStatusBadgeVariant(value)} className="capitalize">
+        <Badge variant={getStatusBadgeVariant(value)} className="capitalize text-[10px] font-semibold py-0.5 px-2">
           {value.replace(/_/g, " ")}
         </Badge>
       ),
@@ -207,7 +173,7 @@ export default function AdminEnquiries() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Enquiries</h1>
         <p className="text-muted-foreground mt-1">Manage enquiries from website forms</p>
@@ -215,13 +181,40 @@ export default function AdminEnquiries() {
 
       <DataTable
         columns={columns}
-        data={filteredEnquiries}
+        data={paginatedEnquiries}
         searchPlaceholder="Search enquiries..."
-        onSearch={setSearchQuery}
+        onSearch={handleSearch}
         onView={handleView}
         onDelete={handleDelete}
         isLoading={isLoading}
       />
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-border pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredEnquiries.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
+            {Math.min(currentPage * pageSize, filteredEnquiries.length)} of {filteredEnquiries.length} enquiries
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-lg">
@@ -262,7 +255,7 @@ export default function AdminEnquiries() {
                 {selectedEnquiry.message && (
                   <div className="pt-2 border-t">
                     <p className="text-muted-foreground mb-1">Message:</p>
-                    <p className="bg-muted p-3 rounded-lg">{selectedEnquiry.message}</p>
+                    <p className="bg-muted p-3 rounded-lg whitespace-pre-wrap">{selectedEnquiry.message}</p>
                   </div>
                 )}
               </div>
@@ -300,7 +293,9 @@ export default function AdminEnquiries() {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Close
                   </Button>
-                  <Button type="submit">Update</Button>
+                  <Button type="submit" disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? "Updating..." : "Update"}
+                  </Button>
                 </div>
               </form>
             </div>

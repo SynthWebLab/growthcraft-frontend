@@ -1,6 +1,7 @@
 "use client";
 
-import { DollarSign } from "lucide-react";
+import { useState } from "react";
+import { DollarSign, CreditCard, Building2, Send, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import DataCard from "@/components/ui/data-card";
@@ -8,6 +9,24 @@ import PanelDataTable, { type Column } from "@/components/panel/PanelDataTable";
 import { StatusPill } from "@/components/panel";
 import { useMentorEarnings, useWithdrawMentorEarnings } from "@/hooks/queries/useMentor";
 import type { MentorMonthlyEarningsData, MentorPayoutHistoryItem } from "@/types/mentor";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 const monthCols: Column<MentorMonthlyEarningsData>[] = [
   { key: "month", label: "Month", sortable: true },
@@ -28,7 +47,15 @@ const payoutCols: Column<MentorPayoutHistoryItem>[] = [
   {
     key: "status",
     label: "Status",
-    render: (r) => <StatusPill variant={r.status === "completed" ? "completed" : "pending"} />,
+    render: (r) => {
+      if (r.status === "completed") {
+        return <StatusPill variant="completed" />;
+      }
+      if (r.status === "processing") {
+        return <StatusPill variant="pending" label="Processing" />;
+      }
+      return <StatusPill variant="pending" label="Pending" />;
+    },
   },
   {
     key: "txnId",
@@ -57,6 +84,11 @@ const MentorEarnings = () => {
   const { data: earningsResponse, isLoading, error } = useMentorEarnings();
   const { mutate: withdrawEarnings, isPending: isWithdrawing } = useWithdrawMentorEarnings();
 
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"UPI" | "Bank Transfer">("UPI");
+  const [paymentDetails, setPaymentDetails] = useState("");
+
   if (isLoading) {
     return <EarningsSkeleton />;
   }
@@ -73,9 +105,102 @@ const MentorEarnings = () => {
   }
 
   const earnings = earningsResponse?.data;
-  const summary = earnings?.summary || { thisMonth: 0, pendingPayout: 0, lifetime: 0 };
+  const summary = earnings?.summary || { thisMonth: 0, pendingPayout: 0, withdrawablePayout: 0, lifetime: 0 };
   const monthlyData = earnings?.monthlyData || [];
   const payouts = earnings?.payouts || [];
+
+  const handleOpenWithdraw = () => {
+    setAmount("");
+    setPaymentMethod("UPI");
+    setPaymentDetails("");
+    setWithdrawOpen(true);
+  };
+
+  const handleConfirmWithdraw = () => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      toast.error("Please enter a valid withdrawal amount");
+      return;
+    }
+
+    if (numAmount > (summary.withdrawablePayout ?? summary.pendingPayout)) {
+      toast.error(`Amount cannot exceed withdrawable balance of ₹${(summary.withdrawablePayout ?? summary.pendingPayout).toLocaleString()}`);
+      return;
+    }
+
+    if (!paymentDetails.trim()) {
+      toast.error(`Please enter your ${paymentMethod === "UPI" ? "UPI ID" : "Bank Account details"}`);
+      return;
+    }
+
+    withdrawEarnings(
+      {
+        amount: numAmount,
+        paymentMethod,
+        paymentDetails: paymentDetails.trim(),
+      },
+      {
+        onSuccess: () => {
+          setWithdrawOpen(false);
+        },
+      }
+    );
+  };
+
+  const mobileRenderMonth = (row: MentorMonthlyEarningsData) => {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-sm text-foreground">{row.month}</span>
+          <span className="font-bold text-sm text-magenta">₹{row.total.toLocaleString()}</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-border/40 text-muted-foreground">
+          <div>
+            <span className="text-[10px] uppercase block">Sessions</span>
+            <span className="font-semibold text-foreground">{row.sessions}</span>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase block">Base</span>
+            <span className="font-medium text-foreground">₹{row.amount.toLocaleString()}</span>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase block">Bonus</span>
+            <span className="font-medium text-foreground">
+              {row.bonus > 0 ? `₹${row.bonus.toLocaleString()}` : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const mobileRenderPayout = (row: MentorPayoutHistoryItem) => {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground font-medium">{row.date}</span>
+          <span className="font-bold text-sm text-foreground">₹{row.amount.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4 pt-1.5 border-t border-border/40 text-xs">
+          <div className="min-w-0">
+            <span className="text-[10px] uppercase text-muted-foreground block">Transaction ID</span>
+            <code className="text-[10px] font-mono text-muted-foreground block truncate max-w-[150px]" title={row.txnId}>
+              {row.txnId}
+            </code>
+          </div>
+          <div className="shrink-0">
+            {row.status === "completed" ? (
+              <StatusPill variant="completed" />
+            ) : row.status === "processing" ? (
+              <StatusPill variant="pending" label="Processing" />
+            ) : (
+              <StatusPill variant="pending" label="Pending" />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -84,11 +209,11 @@ const MentorEarnings = () => {
         description="Track your monthly earnings and payouts"
         action={
           <Button
-            className="bg-magenta hover:bg-magenta/90 text-white"
-            onClick={() => withdrawEarnings()}
-            disabled={isWithdrawing || summary.pendingPayout === 0}
+            className="bg-magenta hover:bg-magenta/90 text-white gap-1.5 w-full md:w-auto"
+            onClick={handleOpenWithdraw}
+            disabled={isWithdrawing || (summary.withdrawablePayout ?? summary.pendingPayout) === 0}
           >
-            <DollarSign className="h-4 w-4 mr-1" /> {isWithdrawing ? "Withdrawing..." : "Withdraw"}
+            <DollarSign className="h-4 w-4" /> Withdraw
           </Button>
         }
       />
@@ -110,13 +235,103 @@ const MentorEarnings = () => {
 
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-3">Monthly Breakdown</h2>
-        <PanelDataTable columns={monthCols} data={monthlyData} />
+        <PanelDataTable
+          columns={monthCols}
+          data={monthlyData}
+          mobileRender={mobileRenderMonth}
+        />
       </div>
 
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-3">Payout History</h2>
-        <PanelDataTable columns={payoutCols} data={payouts} />
+        <PanelDataTable
+          columns={payoutCols}
+          data={payouts}
+          mobileRender={mobileRenderPayout}
+        />
       </div>
+
+      {/* WITHDRAWAL DIALOG */}
+      <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <DollarSign className="h-5 w-5 text-magenta" /> Request Earnings Withdrawal
+            </DialogTitle>
+            <DialogDescription>
+              Submit a disbursal request for your approved mentoring earnings.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="p-3 bg-muted/40 rounded-lg border border-border flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">Available to Withdraw</span>
+              <span className="font-bold text-warning text-base">₹{(summary.withdrawablePayout ?? summary.pendingPayout).toLocaleString()}</span>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="withdraw-amount">Amount to Withdraw (₹)</Label>
+              <Input
+                id="withdraw-amount"
+                type="text"
+                value={amount}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*\.?\d*$/.test(val)) {
+                    setAmount(val);
+                  }
+                }}
+                placeholder="Enter amount"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Payment Transfer Method</Label>
+              <Select
+                value={paymentMethod}
+                onValueChange={(val: any) => setPaymentMethod(val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="UPI">UPI (Google Pay, PhonePe, Paytm)</SelectItem>
+                  <SelectItem value="Bank Transfer">Bank Account (IMPS / NEFT)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payment-details">
+                {paymentMethod === "UPI" ? "VPA / UPI ID" : "Account Number & IFSC Code"}
+              </Label>
+              <Input
+                id="payment-details"
+                value={paymentDetails}
+                onChange={(e) => setPaymentDetails(e.target.value)}
+                placeholder={
+                  paymentMethod === "UPI"
+                    ? "e.g. mentor@upi or 9876543210@paytm"
+                    : "e.g. A/C: 123456789012, IFSC: HDFC0001234"
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWithdrawOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmWithdraw}
+              disabled={isWithdrawing || !amount || !paymentDetails.trim()}
+              className="bg-magenta text-white hover:bg-magenta/90 gap-1.5"
+            >
+              {isWithdrawing ? "Submitting..." : "Confirm Withdrawal"} <Send className="h-4 w-4" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

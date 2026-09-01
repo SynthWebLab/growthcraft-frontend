@@ -159,4 +159,19 @@ export const collegeService = {
   deactivateAmbassador: async (studentUserId: string): Promise<ApiResponse<any>> => {
     return apiClient.delete<ApiResponse<any>>(API_ENDPOINTS.colleges.deleteAmbassador(studentUserId));
   },
+
+  buyEvent: async (
+    eventId: string,
+    payload?: { batchId?: string; amount?: number }
+  ): Promise<ApiResponse<{ orderId: string; amount: number; currency: string; keyId: string }>> => {
+    return apiClient.post(API_ENDPOINTS.colleges.buyEvent(eventId), payload || {});
+  },
+
+  verifyEventPayment: async (data: {
+    razorpayOrderId: string;
+    razorpayPaymentId: string;
+    razorpaySignature?: string;
+  }): Promise<ApiResponse<any>> => {
+    return apiClient.post(API_ENDPOINTS.colleges.verifyEventPayment, data);
+  },
 };

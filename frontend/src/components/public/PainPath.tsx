@@ -44,20 +44,23 @@ const pillars = [
 
 export const PainPath = () => {
   return (
-    <Section variant="marble" >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-12 md:gap-16">
+    <Section variant="marble" className="!py-10 sm:!py-14 md:!py-18 lg:!py-22">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-start">
         {/* Left Column - Pain Points */}
         <div className="animate-fade-up">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display mb-6 sm:mb-8 leading-tight">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-semibold uppercase tracking-wider mb-3">
+            The Problem
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display mb-4 sm:mb-6 leading-tight">
             Most coding courses leave you with tutorials, not a job.
           </h2>
-          <div className="space-y-4 sm:space-y-5">
+          <div className="space-y-3 sm:space-y-4">
             {pains.map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-start gap-3 sm:gap-4">
-                <div className="mt-1 flex-shrink-0 rounded-lg bg-primary/10 p-2">
-                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <div key={text} className="flex items-start gap-3 sm:gap-4 p-3 rounded-lg bg-card/60 border border-border/50">
+                <div className="mt-0.5 flex-shrink-0 rounded-lg bg-destructive/10 p-2">
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
                 </div>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                <p className="text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed">
                   {text}
                 </p>
               </div>
@@ -67,16 +70,19 @@ export const PainPath = () => {
 
         {/* Right Column - Solutions */}
         <div className="animate-fade-up" style={{ animationDelay: "0.1s" }}>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display mb-6 sm:mb-8 leading-tight">
-            GrowthCraft fixes this.
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider mb-3">
+            The GrowthCraft Way
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-display mb-4 sm:mb-6 leading-tight">
+            Built from scratch to fix this.
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-5">
             {pillars.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
-                className="rounded-xl border border-border bg-card p-4 sm:p-5 hover:shadow-md transition-shadow"
+                className="rounded-xl border border-border bg-card p-4 sm:p-5 hover:shadow-md hover:border-primary/30 transition-all"
               >
-                <div className="rounded-lg bg-primary/10 p-2 w-fit mb-3">
+                <div className="rounded-lg bg-primary/10 p-2 w-fit mb-2.5 sm:mb-3">
                   <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
                 <h3 className="font-bold font-display text-sm sm:text-base mb-1">

@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Clock, Search, Briefcase, Loader2 } from "lucide-react";
+import { Clock, Search, Briefcase, Loader2, Flame } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataCard } from "@/components/ui/data-card";
 import { Section } from "@/components/ui/section";
 import { getPrimaryCta } from "@/lib/ctaPolicy";
+import { PartnerLogo } from "@/components/common/PartnerLogo";
 import {
   useTrainingPrograms,
   useTrainingProgramConfig,
@@ -87,7 +89,17 @@ export default function TrainingProgramsPage() {
     limit: itemsPerPage,
   });
 
-  const programs = apiResponse?.data || [];
+  const rawPrograms = apiResponse?.data || [];
+  const programs = [...rawPrograms].sort((a: any, b: any) => {
+    const aFeatured = a.isFeatured || a.is_featured ? 1 : 0;
+    const bFeatured = b.isFeatured || b.is_featured ? 1 : 0;
+    if (bFeatured !== aFeatured) {
+      return bFeatured - aFeatured;
+    }
+    const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
   const totalPrograms = apiResponse?.meta?.pagination?.total || 0;
   const totalPages = apiResponse?.meta?.pagination?.totalPages || 0;
 
@@ -243,8 +255,13 @@ export default function TrainingProgramsPage() {
                   className="group"
                 >
                   <DataCard className="h-full flex flex-col">
-                    {/* Header with domain and level */}
-                    <div className="flex items-center gap-2 mb-3">
+                    {/* Header with domain, level and trending badge */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      {(program.isFeatured || program.is_featured) && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                          <Flame className="h-3 w-3" /> Trending
+                        </span>
+                      )}
                       <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-magenta/10 text-magenta">
                         {program.domain}
                       </span>
@@ -257,10 +274,36 @@ export default function TrainingProgramsPage() {
                       </span>
                     </div>
 
+                    {/* Assigned Mentors (if any) */}
+                    {program.mentors && program.mentors.length > 0 && (
+                      <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                        <div className="flex -space-x-1.5 overflow-hidden">
+                          {program.mentors.slice(0, 3).map((m: any, idx: number) => (
+                            <Avatar key={idx} className="inline-block h-5 w-5 rounded-full ring-1 ring-background">
+                              <AvatarImage src={m.avatar || undefined} />
+                              <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                                {(m.name || m.fullName || "M").charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
+                        <span className="truncate font-medium text-foreground/80">
+                          {program.mentors.map((m: any) => m.name || m.fullName).filter(Boolean).join(", ")}
+                        </span>
+                      </div>
+                    )}
+
                     {/* Program Title */}
-                    <h3 className="text-base font-bold text-foreground group-hover:text-magenta transition-colors mb-2 line-clamp-2">
-                      {program.title}
+                    <h3 className="text-lg font-bold text-foreground group-hover:text-magenta transition-colors mb-1 line-clamp-1">
+                      {program.programName || program.title}
                     </h3>
+
+                    {/* Full Title (Displayed distinctly) */}
+                    {program.fullTitle && (
+                      <p className="text-xs font-medium text-primary/80 dark:text-lavender mb-2 line-clamp-1">
+                        {program.fullTitle}
+                      </p>
+                    )}
 
                     {/* Description */}
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
@@ -277,7 +320,21 @@ export default function TrainingProgramsPage() {
                         <Briefcase className="h-3 w-3" />
                         Internship
                       </span>
+                      {program.internshipPartners && program.internshipPartners.length > 0 && (
+                        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                          <PartnerLogo companyName={program.internshipPartners[0]?.companyName} size="sm" className="h-3.5 w-3.5 rounded-xs" />
+                          <span>{program.internshipPartners.map((p: any) => p.companyName).join(", ")}</span>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Prerequisites */}
+                    {program.prerequisites && program.prerequisites.length > 0 && (
+                      <div className="text-[11px] text-muted-foreground/90 line-clamp-1 mb-2.5 flex items-center gap-1">
+                        <span className="font-semibold text-foreground/80">Prerequisites:</span>
+                        <span className="truncate">{Array.isArray(program.prerequisites) ? program.prerequisites.join("; ") : program.prerequisites}</span>
+                      </div>
+                    )}
 
                     {/* Tools chips (max 4) */}
                     <div className="flex flex-wrap gap-1.5 mb-4">

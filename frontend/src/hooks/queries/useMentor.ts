@@ -141,7 +141,8 @@ export function useWithdrawMentorEarnings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => mentorService.withdrawEarnings(),
+    mutationFn: (data?: { amount?: number; paymentMethod?: string; paymentDetails?: string }) =>
+      mentorService.withdrawEarnings(data),
     onSuccess: (response) => {
       if (response.success) {
         toast.success("Withdrawal submitted", {

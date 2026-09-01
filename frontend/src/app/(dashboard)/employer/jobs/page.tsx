@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import PanelDataTable, { type Column } from "@/components/panel/PanelDataTable";
 import { StatusPill } from "@/components/panel";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -31,7 +32,7 @@ const FormFields = ({ defaults }: { defaults?: Job }) => (
       <Label>Job Title</Label>
       <Input name="title" defaultValue={defaults?.title} required />
     </div>
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div className="space-y-2">
         <Label>Job Type</Label>
         <Select name="type" defaultValue={defaults?.jobType || "Full-time"}>
@@ -49,7 +50,7 @@ const FormFields = ({ defaults }: { defaults?: Job }) => (
         <Input name="location" defaultValue={defaults?.location} required />
       </div>
     </div>
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div className="space-y-2">
         <Label>Location Type</Label>
         <Select name="locationType" defaultValue={defaults?.locationType || "Remote"}>
@@ -74,13 +75,13 @@ const FormFields = ({ defaults }: { defaults?: Job }) => (
         />
       </div>
     </div>
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div className="space-y-2">
-        <Label>Min Salary (LPA / Monthly stipend)</Label>
+        <Label>Min Salary (LPA / Stipend)</Label>
         <Input name="salaryMin" type="number" defaultValue={defaults?.salaryRange?.min} placeholder="e.g. 4" />
       </div>
       <div className="space-y-2">
-        <Label>Max Salary (LPA / Monthly stipend)</Label>
+        <Label>Max Salary (LPA / Stipend)</Label>
         <Input name="salaryMax" type="number" defaultValue={defaults?.salaryRange?.max} placeholder="e.g. 6" />
       </div>
     </div>
@@ -231,19 +232,86 @@ const EmployerJobs = () => {
     },
   ];
 
+  const mobileRender = (row: Job) => {
+    const jobId = row._id || row.id || "";
+    return (
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h4 className="font-semibold text-sm text-foreground break-words">{row.title}</h4>
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+              <span>{row.jobType}</span>
+              <span>·</span>
+              <span>{row.location}</span>
+              <span>·</span>
+              <span>{row.locationType}</span>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <StatusPill
+              variant={row.status === "Active" ? "active" : row.status === "Draft" ? "pending" : "cancelled"}
+              label={row.status}
+            />
+          </div>
+        </div>
+
+        {row.skillsRequired && row.skillsRequired.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {row.skillsRequired.map((s, idx) => (
+              <Badge key={`${s}-${idx}`} variant="secondary" className="text-[10px]">{s}</Badge>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between text-xs pt-1.5 border-t border-border/40 text-muted-foreground">
+          <div>
+            <span className="text-[10px] uppercase block">Applicants</span>
+            <span className="font-semibold text-foreground">{row.applicantsCount ?? 0}</span>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase block">Posted</span>
+            <span className="font-medium text-foreground">
+              {row.createdAt
+                ? new Date(row.createdAt).toLocaleDateString([], { month: "short", day: "numeric" })
+                : "—"}
+            </span>
+          </div>
+          <div className="flex gap-1 shrink-0">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditJob(row)} title="Edit">
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            {row.status === "Active" && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleClose(jobId)} title="Close">
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-danger" onClick={() => handleDelete(jobId)} title="Delete">
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Job Postings"
         description="Manage your active and closed job listings"
         action={
-          <Button onClick={() => setPostOpen(true)} className="bg-magenta hover:bg-magenta/90">
+          <Button onClick={() => setPostOpen(true)} className="bg-magenta hover:bg-magenta/90 w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" /> Post New Job
           </Button>
         }
       />
 
-      <PanelDataTable columns={columns} data={jobs} searchKey="title" />
+      <PanelDataTable
+        columns={columns}
+        data={jobs}
+        searchKey="title"
+        mobileRender={mobileRender}
+      />
 
       <Dialog open={postOpen} onOpenChange={setPostOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
