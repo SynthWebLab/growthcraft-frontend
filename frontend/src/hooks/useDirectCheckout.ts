@@ -127,7 +127,7 @@ export function useDirectCheckout() {
     }
 
     // 3. Build enrollment data from the logged-in user's profile
-    const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.name || "Student";
+    const fullName = user.fullName || "Student";
     const email = user.email || "";
     const phone = user.phone || "";
 
