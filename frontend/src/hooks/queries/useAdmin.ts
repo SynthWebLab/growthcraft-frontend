@@ -6,6 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { adminService } from "@/services/admin.service";
+import * as AdminTypes from "@/types/admin";
 
 function extractApiError(error: any, fallback: string): string {
   const errorData = error?.response?.data?.error;
@@ -118,7 +119,7 @@ export function useAssignMentorToBatch() {
 export function useCreateBatch() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => adminService.createBatch(data),
+    mutationFn: (data: AdminTypes.CreateBatchRequest) => adminService.createBatch(data),
     onSuccess: () => {
       toast.success("Batch created successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.batches() });
@@ -132,8 +133,7 @@ export function useCreateBatch() {
 export function useUpdateBatch() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      adminService.updateBatch(id, data),
+    mutationFn: ({ id, data }: { id: string; data: AdminTypes.UpdateBatchRequest }) => adminService.updateBatch(id, data),
     onSuccess: () => {
       toast.success("Batch updated successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.batches() });
@@ -219,7 +219,7 @@ export function useConfirmPayout(mentorId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ payoutId, razorpayPaymentId }: { payoutId: string; razorpayPaymentId: string }) =>
-      adminService.confirmPayout(payoutId, razorpayPaymentId),
+      adminService.confirmPayout(payoutId, { razorpayPaymentId }),
     onSuccess: () => {
       toast.success("Payout confirmed and marked as Paid");
       queryClient.invalidateQueries({ queryKey: adminKeys.mentorDetails(mentorId) });
@@ -367,7 +367,7 @@ export function useUpdateUserStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      adminService.updateUserStatus(id, isActive),
+      adminService.updateUserStatus(id, { isActive }),
     onSuccess: (_, variables) => {
       toast.success(variables.isActive ? "User account activated" : "User account suspended");
       queryClient.invalidateQueries({ queryKey: adminKeys.users() });
@@ -468,7 +468,7 @@ export function useAdminCourses() {
 export function useCreateCourse() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => adminService.createCourse(data),
+    mutationFn: (data: AdminTypes.CreateCourseRequest) => adminService.createCourse(data),
     onSuccess: () => {
       toast.success("Course created successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.courses() });
@@ -482,7 +482,7 @@ export function useCreateCourse() {
 export function useUpdateCourse() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => adminService.updateCourse(id, data),
+    mutationFn: ({ id, data }: { id: string; data: AdminTypes.UpdateCourseRequest }) => adminService.updateCourse(id, data),
     onSuccess: () => {
       toast.success("Course updated successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.courses() });
@@ -548,7 +548,7 @@ export function usePublishTrainingProgram() {
 export function useCreateTrainingProgram() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => adminService.createTrainingProgram(data),
+    mutationFn: (data: AdminTypes.CreateTrainingProgramRequest) => adminService.createTrainingProgram(data),
     onSuccess: () => {
       toast.success("Training program created successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.trainingPrograms() });
@@ -562,7 +562,7 @@ export function useCreateTrainingProgram() {
 export function useUpdateTrainingProgram() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => adminService.updateTrainingProgram(id, data),
+    mutationFn: ({ id, data }: { id: string; data: AdminTypes.UpdateTrainingProgramRequest }) => adminService.updateTrainingProgram(id, data),
     onSuccess: () => {
       toast.success("Training program updated successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.trainingPrograms() });
@@ -636,7 +636,7 @@ export function useToggleEventStatus() {
 export function useCreateEvent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => adminService.createEvent(data),
+    mutationFn: (data: AdminTypes.CreateEventRequest) => adminService.createEvent(data),
     onSuccess: () => {
       toast.success("Event created successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.events() });
@@ -654,7 +654,7 @@ export function useCreateEvent() {
 export function useUpdateEvent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => adminService.updateEvent(id, data),
+    mutationFn: ({ id, data }: { id: string; data: AdminTypes.UpdateEventRequest }) => adminService.updateEvent(id, data),
     onSuccess: () => {
       toast.success("Event updated successfully");
       queryClient.invalidateQueries({ queryKey: adminKeys.events() });
@@ -700,7 +700,7 @@ export function useAdminEnquiries() {
 export function useUpdateAdminEnquiry() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { status: string; notes?: string; enquiry_type: string } }) =>
+    mutationFn: ({ id, data }: { id: string; data: AdminTypes.UpdateEnquiryRequest }) =>
       adminService.updateEnquiry(id, data),
     onSuccess: () => {
       toast.success("Enquiry updated successfully");
@@ -745,7 +745,7 @@ export function useUpdateAdminRegistration() {
       data,
     }: {
       id: string;
-      data: { status: string; payment_status: string; notes?: string; item_type: string };
+      data: AdminTypes.UpdateRegistrationRequest;
     }) => adminService.updateRegistration(id, data),
     onSuccess: () => {
       toast.success("Registration updated successfully");
@@ -771,3 +771,5 @@ export function useDeleteAdminRegistration() {
     },
   });
 }
+
+
