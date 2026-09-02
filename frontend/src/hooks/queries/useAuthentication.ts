@@ -10,6 +10,7 @@ import { authService } from "@/services/auth.service";
 import { AUTH_ROUTES, DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
 import { broadcastAuthChange } from "@/lib/auth/authSync";
 import type { RegisterData } from "@/types/api";
+import { useVerificationStore } from "@/stores/useVerificationStore";
 
 // Query keys for cache management
 export const authKeys = {
@@ -32,12 +33,13 @@ export function useRegister(callbackUrl?: string) {
           description: "Please check your email to verify your account.",
         });
         
-        // Redirect to email verification page with email and callbackUrl
-        const verifyUrl = AUTH_ROUTES.verifyEmail(variables.email);
-        const finalUrl = callbackUrl 
-          ? `${verifyUrl}&callbackUrl=${encodeURIComponent(callbackUrl)}`
-          : verifyUrl;
-        router.push(finalUrl);
+        // Save to in-memory store instead of URL params for security and atomicity
+        const setPending = useVerificationStore.getState().setPendingVerification;
+        setPending(variables.email, callbackUrl);
+
+        // Redirect to email verification page WITHOUT email in URL
+        const verifyUrl = '/verify-email';
+        router.push(verifyUrl);
       } else {
         toast.error("Registration failed", {
           description: response.error?.message || "Please try again.",
@@ -103,8 +105,13 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
             description: "Redirecting you to verify your email...",
           });
           
-          // Redirect to verify-email page with email immediately
-          router.push(AUTH_ROUTES.verifyEmail(email));
+          
+          // Set in-memory pending state
+          const setPending = useVerificationStore.getState().setPendingVerification;
+          setPending(email);
+
+          // Redirect to verify-email page WITHOUT email in URL
+          router.push('/verify-email');
           return;
         }
 
@@ -189,8 +196,12 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
           description: "Redirecting you to verify your email...",
         });
         
-        // Redirect to verify-email page with email
-        router.push(AUTH_ROUTES.verifyEmail(variables.email));
+        // Set in-memory pending state
+        const setPending = useVerificationStore.getState().setPendingVerification;
+        setPending(variables.email);
+
+        // Redirect to verify-email page WITHOUT email in URL
+        router.push('/verify-email');
         return;
       }
       
@@ -223,6 +234,9 @@ export function useVerifyEmail(callbackUrl?: string) {
           description: "Please sign in with your credentials to continue.",
         });
 
+        // Clear the pending verification state since we succeeded
+        useVerificationStore.getState().clearPendingVerification();
+
         setTimeout(() => {
           router.push(finalRedirect);
         }, 1200);
@@ -246,11 +260,13 @@ export function useVerifyEmail(callbackUrl?: string) {
 export function useResendOTP() {
   return useMutation({
     mutationFn: (email: string) => authService.resendVerificationOTP(email),
-    onSuccess: (response) => {
+    onSuccess: (response, email) => {
       if (response.success) {
         toast.success("OTP sent!", {
           description: "Please check your email.",
         });
+        // Reset the countdown in the store since a new OTP was sent
+        useVerificationStore.getState().setPendingVerification(email);
       } else {
         toast.error("Failed to send OTP", {
           description: response.error?.message,

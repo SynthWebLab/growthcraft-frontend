@@ -1,38 +1,43 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-export const dynamic = "force-dynamic";
-import { Suspense } from "react";
-
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Mail } from "lucide-react";
 import { VerifyEmailForm } from "@/components/auth/VerifyEmailForm";
 import { AuthPageLayout } from "@/components/auth/AuthPageLayout";
+import { useVerificationStore } from "@/stores/useVerificationStore";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
 
-function VerifyEmailContent() {
-  const searchParams = useSearchParams();
-  const email = searchParams.get("email");
-  const callbackUrl = searchParams.get("callbackUrl") || undefined;
+export default function VerifyEmailPage() {
+  const router = useRouter();
+  const { email, callbackUrl } = useVerificationStore();
+  const { isAuthenticated, user } = useCurrentUser();
+  const [mounted, setMounted] = useState(false);
 
-  if (!email) {
-    return (
-      <AuthPageLayout
-        icon={Mail}
-        title="Email Verification"
-        subtitle="Please provide your email address"
-      >
-        <div className="text-center space-y-4">
-          <p className="text-muted-foreground">
-            No email address provided. Please register first.
-          </p>
-          <a
-            href="/register/student"
-            className="text-primary hover:underline"
-          >
-            Go to Registration
-          </a>
-        </div>
-      </AuthPageLayout>
-    );
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    // Cross-tab login sync: Redirect to dashboard if authenticated
+    if (isAuthenticated && user?.role) {
+      const dashboardRoute = DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/';
+      router.replace(dashboardRoute);
+      return;
+    }
+
+    // Redirect to home if no pending verification (e.g. direct URL visit or refresh)
+    if (!email) {
+      router.replace("/");
+    }
+  }, [mounted, isAuthenticated, user, email, router]);
+
+  // Don't render anything until mounted and we have an email (avoids flashes)
+  if (!mounted || !email || isAuthenticated) {
+    return null;
   }
 
   return (
@@ -43,13 +48,5 @@ function VerifyEmailContent() {
     >
       <VerifyEmailForm email={email} callbackUrl={callbackUrl} />
     </AuthPageLayout>
-  );
-}
-
-export default function VerifyEmailPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <VerifyEmailContent />
-    </Suspense>
   );
 }
