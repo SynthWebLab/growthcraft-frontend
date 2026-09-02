@@ -7,12 +7,13 @@ import { QueryProvider } from "@/providers/QueryProvider";
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-plus-jakarta-sans",
+  weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
-  weight: ["700"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-dancing-script",
   display: "swap",
 });
