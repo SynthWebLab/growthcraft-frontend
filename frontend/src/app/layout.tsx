@@ -5,15 +5,17 @@ import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/QueryProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-sans",
   subsets: ["latin"],
+  variable: "--font-plus-jakarta-sans",
   weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 const dancingScript = Dancing_Script({
-  variable: "--font-script",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  variable: "--font-dancing-script",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -49,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} ${dancingScript.variable} h-full antialiased`}
+      className={`h-full antialiased ${plusJakartaSans.variable} ${dancingScript.variable}`}
     >
       <body className="font-sans antialiased">
         <QueryProvider>
