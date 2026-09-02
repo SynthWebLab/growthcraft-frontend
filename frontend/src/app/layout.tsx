@@ -1,7 +1,21 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/QueryProvider";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta-sans",
+  display: "swap",
+});
+
+const dancingScript = Dancing_Script({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-dancing-script",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "GrowthCraft - Where Learning Meets Opportunity",
@@ -36,7 +50,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="h-full antialiased"
+      className={`h-full antialiased ${plusJakartaSans.variable} ${dancingScript.variable}`}
     >
       <body className="font-sans antialiased">
         <QueryProvider>
