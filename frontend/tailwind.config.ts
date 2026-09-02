@@ -22,9 +22,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        script: ['Dancing Script', 'cursive'],
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        script: ['var(--font-script)', 'cursive'],
       },
       colors: {
         border: "hsl(var(--border))",
