@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { HeroSection } from "@/components/public/HeroSection";
-import { TrustStrip } from "@/components/public/TrustStrip";
-import { PainPath } from "@/components/public/PainPath";
-import { HowItWorks } from "@/components/public/HowItWorks";
-import { FeaturedCourses } from "@/components/public/FeaturedCourses";
-import { BootcampHighlight } from "@/components/public/BootcampHighlight";
-import { FivePaths } from "@/components/public/FivePaths";
-import { MentorShowcase } from "@/components/public/MentorShowcase";
-import { Outcomes } from "@/components/public/Outcomes";
-import { HiringPartners } from "@/components/public/HiringPartners";
-import { FAQ } from "@/components/public/FAQ";
-import { FinalCTA } from "@/components/public/FinalCTA";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SEO_CONFIG } from "@/config/seo.config";
+
+const TrustStrip = dynamic(() => import("@/components/public/TrustStrip").then((m) => m.TrustStrip));
+const PainPath = dynamic(() => import("@/components/public/PainPath").then((m) => m.PainPath));
+const HowItWorks = dynamic(() => import("@/components/public/HowItWorks").then((m) => m.HowItWorks));
+const FeaturedCourses = dynamic(() => import("@/components/public/FeaturedCourses").then((m) => m.FeaturedCourses));
+const BootcampHighlight = dynamic(() => import("@/components/public/BootcampHighlight").then((m) => m.BootcampHighlight));
+const FivePaths = dynamic(() => import("@/components/public/FivePaths").then((m) => m.FivePaths));
+const MentorShowcase = dynamic(() => import("@/components/public/MentorShowcase").then((m) => m.MentorShowcase));
+const Outcomes = dynamic(() => import("@/components/public/Outcomes").then((m) => m.Outcomes));
+const HiringPartners = dynamic(() => import("@/components/public/HiringPartners").then((m) => m.HiringPartners));
+const FAQ = dynamic(() => import("@/components/public/FAQ").then((m) => m.FAQ));
+const FinalCTA = dynamic(() => import("@/components/public/FinalCTA").then((m) => m.FinalCTA));
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = SEO_CONFIG.homepage;
