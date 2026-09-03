@@ -22,8 +22,8 @@ export const authService = {
   /**
    * Login user
    */
-  login: async (email: string, password: string): Promise<ApiResponse> => {
-    return apiClient.post<ApiResponse>(API_ENDPOINTS.auth.login, { email, password });
+  login: async (email: string, password: string, role?: string): Promise<ApiResponse> => {
+    return apiClient.post<ApiResponse>(API_ENDPOINTS.auth.login, { email, password, role });
   },
 
   /**

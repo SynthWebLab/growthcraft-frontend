@@ -63,7 +63,7 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+    mutationFn: async ({ email, password, role }: { email: string; password: string; role?: string }) => {
       // ── Guard: block login if already authenticated ──────────────────────────
       // This is the last line of defence in case the AuthPageLayout conflict modal
       // is somehow bypassed (e.g. via DevTools or a race condition).
@@ -90,9 +90,10 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
       }
       // ─────────────────────────────────────────────────────────────────────────
 
-      // Call backend directly - this will set httpOnly cookies in browser
-      const response = await authService.login(email, password);
-      return { response, email }; // Return email for use in onSuccess
+      // Call backend directly with explicit role if available - this will set httpOnly cookies in browser
+      const targetRole = role || expectedRole;
+      const response = await authService.login(email, password, targetRole);
+      return { response, email, role: targetRole }; // Return email and role for use in onSuccess
     },
     onSuccess: async ({ response, email }) => {
       if (!response.success) {
@@ -118,6 +119,26 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
         toast.error("Login failed", {
           description: response.error?.message || "Please try again.",
         });
+        return;
+      }
+
+      // Handle multiple role accounts requiring role selection
+      if (response.data?.requiresRoleSelection) {
+        const availableRoles = (response.data.availableRoles || []) as string[];
+        const roleLinks = availableRoles
+          .map((r: string) => {
+            const formatted = r.charAt(0).toUpperCase() + r.slice(1);
+            return `${formatted} portal: /login/${r.toLowerCase()}`;
+          })
+          .join(" or ");
+        const errorMessage = `Multiple accounts found for this email. Please sign in via the ${roleLinks}`;
+        if (setFormError) {
+          setFormError(errorMessage);
+        } else {
+          toast.info("Role Selection Required", {
+            description: errorMessage,
+          });
+        }
         return;
       }
 
@@ -205,6 +226,14 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
         return;
       }
       
+      // Check if error is a wrong portal error (format: "...portal: /login/<role>")
+      if (error.message?.includes("portal: /login/")) {
+        if (setFormError) {
+          setFormError(error.message);
+          return;
+        }
+      }
+
       toast.error("Login failed", {
         description: error.message || "An unexpected error occurred.",
       });

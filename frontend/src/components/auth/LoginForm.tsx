@@ -52,6 +52,7 @@ export function LoginForm({ role, redirectPath, callbackUrl }: LoginFormProps) {
     loginMutation.mutate({
       email: data.email,
       password: data.password,
+      role,
     });
   };
 
