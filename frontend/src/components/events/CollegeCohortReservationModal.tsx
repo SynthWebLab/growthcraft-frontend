@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { useBuyCollegeEvent, useVerifyCollegeEventPayment, useCollegeCohort, useCollegeDashboard } from "@/hooks/queries/useCollege";
 import { toast } from "sonner";
+import { isPaymentPaused } from "@/config/paymentConfig";
+import { usePaymentMaintenanceStore } from "@/stores/paymentMaintenanceStore";
 
 interface CollegeCohortReservationModalProps {
   isOpen: boolean;
@@ -45,6 +47,7 @@ export function CollegeCohortReservationModal({
 }: CollegeCohortReservationModalProps) {
   const { data: cohortData } = useCollegeCohort();
   const { data: dashboardData } = useCollegeDashboard();
+  const openPaymentMaintenance = usePaymentMaintenanceStore((state) => state.openModal);
 
   const collegeName = (dashboardData as any)?.data?.collegeName || (dashboardData as any)?.collegeName || "College Partner";
   const activeStudents = (cohortData as any)?.used || (cohortData as any)?.data?.used || 0;
@@ -69,6 +72,16 @@ export function CollegeCohortReservationModal({
   const handleReserveAndPay = async () => {
     if (!cohortName.trim()) {
       toast.error("Please enter a Cohort Name");
+      return;
+    }
+
+    if (isPaymentPaused()) {
+      onClose();
+      openPaymentMaintenance({
+        itemTitle: `${eventTitle} (${seatCount} seats - Cohort: ${cohortName})`,
+        itemPrice: totalAmount,
+        itemType: "college-cohort",
+      });
       return;
     }
 

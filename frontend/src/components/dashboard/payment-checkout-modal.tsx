@@ -19,6 +19,8 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
+import { isPaymentPaused } from "@/config/paymentConfig";
+import { usePaymentMaintenanceStore } from "@/stores/paymentMaintenanceStore";
 
 export interface PaymentItemDetails {
   id: string;
@@ -43,6 +45,7 @@ export function PaymentCheckoutModal({
   onPaymentSuccess,
 }: PaymentCheckoutModalProps) {
   const queryClient = useQueryClient();
+  const openPaymentMaintenance = usePaymentMaintenanceStore((state) => state.openModal);
   const [selectedMethod, setSelectedMethod] = useState<"razorpay" | "upi" | "card">("razorpay");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -72,6 +75,16 @@ export function PaymentCheckoutModal({
   }).format(price);
 
   const handleProcessPayment = async () => {
+    if (isPaymentPaused()) {
+      onClose();
+      openPaymentMaintenance({
+        itemTitle: item.title,
+        itemPrice: price,
+        itemType: item.type,
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
     try {

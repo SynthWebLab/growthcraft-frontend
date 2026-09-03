@@ -11,6 +11,8 @@ import { useRegisterWorkshop } from "@/hooks/queries/useWorkshops";
 import { useRegisterHackathon } from "@/hooks/queries/useHackathons";
 import { useEnrollCourse } from "@/hooks/queries/useCourses";
 import { useEnrollInTrainingProgram } from "@/hooks/queries/useTrainingPrograms";
+import { isPaymentPaused } from "@/config/paymentConfig";
+import { usePaymentMaintenanceStore } from "@/stores/paymentMaintenanceStore";
 
 export type DirectCheckoutItemType =
   | "course"
@@ -84,13 +86,14 @@ function triggerConfetti() {
  * Flow:
  * 1. If user is NOT logged in → redirect to /register/student?callbackUrl=...
  * 2. If user IS logged in → enroll via API, then:
- *    a. price > 0 → open Razorpay checkout
+ *    a. price > 0 → open Razorpay checkout (or maintenance modal if payments are paused)
  *    b. price === 0 → show success toast + confetti
  */
 export function useDirectCheckout() {
   const { data: user } = useCurrentUser();
   const router = useRouter();
   const { openCheckout } = useRazorpayCheckout();
+  const openPaymentMaintenance = usePaymentMaintenanceStore((state) => state.openModal);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingItemId, setProcessingItemId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -112,6 +115,16 @@ export function useDirectCheckout() {
   const trainingProgramEnroll = useEnrollInTrainingProgram();
 
   const checkout = async ({ itemId, itemType, itemTitle, price, onEnrolled }: DirectCheckoutParams) => {
+    // If online payments are paused and this is a paid item, open maintenance modal
+    if (isPaymentPaused() && price > 0) {
+      openPaymentMaintenance({
+        itemTitle,
+        itemPrice: price,
+        itemType,
+      });
+      return;
+    }
+
     // 1. Not logged in → redirect to registration
     if (!user || !user.isEmailVerified) {
       if (typeof window !== "undefined") {

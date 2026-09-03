@@ -62,6 +62,8 @@ import {
   useRequestTrainingProgramCallback,
 } from "@/hooks/queries/useTrainingPrograms";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import { isPaymentPaused } from "@/config/paymentConfig";
+import { usePaymentMaintenanceStore } from "@/stores/paymentMaintenanceStore";
 
 
 function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMM dd, yyyy"): string {
@@ -111,6 +113,7 @@ export default function TrainingProgramDetailPage({
   // Mutations for enrollment and callback
   const enrollMutation = useEnrollInTrainingProgram();
   const { openCheckout, isLoading: checkoutLoading } = useRazorpayCheckout();
+  const openPaymentMaintenance = usePaymentMaintenanceStore((state) => state.openModal);
   const callbackMutation = useRequestTrainingProgramCallback();
 
 
@@ -320,6 +323,17 @@ export default function TrainingProgramDetailPage({
       toast.error("Please login to complete your enrollment");
       return;
     }
+
+    if (isPaymentPaused() && (program.price || 9999) > 0) {
+      setIsCompanyModalOpen(false);
+      openPaymentMaintenance({
+        itemTitle: program.title,
+        itemPrice: program.price || 9999,
+        itemType: "training-program",
+      });
+      return;
+    }
+
     const chosenPartner = internshipPartners[selectedPartnerIndex] || internshipPartners[0];
     try {
       const response = await enrollMutation.mutateAsync({
