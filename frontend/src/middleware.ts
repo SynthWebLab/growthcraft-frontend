@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { LAUNCH_CONFIG } from '@/config/launch.config';
+import { getSafeCallbackUrl } from '@/lib/utils/url';
 
 // Define public routes that don't require authentication
 const publicRoutes = [
@@ -131,8 +132,11 @@ export async function middleware(request: NextRequest) {
   if (isAuthenticated && isEmailVerified && userRole) {
     if (pathname.startsWith('/verify-email')) {
       const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
-      if (callbackUrl && callbackUrl !== '/') {
-        return NextResponse.redirect(new URL(callbackUrl, request.url));
+      if (callbackUrl) {
+        const safeUrl = getSafeCallbackUrl(callbackUrl, '/');
+        if (safeUrl !== '/') {
+          return NextResponse.redirect(new URL(safeUrl, request.url));
+        }
       }
       const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
       return NextResponse.redirect(new URL(dashboardRoute, request.url));
@@ -143,8 +147,11 @@ export async function middleware(request: NextRequest) {
       // Only auto-redirect for their own portal or generic auth routes (no role in path)
       if (targetRole === null || targetRole === userRole) {
         const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
-        if (callbackUrl && callbackUrl !== '/') {
-          return NextResponse.redirect(new URL(callbackUrl, request.url));
+        if (callbackUrl) {
+          const safeUrl = getSafeCallbackUrl(callbackUrl, '/');
+          if (safeUrl !== '/') {
+            return NextResponse.redirect(new URL(safeUrl, request.url));
+          }
         }
         const dashboardRoute = roleRoutes[userRole]?.[0] || '/';
         return NextResponse.redirect(new URL(dashboardRoute, request.url));

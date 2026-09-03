@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
@@ -88,6 +89,7 @@ function triggerConfetti() {
  */
 export function useDirectCheckout() {
   const { data: user } = useCurrentUser();
+  const router = useRouter();
   const { openCheckout } = useRazorpayCheckout();
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingItemId, setProcessingItemId] = useState<string | null>(null);
@@ -114,8 +116,10 @@ export function useDirectCheckout() {
     if (!user || !user.isEmailVerified) {
       if (typeof window !== "undefined") {
         const currentUrl = window.location.pathname + window.location.search;
-        toast.info("Please register or login to continue");
-        window.location.href = `/register/student?callbackUrl=${encodeURIComponent(currentUrl)}`;
+        toast.info("Please log in or register to complete your enrollment.", {
+          duration: 5000,
+        });
+        router.push(`/register/student?callbackUrl=${encodeURIComponent(currentUrl)}`);
       }
       return;
     }
