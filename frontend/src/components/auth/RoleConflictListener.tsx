@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ const loginRoutes: Record<string, string> = {
 export function RoleConflictListener() {
   const { data: user } = useCurrentUser();
   const queryClient = useQueryClient();
+  const router = useRouter();
   
   const [isOpen, setIsOpen] = useState(false);
   const [expectedRole, setExpectedRole] = useState<"student" | "mentor" | "college" | "employer" | null>(null);
@@ -101,7 +103,7 @@ export function RoleConflictListener() {
 
       // Redirect to the target portal's login page for immediate access
       const targetLoginPath = expectedRole ? loginRoutes[expectedRole] : "/";
-      window.location.href = targetLoginPath;
+      router.replace(targetLoginPath);
     }
     setIsLoggingOut(false);
   };

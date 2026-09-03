@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSocket } from "@/lib/socket";
 import { useCurrentUser } from "./useCurrentUser";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { notificationsKeys } from "./queries/useNotifications";
 import { authService } from "@/services/auth.service";
@@ -30,6 +31,7 @@ const getNotificationToastMessage = (notification: any): string => {
 export function useSocket() {
   const { user, isAuthenticated } = useCurrentUser();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -54,7 +56,7 @@ export function useSocket() {
             if (typeof window !== "undefined") {
               const role = user.role;
               const dashboardPath = `/${role}/notifications`;
-              window.location.href = dashboardPath;
+              router.push(dashboardPath);
             }
           }
         }

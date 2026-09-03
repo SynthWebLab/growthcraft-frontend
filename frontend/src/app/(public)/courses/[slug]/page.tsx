@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { DataCard } from "@/components/ui/data-card";
@@ -42,6 +42,7 @@ export default function CourseDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { isOpen, formType, formTitle, courseId, courseTitle, openForm, closeForm } = usePopupForm();
   const { data: user, isLoading: userLoading } = useCurrentUser();
 
@@ -165,7 +166,7 @@ export default function CourseDetailPage({
       if (typeof window !== "undefined") {
         const currentUrl = window.location.pathname;
         toast.info("Please register to enroll in this course");
-        window.location.href = `/register/student?callbackUrl=${encodeURIComponent(currentUrl)}`;
+        router.push(`/register/student?callbackUrl=${encodeURIComponent(currentUrl)}`);
       }
       return;
     }

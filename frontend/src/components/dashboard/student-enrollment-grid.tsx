@@ -70,7 +70,19 @@ function StudentEnrollmentGridContent({
 
   return (
     <div className="space-y-6 p-4 sm:p-0">
-      <PageHeader title={pageTitle} description={pageDescription} />
+      <PageHeader 
+        title={pageTitle} 
+        description={pageDescription} 
+        action={
+          filteredItems.length > 0 && browseHref ? (
+            <Link href={browseHref}>
+              <Button className="bg-magenta text-white hover:bg-magenta/90 text-xs sm:text-sm px-4 py-2">
+                {browseLabel}
+              </Button>
+            </Link>
+          ) : undefined
+        }
+      />
 
       {/* Payment Gateway Modal */}
       <PaymentCheckoutModal

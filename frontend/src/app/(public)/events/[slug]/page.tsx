@@ -2,7 +2,7 @@
 
 import { use, useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { DataCard } from "@/components/ui/data-card";
@@ -226,6 +226,7 @@ export default function EventDetailPage({
   const { data: user } = useCurrentUser();
   const { isEventEnrolled } = useUserEnrollments();
   const { checkout, isProcessing: isDirectCheckoutProcessing } = useDirectCheckout();
+  const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [hasJustEnrolled, setHasJustEnrolled] = useState(false);
 
@@ -439,9 +440,9 @@ export default function EventDetailPage({
       if (typeof window !== "undefined") {
         const currentUrl = window.location.pathname;
         toast.info("Please register or login to join this event");
-        window.location.href = `/login?callbackUrl=${encodeURIComponent(
+        router.push(`/login?callbackUrl=${encodeURIComponent(
           currentUrl
-        )}`;
+        )}`);
       }
       return;
     }

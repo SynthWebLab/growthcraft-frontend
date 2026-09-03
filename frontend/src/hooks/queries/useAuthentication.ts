@@ -11,6 +11,7 @@ import { AUTH_ROUTES, DASHBOARD_ROUTES } from "@/lib/constants/routes.constant";
 import { broadcastAuthChange } from "@/lib/auth/authSync";
 import type { RegisterData } from "@/types/api";
 import { useVerificationStore } from "@/stores/useVerificationStore";
+import { getSafeCallbackUrl } from "@/lib/utils/url";
 
 // Query keys for cache management
 export const authKeys = {
@@ -183,18 +184,20 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
         });
         
         // Check for callback URL first
-        if (callbackUrl && callbackUrl !== '/') {
-          router.push(callbackUrl);
-          router.refresh(); // Refresh to update middleware auth state
-        } else {
-          // Role-based redirect to dashboard
-          const dashboardRoute = DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES];
-          if (dashboardRoute) {
-            router.push(dashboardRoute);
-            router.refresh(); // Refresh to update middleware auth state
-          } else {
-            router.push('/');
+        if (callbackUrl) {
+          const safeUrl = getSafeCallbackUrl(callbackUrl, '/');
+          if (safeUrl !== '/') {
+            window.location.href = safeUrl;
+            return;
           }
+        }
+        
+        // Role-based redirect to dashboard
+        const dashboardRoute = DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES];
+        if (dashboardRoute) {
+          window.location.href = dashboardRoute;
+        } else {
+          window.location.href = '/';
         }
       }
     },

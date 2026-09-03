@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getSafeCallbackUrl } from "@/lib/utils/url";
 
 interface AuthPageLayoutProps {
   icon: LucideIcon;
@@ -40,6 +42,7 @@ const dashboardRoutes = {
 export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, children }: AuthPageLayoutProps) {
   const { data: user, isLoading } = useCurrentUser();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogoutAndRedirect = async () => {
@@ -67,7 +70,7 @@ export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, chil
       // Redirect to the target portal's login page (not a reload of the current URL)
       // so the user lands directly on the correct login form after switching accounts.
       const targetLoginPath = expectedRole ? loginRoutes[expectedRole] : window.location.pathname;
-      window.location.href = targetLoginPath;
+      router.replace(targetLoginPath);
     }
     setIsLoggingOut(false);
   };
@@ -85,15 +88,12 @@ export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, chil
         if (typeof window !== "undefined") {
           const searchParams = new URLSearchParams(window.location.search);
           const callbackUrl = searchParams.get("callbackUrl");
-          if (callbackUrl && callbackUrl !== "/") {
-            window.location.href = callbackUrl;
-          } else {
-            window.location.href = userDashboard;
-          }
+          const safeUrl = getSafeCallbackUrl(callbackUrl, userDashboard);
+          router.replace(safeUrl);
         }
       }
     }
-  }, [user, isLoading, expectedRole, userDashboard]);
+  }, [user, isLoading, expectedRole, userDashboard, router]);
 
   // If user is loading session, show loading spinner
   if (isLoading) {
