@@ -20,6 +20,8 @@ import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import { isPaymentPaused } from "@/config/paymentConfig";
+import { usePaymentMaintenanceStore } from "@/stores/paymentMaintenanceStore";
 
 // Validation schemas
 const enrollmentSchema = z.object({
@@ -143,17 +145,22 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
 
   // Multi-step State
   const [step, setStep] = useState(1); // 1: Attendee Info, 2: Payment Choice, 3: Success/Hold screen
-  const [paymentMethod, setPaymentMethod] = useState<"online" | "offline">("online");
+  const isPaused = isPaymentPaused();
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "offline">(
+    isPaymentPaused() ? "offline" : "online"
+  );
   const [tempData, setTempData] = useState<EnrollmentFormData | null>(null);
   const [enrollmentResult, setEnrollmentResult] = useState<any>(null);
   const [isMutating, setIsMutating] = useState(false);
 
   const { openCheckout } = useRazorpayCheckout();
+  const openPaymentMaintenance = usePaymentMaintenanceStore((state) => state.openModal);
 
   // Reset steps on close or open
   useEffect(() => {
     if (isOpen) {
       setStep(1);
+      setPaymentMethod(isPaymentPaused() ? "offline" : "online");
       setTempData(null);
       setEnrollmentResult(null);
       setIsMutating(false);
@@ -353,6 +360,16 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
 
   const handlePaymentConfirm = async () => {
     if (!tempData) return;
+
+    if (paymentMethod === "online" && isPaused) {
+      openPaymentMaintenance({
+        itemTitle: courseTitle,
+        itemPrice: price,
+        itemType,
+      });
+      return;
+    }
+
     setIsMutating(true);
     try {
       const res = await executeEnrollmentMutation(tempData);
@@ -578,7 +595,17 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
               <div className="space-y-6 mt-4">
                 <div className="space-y-3">
                   <div
-                    onClick={() => setPaymentMethod("online")}
+                    onClick={() => {
+                      if (isPaused) {
+                        openPaymentMaintenance({
+                          itemTitle: courseTitle,
+                          itemPrice: price,
+                          itemType,
+                        });
+                        return;
+                      }
+                      setPaymentMethod("online");
+                    }}
                     className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       paymentMethod === "online"
                         ? "border-primary bg-primary/5"
@@ -588,8 +615,19 @@ export const PopupForm = ({ isOpen, onClose, type, title, courseId, courseTitle,
                     <div className="flex items-center gap-3">
                       <CreditCard className={`h-5 w-5 ${paymentMethod === "online" ? "text-primary" : "text-muted-foreground"}`} />
                       <div className="text-left">
-                        <p className="text-sm font-semibold text-foreground">Pay Online Now</p>
-                        <p className="text-xs text-muted-foreground">Instant confirmation via credit/debit card, UPI, or NetBanking</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">Pay Online Now</p>
+                          {isPaused && (
+                            <span className="text-[10px] bg-amber-500/15 text-amber-600 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">
+                              Maintenance
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {isPaused
+                            ? "Direct online payments temporarily offline for system maintenance"
+                            : "Instant confirmation via credit/debit card, UPI, or NetBanking"}
+                        </p>
                       </div>
                     </div>
                     <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${paymentMethod === "online" ? "border-primary bg-primary" : "border-border"}`}>

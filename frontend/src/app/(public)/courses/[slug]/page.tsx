@@ -34,6 +34,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCourseBySlug, useEnrollmentStatus, useEnrollCourse, useRequestCallback, courseKeys } from "@/hooks/queries/useCourses";
 import { RazorpayPayButton } from "@/components/payment/RazorpayPayButton";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import { isPaymentPaused } from "@/config/paymentConfig";
+import { usePaymentMaintenanceStore } from "@/stores/paymentMaintenanceStore";
 
 
 export default function CourseDetailPage({
@@ -65,6 +67,7 @@ export default function CourseDetailPage({
   // Enrollment and callback mutations - must be called unconditionally (Rules of Hooks)
   const enrollMutation = useEnrollCourse();
   const { openCheckout, isLoading: checkoutLoading } = useRazorpayCheckout();
+  const openPaymentMaintenance = usePaymentMaintenanceStore((state) => state.openModal);
   const callbackMutation = useRequestCallback("callback"); // Default context
 
   const registerInterestMutation = useRequestCallback("register-interest");
@@ -177,6 +180,16 @@ export default function CourseDetailPage({
 
     if (isEnrolled) {
       toast.info("You are already enrolled in this course");
+      return;
+    }
+
+    // If online payments are paused and this is a paid course, show maintenance modal
+    if (isPaymentPaused() && (course?.price ?? 0) > 0) {
+      openPaymentMaintenance({
+        itemTitle: course.title,
+        itemPrice: course.price,
+        itemType: "course",
+      });
       return;
     }
 

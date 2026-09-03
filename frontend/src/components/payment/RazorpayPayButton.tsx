@@ -2,7 +2,9 @@
 
 import React, { useState } from "react";
 import { useRazorpayCheckout, CheckoutOptions } from "@/hooks/useRazorpayCheckout";
-import { Loader2, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2, CreditCard, CheckCircle, AlertCircle, Wrench } from "lucide-react";
+import { isPaymentPaused } from "@/config/paymentConfig";
+import { usePaymentMaintenanceStore } from "@/stores/paymentMaintenanceStore";
 
 interface RazorpayPayButtonProps extends CheckoutOptions {
   buttonText?: string;
@@ -24,10 +26,21 @@ export const RazorpayPayButton: React.FC<RazorpayPayButtonProps> = ({
   variant = "primary",
 }) => {
   const { openCheckout, isLoading } = useRazorpayCheckout();
+  const openPaymentMaintenance = usePaymentMaintenanceStore((state) => state.openModal);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const isPaused = isPaymentPaused();
 
   const handlePay = () => {
+    if (isPaused) {
+      openPaymentMaintenance({
+        itemTitle: title || "Program Enrollment",
+        itemPrice: amount,
+        itemType,
+      });
+      return;
+    }
+
     setErrorMsg(null);
     setSuccessMsg(null);
 
@@ -50,6 +63,10 @@ export const RazorpayPayButton: React.FC<RazorpayPayButtonProps> = ({
   };
 
   const getVariantStyles = () => {
+    if (isPaused) {
+      return "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 shadow-sm";
+    }
+
     switch (variant) {
       case "secondary":
         return "bg-slate-800 hover:bg-slate-900 text-white shadow-md hover:shadow-lg";
@@ -76,6 +93,11 @@ export const RazorpayPayButton: React.FC<RazorpayPayButtonProps> = ({
             <Loader2 className="w-4 h-4 animate-spin text-current" />
             <span>Processing Order...</span>
           </>
+        ) : isPaused ? (
+          <>
+            <CreditCard className="w-4 h-4 text-amber-400" />
+            <span>{buttonText || `Pay ₹${amount.toLocaleString("en-IN")}`}</span>
+          </>
         ) : (
           <>
             <CreditCard className="w-4 h-4" />
@@ -83,6 +105,13 @@ export const RazorpayPayButton: React.FC<RazorpayPayButtonProps> = ({
           </>
         )}
       </button>
+
+      {isPaused && (
+        <p className="text-[11px] text-center text-amber-500/90 font-medium flex items-center justify-center gap-1">
+          <Wrench className="w-3 h-3 shrink-0" />
+          <span>Gateway maintenance in progress. Click to view offline options.</span>
+        </p>
+      )}
 
       {successMsg && (
         <div className="flex items-center gap-2 text-xs font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 p-2.5 rounded-lg animate-in fade-in duration-200">

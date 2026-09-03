@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { PaymentMaintenanceModal } from "@/components/payment/PaymentMaintenanceModal";
 
 export const metadata: Metadata = {
   title: "GrowthCraft - Where Learning Meets Opportunity",
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <QueryProvider>
           {children}
+          <PaymentMaintenanceModal />
         </QueryProvider>
         <Toaster position="top-center" richColors />
       </body>

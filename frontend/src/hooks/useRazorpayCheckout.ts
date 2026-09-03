@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useCreatePaymentOrder, useVerifyPayment } from "./queries/usePayment";
+import { isPaymentPaused } from "@/config/paymentConfig";
+import { usePaymentMaintenanceStore } from "@/stores/paymentMaintenanceStore";
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -44,8 +46,18 @@ export function useRazorpayCheckout() {
   const [isLoading, setIsLoading] = useState(false);
   const createOrderMutation = useCreatePaymentOrder();
   const verifyPaymentMutation = useVerifyPayment();
+  const openPaymentMaintenance = usePaymentMaintenanceStore((state) => state.openModal);
 
   const openCheckout = async (options: CheckoutOptions) => {
+    if (isPaymentPaused()) {
+      openPaymentMaintenance({
+        itemTitle: options.title,
+        itemPrice: options.amount,
+        itemType: options.itemType,
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
 
