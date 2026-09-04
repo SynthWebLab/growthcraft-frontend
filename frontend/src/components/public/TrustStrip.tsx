@@ -109,11 +109,10 @@ export const TrustStrip = () => {
             <Tooltip key={item.name}>
               <TooltipTrigger asChild>
                 <div
-                  className={`group flex items-center justify-center h-20 sm:h-24 md:h-28 px-3 sm:px-4 py-2.5 rounded-xl sm:rounded-2xl border shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer text-center ${
-                    item.bgColor
+                  className={`group flex items-center justify-center h-20 sm:h-24 md:h-28 px-3 sm:px-4 py-2.5 rounded-xl sm:rounded-2xl border shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer text-center ${item.bgColor
                       ? item.bgColor
                       : "bg-card border-border/80 hover:border-magenta/40"
-                  }`}
+                    }`}
                 >
                   <LogoItem
                     src={item.logo}
@@ -133,11 +132,11 @@ export const TrustStrip = () => {
         </div>
       </TooltipProvider>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-3xl mx-auto">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-3xl mx-auto">
         <StatCounter value={4200} suffix="+" label="Students Trained" />
         <StatCounter value={120} suffix="+" label="Hiring Partners" />
         <StatCounter value={94} suffix="%" label="Placement Rate" />
-      </div>
+      </div> */}
     </Section>
   );
 };
