@@ -30,8 +30,9 @@ export interface Event {
   mode: EventMode;
   venue?: EventVenue; // Only for Offline/Hybrid events
   zoomLink?: string; // Only for Online events
-  startDate: string;
-  endDate: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  isDateTBA?: boolean;
   maxSeats: number;
   enrolledCount: number;
   status: EventStatus;

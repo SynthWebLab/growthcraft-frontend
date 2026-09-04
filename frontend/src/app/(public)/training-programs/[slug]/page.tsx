@@ -54,6 +54,7 @@ import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { formatDisplayDate } from "@/lib/dateUtils";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useTrainingProgramBySlug,
@@ -66,14 +67,20 @@ import { isPaymentPaused } from "@/config/paymentConfig";
 import { usePaymentMaintenanceStore } from "@/stores/paymentMaintenanceStore";
 
 
-function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMM dd, yyyy"): string {
-  if (!dateStr) return "";
+function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMM dd, yyyy", fallback: string = "To be announced"): string {
+  if (!dateStr) return fallback;
+  if (
+    typeof dateStr === "string" &&
+    (dateStr.toLowerCase().includes("announced") || dateStr.toLowerCase().includes("tba"))
+  ) {
+    return fallback;
+  }
   const dateObj = new Date(dateStr);
-  if (isNaN(dateObj.getTime())) return "";
+  if (isNaN(dateObj.getTime())) return fallback;
   try {
     return format(dateObj, formatPattern);
   } catch (err) {
-    return "";
+    return fallback;
   }
 }
 
@@ -534,6 +541,9 @@ export default function TrainingProgramDetailPage({
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-graphite/10 text-graphite">
                   {program.duration} days
                 </span>
+                <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-primary/10 text-primary flex items-center gap-1">
+                  <Calendar className="h-3 w-3" /> {formatDisplayDate(program.startDate, program.endDate, program.isDateTBA, program.durationDays || program.duration)}
+                </span>
                 {internshipPartners.length > 0 && (
                   <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 flex items-center gap-1.5 max-w-full">
                     <Building2 className="h-3.5 w-3.5 shrink-0" />
@@ -735,7 +745,7 @@ export default function TrainingProgramDetailPage({
 
               <TabsContent value="cohorts" className="pt-6">
                 <h2 className="text-xl font-bold mb-4">Available Cohort Start Dates</h2>
-                {program.cohorts && program.cohorts.length > 0 ? (
+                {program.cohorts && program.cohorts.length > 0 && !program.isDateTBA ? (
                   <div className="space-y-3">
                     {program.cohorts.map((cohort) => (
                       <DataCard key={cohort._id}>
@@ -892,6 +902,11 @@ export default function TrainingProgramDetailPage({
                       ₹{program.originalPrice.toLocaleString()}
                     </span>
                   )}
+                </div>
+
+                <div className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Calendar className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                  <span><strong className="font-semibold text-foreground">{formatDisplayDate(program.startDate, program.endDate, program.isDateTBA, program.durationDays || program.duration)}</strong></span>
                 </div>
 
                 {/* Primary CTA */}

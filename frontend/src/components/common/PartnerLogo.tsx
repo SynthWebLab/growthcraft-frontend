@@ -17,7 +17,7 @@ export function getPartnerLogo(companyName?: string, logoUrl?: string): string |
   if (!companyName) return null;
   const name = companyName.toLowerCase().trim();
   if (name.includes("synthweb")) {
-    return "/images/partners/synthweb.webp";
+    return "/logos/synthweb.webp";
   }
   return null;
 }

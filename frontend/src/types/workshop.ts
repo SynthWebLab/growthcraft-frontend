@@ -13,8 +13,9 @@ export interface Workshop {
   banner?: string;
   rating: number;
   tags: string[];
-  startDate: string;
-  endDate: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  isDateTBA?: boolean;
   mode: WorkshopMode;
   maxSeats: number;
   enrolledCount: number;

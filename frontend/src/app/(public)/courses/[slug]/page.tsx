@@ -25,7 +25,9 @@ import {
   PlayCircle,
   ArrowRight,
   Loader2,
+  Calendar,
 } from "lucide-react";
+import { formatDisplayDate } from "@/lib/dateUtils";
 import { PopupForm, usePopupForm } from "@/components/common/PopupForm";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { AUTH_ROUTES } from "@/lib/constants/routes.constant";
@@ -350,6 +352,9 @@ export default function CourseDetailPage({
                 <span className="px-2 py-0.5 rounded text-xs font-semibold bg-lavender/10 text-lavender">
                   {course.difficultyLevel}
                 </span>
+                <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-primary/10 text-primary flex items-center gap-1">
+                  <Calendar className="h-3 w-3" /> Next Batch: {formatDisplayDate(course.startDate, course.endDate, course.isDateTBA)}
+                </span>
                 {(course.isFeatured || (course as any).is_featured) && (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs flex items-center gap-1">
                     🔥 Trending Now
@@ -587,6 +592,11 @@ export default function CourseDetailPage({
                       ₹{course.originalPrice.toLocaleString()}
                     </span>
                   )}
+                </div>
+
+                <div className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Calendar className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                  <span>Next Batch: <strong className="font-semibold text-foreground">{formatDisplayDate(course.startDate, course.endDate, course.isDateTBA)}</strong></span>
                 </div>
 
                 {/* Primary CTA */}

@@ -24,8 +24,11 @@ export interface Bootcamp {
   banner: string;
   rating: number;
   tags: string[];
-  startDate: string;
-  endDate: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  isDateTBA?: boolean;
+  duration?: string;
+  durationDays?: number;
   mode: (typeof BOOTCAMP_MODES)[number];
   maxSeats: number;
   enrolledCount: number;

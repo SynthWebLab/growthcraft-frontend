@@ -13,6 +13,7 @@ import {
 } from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
+import { getBatchDateDetails } from "@/lib/dateUtils";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, Flame, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 /* ─── Constants ─────────────────────────────────────────────── */
 
@@ -64,6 +66,7 @@ const EMPTY_FORM = {
   maxSeats: "50",
   startDate: "",
   endDate: "",
+  isDateTBA: false,
   is_published: false,
   is_featured: false,
   selectedMentorIds: [] as string[],
@@ -142,6 +145,7 @@ function AdminEventsContent() {
       maxSeats: (event.maxSeats ?? "50").toString(),
       startDate: event.startDate ? new Date(event.startDate).toISOString().split("T")[0] : "",
       endDate: event.endDate ? new Date(event.endDate).toISOString().split("T")[0] : "",
+      isDateTBA: event.isDateTBA !== undefined ? Boolean(event.isDateTBA) : (!event.startDate && !event.endDate),
       is_published: !!event.isPublished,
       is_featured: !!event.isFeatured,
       selectedMentorIds: existingMentorIds,
@@ -186,9 +190,12 @@ function AdminEventsContent() {
       domain: formData.domain,
       mode: formData.mode,
       status: formData.status,
-      durationDays: formData.durationDays ? parseInt(formData.durationDays) : 30,
+      durationDays: formData.durationDays ? parseInt(formData.durationDays, 10) : 30,
       price: formData.price ? parseFloat(formData.price) : 0,
-      maxSeats: formData.maxSeats ? parseInt(formData.maxSeats) : 50,
+      maxSeats: formData.maxSeats ? parseInt(formData.maxSeats, 10) : 50,
+      isDateTBA: formData.isDateTBA,
+      startDate: !formData.isDateTBA && formData.startDate ? formData.startDate : null,
+      endDate: !formData.isDateTBA && formData.endDate ? formData.endDate : null,
       isPublished: formData.is_published,
       isFeatured: formData.is_featured,
       mentorIds: formData.selectedMentorIds,
@@ -215,6 +222,27 @@ function AdminEventsContent() {
       key: "price",
       label: "Price",
       render: (v: number) => (v != null && v > 0 ? `₹${v.toLocaleString()}` : "Free"),
+    },
+    {
+      key: "startDate",
+      label: "Event Date",
+      render: (v: string, row: any) => {
+        const details = getBatchDateDetails(v, row.endDate, row.isDateTBA, row.durationDays || row.duration);
+        return (
+          <Badge
+            variant="outline"
+            className={`text-xs font-medium ${
+              details.isTBA
+                ? "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                : details.status === "in-progress"
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                : "bg-primary/10 text-primary border-primary/20"
+            }`}
+          >
+            {details.displayWithStatus}
+          </Badge>
+        );
+      },
     },
     {
       key: "isPublished",
@@ -468,26 +496,78 @@ function AdminEventsContent() {
                 />
               </div>
 
-              {/* Start Date */}
-              <div className="space-y-2">
-                <Label htmlFor="ev-startDate">Start Date</Label>
-                <Input
-                  id="ev-startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                />
-              </div>
+              {/* Event Dates & TBA Setting */}
+              <div className="space-y-3 md:col-span-2 p-3.5 rounded-lg border bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-semibold">Event Dates</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Set scheduled dates or mark as "To be announced"
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="ev-tba-switch" className="text-xs font-medium cursor-pointer">
+                      To be announced
+                    </Label>
+                    <Switch
+                      id="ev-tba-switch"
+                      checked={formData.isDateTBA}
+                      onCheckedChange={(checked) =>
+                        setFormData({
+                          ...formData,
+                          isDateTBA: checked,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
 
-              {/* End Date */}
-              <div className="space-y-2">
-                <Label htmlFor="ev-endDate">End Date</Label>
-                <Input
-                  id="ev-endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="ev-startDate" className="text-xs font-medium">Start Date</Label>
+                    <Input
+                      id="ev-startDate"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => {
+                        const newStart = e.target.value;
+                        let newEnd = formData.endDate;
+                        if (newStart && formData.durationDays) {
+                          const days = parseInt(formData.durationDays, 10) || 1;
+                          const d = new Date(newStart);
+                          d.setDate(d.getDate() + days);
+                          newEnd = d.toISOString().split("T")[0];
+                        }
+                        setFormData({
+                          ...formData,
+                          startDate: newStart,
+                          endDate: newEnd,
+                          isDateTBA: newStart ? false : formData.isDateTBA,
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="ev-endDate" className="text-xs font-medium">End Date</Label>
+                    <Input
+                      id="ev-endDate"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          endDate: e.target.value,
+                          isDateTBA: e.target.value ? false : formData.isDateTBA,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                {formData.isDateTBA && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ℹ️ Marked as "To be announced". The date inputs above are saved, but "To be announced" will be shown on public cards.
+                  </p>
+                )}
               </div>
             </div>
 

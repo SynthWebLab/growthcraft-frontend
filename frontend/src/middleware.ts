@@ -83,6 +83,8 @@ async function checkAuth(request: NextRequest): Promise<{ isAuthenticated: boole
 }
 
 function getTargetRoleFromPath(pathname: string): string | null {
+  if (pathname.includes('/super_admin')) return 'super_admin';
+  if (pathname.includes('/ops')) return 'ops';
   if (pathname.includes('/student')) return 'student';
   if (pathname.includes('/mentor')) return 'mentor';
   if (pathname.includes('/college')) return 'college';

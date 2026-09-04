@@ -9,12 +9,10 @@ const PainPath = dynamic(() => import("@/components/public/PainPath").then((m) =
 const HowItWorks = dynamic(() => import("@/components/public/HowItWorks").then((m) => m.HowItWorks));
 const FeaturedCourses = dynamic(() => import("@/components/public/FeaturedCourses").then((m) => m.FeaturedCourses));
 const BootcampHighlight = dynamic(() => import("@/components/public/BootcampHighlight").then((m) => m.BootcampHighlight));
-const FivePaths = dynamic(() => import("@/components/public/FivePaths").then((m) => m.FivePaths));
 const MentorShowcase = dynamic(() => import("@/components/public/MentorShowcase").then((m) => m.MentorShowcase));
 const Outcomes = dynamic(() => import("@/components/public/Outcomes").then((m) => m.Outcomes));
 const HiringPartners = dynamic(() => import("@/components/public/HiringPartners").then((m) => m.HiringPartners));
-const FAQ = dynamic(() => import("@/components/public/FAQ").then((m) => m.FAQ));
-const FinalCTA = dynamic(() => import("@/components/public/FinalCTA").then((m) => m.FinalCTA));
+const PlatformAndFaqHub = dynamic(() => import("@/components/public/PlatformAndFaqHub").then((m) => m.PlatformAndFaqHub));
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = SEO_CONFIG.homepage;
@@ -66,15 +64,13 @@ export default function Home() {
       <HeroSection />
       <TrustStrip />
       <PainPath />
+      <PlatformAndFaqHub />
       <HowItWorks />
       <FeaturedCourses />
       <BootcampHighlight />
-      <FivePaths />
       <MentorShowcase />
       <Outcomes />
       <HiringPartners />
-      <FAQ />
-      <FinalCTA />
     </>
   );
 }
