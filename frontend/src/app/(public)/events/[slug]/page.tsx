@@ -40,7 +40,6 @@ import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatDisplayDate } from "@/lib/dateUtils";
-import { getEventDetailBySlug } from "@/data/events-detail.mock";
 import type { WorkshopDetailResponse } from "@/types/workshop";
 import type { HackathonDetailResponse } from "@/types/hackathon";
 
