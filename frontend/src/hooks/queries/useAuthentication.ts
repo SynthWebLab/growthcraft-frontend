@@ -401,13 +401,6 @@ export function useLogout() {
       // Clear all React Query cache
       queryClient.clear();
       
-      // Clear any non-httpOnly cookies (just in case)
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
-      
       toast.success("Logged out successfully");
       
       // Small delay to ensure cookies are cleared
@@ -446,13 +439,6 @@ export function useLogoutAll() {
       broadcastAuthChange("LOGOUT");
       // Clear all React Query cache
       queryClient.clear();
-      
-      // Clear any non-httpOnly cookies (just in case)
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
       
       toast.success("Logged out from all devices");
       
