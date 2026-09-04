@@ -112,9 +112,9 @@ export const Navbar = () => {
                 ))}
               </div>
 
-              {/* CTA Buttons — rendered only after mount to avoid SSR/client hydration mismatch */}
+              {/* CTA Buttons — rendered only after mount and session check to avoid UI flicker */}
               <div className="hidden xl:flex items-center gap-2">
-                {!mounted ? (
+                {!mounted || isLoading ? (
                   // Skeleton placeholder matching the size of the buttons — avoids layout shift
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-16 rounded-md bg-muted animate-pulse" />
@@ -197,7 +197,11 @@ export const Navbar = () => {
               ))}
 
               <div className="pt-4 px-4 space-y-2 border-t border-border mt-2">
-                {mounted && user && user.isEmailVerified ? (
+                {!mounted || isLoading ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : user && user.isEmailVerified ? (
                   // Logged in and verified - Show Dashboard button
                   <Button asChild size="default" className="w-full">
                     <Link href={DASHBOARD_ROUTES[user.role as keyof typeof DASHBOARD_ROUTES] || '/student'} onClick={() => setIsOpen(false)}>

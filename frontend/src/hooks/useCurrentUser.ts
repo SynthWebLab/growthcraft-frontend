@@ -6,22 +6,11 @@ import { authKeys } from "./queries/useAuthentication";
 import { subscribeToAuthChanges } from "@/lib/auth/authSync";
 import type { AuthUser } from "@/types/auth.types";
 
-// Helper to get cached user from localStorage safely in Next.js (client-side only)
-export const getCachedUser = (): AuthUser | null => {
-  if (typeof window === "undefined") return null;
-  try {
-    const data = localStorage.getItem("gc_user");
-    return data ? (JSON.parse(data) as AuthUser) : null;
-  } catch {
-    return null;
-  }
-};
-
 export function useCurrentUser() {
   const queryClient = useQueryClient();
 
-  // Initialise from localStorage so first render has data (avoids flicker)
-  const [clientUser, setClientUser] = useState<AuthUser | null>(() => getCachedUser());
+  // Initialise as null; rely on query for true state
+  const [clientUser, setClientUser] = useState<AuthUser | null>(null);
 
   const query = useQuery({
     queryKey: authKeys.profile(),
@@ -30,21 +19,10 @@ export function useCurrentUser() {
         const response = await apiClient.get(API_ENDPOINTS.auth.profile);
         if (response.success && response.data?.user) {
           const user = response.data.user as AuthUser;
-          if (typeof window !== "undefined") {
-            localStorage.setItem("gc_user", JSON.stringify(user));
-          }
           return user;
-        }
-        // No valid session — clear stale localStorage
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("gc_user");
         }
         return null;
       } catch (error) {
-        // User not authenticated (401) or other error — clear stale localStorage
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("gc_user");
-        }
         return null;
       }
     },
@@ -73,27 +51,9 @@ export function useCurrentUser() {
       }
     });
 
-    // 2. Re-validate on tab focus or visibility change
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        const cached = getCachedUser();
-        if (cached && (!clientUser || cached.id !== clientUser.id)) {
-          setClientUser(cached);
-          void queryClient.invalidateQueries({ queryKey: authKeys.profile() });
-        } else if (!cached && clientUser) {
-          setClientUser(null);
-          queryClient.setQueryData(authKeys.profile(), null);
-        }
-      }
-    };
-
-    window.addEventListener("focus", handleVisibilityChange);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
+    // Return unsubscribe cleanup function
     return () => {
       unsubscribe();
-      window.removeEventListener("focus", handleVisibilityChange);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [clientUser, queryClient]);
 

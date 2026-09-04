@@ -52,7 +52,6 @@ export function AuthPageLayout({ icon: Icon, title, subtitle, expectedRole, chil
 
     // Always clear local state regardless of API success/failure
     if (typeof window !== "undefined") {
-      localStorage.removeItem("gc_user");
 
       // Clear any non-httpOnly cookies
       document.cookie.split(";").forEach((c) => {

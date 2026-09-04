@@ -77,17 +77,6 @@ export function subscribeToAuthChanges(
       } catch {
         // Ignore parse error
       }
-    } else if (e.key === "gc_user") {
-      if (e.newValue) {
-        try {
-          const user = JSON.parse(e.newValue);
-          onAuthChange({ type: "LOGIN", user, timestamp: Date.now() });
-        } catch {
-          // Ignore
-        }
-      } else {
-        onAuthChange({ type: "LOGOUT", timestamp: Date.now() });
-      }
     }
   };
 
