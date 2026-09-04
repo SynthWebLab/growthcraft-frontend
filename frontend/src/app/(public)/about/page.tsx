@@ -61,7 +61,6 @@ const AboutPage = () => {
         setIsLoading(false);
       })
       .catch(err => {
-        console.error('Failed to load team data:', err);
         setIsLoading(false);
       });
   }, []);

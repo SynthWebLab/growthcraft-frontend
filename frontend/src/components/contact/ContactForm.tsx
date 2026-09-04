@@ -88,7 +88,6 @@ export function ContactForm() {
         setIsSuccess(false);
       }, 3000);
     } catch (error: any) {
-      console.error("Contact form error:", error);
       toast.error("Something went wrong", {
         description: error.response?.data?.error?.message || error.message || "Failed to send message. Please try again.",
       });

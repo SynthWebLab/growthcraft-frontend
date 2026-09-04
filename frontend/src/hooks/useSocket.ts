@@ -76,7 +76,6 @@ export function useSocket() {
     socket.on("notification", handleNotification);
 
     const handleEventUpdate = (data: any) => {
-      console.log("Real-time event update received:", data);
       void queryClient.invalidateQueries({ queryKey: ["bootcamps"] });
       void queryClient.invalidateQueries({ queryKey: ["hackathons"] });
       void queryClient.invalidateQueries({ queryKey: ["workshops"] });
@@ -89,7 +88,6 @@ export function useSocket() {
     let isRefreshing = false;
 
     socket.on("connect_error", async (err) => {
-      console.debug("Socket connection error:", err.message);
       if (err.message.includes("Authentication error") && !isRefreshing) {
         isRefreshing = true;
         try {
@@ -98,7 +96,6 @@ export function useSocket() {
             if (!socket.connected) socket.connect();
           }, 500);
         } catch (error) {
-          console.debug("Socket token refresh failed, disconnecting:", error);
           socket.disconnect();
         } finally {
           isRefreshing = false;

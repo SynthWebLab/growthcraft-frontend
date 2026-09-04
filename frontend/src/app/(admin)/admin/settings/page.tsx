@@ -48,7 +48,6 @@ export default function AdminSettings() {
       await new Promise((resolve) => setTimeout(resolve, 600));
       setSettings(defaultSettings);
     } catch (error) {
-      console.error("Error fetching settings:", error);
       setSettings(defaultSettings);
     } finally {
       setIsLoading(false);

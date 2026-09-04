@@ -89,7 +89,7 @@ export default function AdminEnquiries() {
         setCurrentPage((prev) => prev - 1);
       }
     } catch (error) {
-      console.error("Error deleting enquiry:", error);
+      // ignore
     }
   };
 
@@ -109,7 +109,7 @@ export default function AdminEnquiries() {
       });
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Error updating enquiry:", error);
+      // ignore
     }
   };
 

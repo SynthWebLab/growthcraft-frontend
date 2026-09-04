@@ -159,7 +159,7 @@ export default function CourseDetailPage({
             },
           });
         } catch (error) {
-          console.error("Register interest error:", error);
+          // ignore
         }
       }
       return;
@@ -234,7 +234,6 @@ export default function CourseDetailPage({
         }
       } catch (error) {
         // Error handling is done in the mutation hook
-        console.error("Enrollment error:", error);
       }
     }
   };
@@ -271,7 +270,6 @@ export default function CourseDetailPage({
         });
       } catch (error) {
         // Error handling is done in the mutation hook
-        console.error("Callback request error:", error);
       }
     }
   };
