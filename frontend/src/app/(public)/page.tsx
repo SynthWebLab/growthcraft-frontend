@@ -64,13 +64,13 @@ export default function Home() {
       <HeroSection />
       <TrustStrip />
       <PainPath />
+      <PlatformAndFaqHub />
       <HowItWorks />
       <FeaturedCourses />
       <BootcampHighlight />
       <MentorShowcase />
       <Outcomes />
       <HiringPartners />
-      <PlatformAndFaqHub />
     </>
   );
 }
