@@ -1,11 +1,27 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Section } from "@/components/ui/section";
 import { DataCard } from "@/components/ui/data-card";
-import { mentorsMock } from "@/data/mentors.mock";
 import { Star } from "lucide-react";
 
+interface Mentor {
+  _id: string;
+  name: string;
+  photo: string;
+  company: string;
+  expertiseTags: string[];
+  sessionsDelivered: number;
+  rating: number;
+}
+
 export const MentorShowcase = () => {
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+
+  useEffect(() => {
+    import("@/test/fixtures/mentors.mock").then(mod => setMentors(mod.mentorsMock));
+  }, []);
+
   return (
     <Section variant="white" className="!py-8 sm:!py-12 md:!py-16 lg:!py-20">
       <div className="text-center mb-8 sm:mb-12 md:mb-14 animate-fade-up">
@@ -18,7 +34,7 @@ export const MentorShowcase = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {mentorsMock.map((mentor) => (
+        {mentors.map((mentor) => (
           <DataCard key={mentor._id} className="text-center h-full p-4 sm:p-5 md:p-6">
             <img
               src={mentor.photo}
