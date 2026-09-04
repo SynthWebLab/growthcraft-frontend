@@ -15,11 +15,10 @@ interface WorkshopCardProps {
   isProcessing?: boolean;
 }
 
-const formatEventDate = (date: string) => {
-  if (!date) return "";
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+import { formatDisplayDate, isDateScheduled } from "@/lib/dateUtils";
+
+const formatEventDate = (date: any, endDate?: any, isDateTBA?: boolean) => {
+  return formatDisplayDate(date, endDate, isDateTBA);
 };
 
 const formatEventTime = (date: string) => {
@@ -120,12 +119,14 @@ export function WorkshopCard({ workshop, onCTAClick, onSecondaryCTAClick, isProc
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
               <Calendar className="h-3 w-3" />
-              {formatEventDate(workshop.startDate)}
+              {formatEventDate(workshop.startDate, workshop.endDate, (workshop as any).isDateTBA)}
             </span>
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              {formatEventTime(workshop.startDate)}
-            </span>
+            {isDateScheduled(workshop.startDate, (workshop as any).isDateTBA) && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {formatEventTime(workshop.startDate as string)}
+              </span>
+            )}
             {seatsAvailable !== null && seatsAvailable > 0 && workshop.status === "Open" && (
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success">
                 {seatsAvailable} seat{seatsAvailable !== 1 ? "s" : ""} left

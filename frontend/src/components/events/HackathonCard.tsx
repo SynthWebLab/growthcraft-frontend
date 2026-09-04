@@ -15,12 +15,7 @@ interface HackathonCardProps {
   isProcessing?: boolean;
 }
 
-const formatEventDate = (date: string) => {
-  if (!date) return "";
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-};
+import { formatDisplayDate } from "@/lib/dateUtils";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -107,7 +102,7 @@ export function HackathonCard({ hackathon, onCTAClick, onSecondaryCTAClick, isPr
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
               <Calendar className="h-3 w-3" />
-              {formatEventDate(hackathon.startDate)} — {formatEventDate(hackathon.endDate)}
+              {formatDisplayDate(hackathon.startDate, hackathon.endDate, (hackathon as any).isDateTBA, (hackathon as any).durationDays || (hackathon as any).duration)}
             </span>
             {seatsAvailable > 0 && hackathon.status === "Open" && (
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success">

@@ -17,12 +17,7 @@ interface BootcampEventCardProps {
   isProcessing?: boolean;
 }
 
-const formatBootcampDate = (date: string) => {
-  if (!date) return "";
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-};
+import { formatDisplayDate } from "@/lib/dateUtils";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -140,7 +135,7 @@ export function BootcampEventCard({
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
               <Calendar className="h-3 w-3" />
-              {formatBootcampDate(bootcamp.startDate)} — {formatBootcampDate(bootcamp.endDate)}
+              {formatDisplayDate(bootcamp.startDate, bootcamp.endDate, (bootcamp as any).isDateTBA, (bootcamp as any).durationDays || (bootcamp as any).duration)}
             </span>
             {bootcamp.availableSeats > 0 && bootcamp.status === "Open" && (
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success">

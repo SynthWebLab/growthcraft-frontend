@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Clock, Search, Briefcase, Loader2, Flame } from "lucide-react";
+import { Clock, Search, Briefcase, Loader2, Flame, Calendar } from "lucide-react";
+import { formatDisplayDate } from "@/lib/dateUtils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -337,7 +338,7 @@ export default function TrainingProgramsPage() {
                     )}
 
                     {/* Tools chips (max 4) */}
-                    <div className="flex flex-wrap gap-1.5 mb-4">
+                    <div className="flex flex-wrap gap-1.5 mb-3">
                       {program.tools.slice(0, 4).map((tool, idx) => (
                         <span
                           key={idx}
@@ -351,6 +352,12 @@ export default function TrainingProgramsPage() {
                           +{program.tools.length - 4}
                         </span>
                       )}
+                    </div>
+
+                    {/* Start & End Date */}
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+                      <Calendar className="h-3 w-3 text-magenta flex-shrink-0" />
+                      <span><strong className="font-semibold text-foreground">{formatDisplayDate(program.startDate, program.endDate, program.isDateTBA, program.durationDays || program.duration)}</strong></span>
                     </div>
 
                     {/* Footer with price and CTA */}

@@ -39,20 +39,27 @@ import { useBootcampBySlug } from "@/hooks/queries/useBootcamps";
 import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { formatDisplayDate } from "@/lib/dateUtils";
 import { getEventDetailBySlug } from "@/data/events-detail.mock";
 import type { WorkshopDetailResponse } from "@/types/workshop";
 import type { HackathonDetailResponse } from "@/types/hackathon";
 
 type EventDetailResponse = WorkshopDetailResponse | HackathonDetailResponse;
 
-function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMMM dd, yyyy"): string {
-  if (!dateStr) return "";
+function safeFormatDate(dateStr?: string | Date, formatPattern: string = "MMMM dd, yyyy", fallback: string = "To be announced"): string {
+  if (!dateStr) return fallback;
+  if (
+    typeof dateStr === "string" &&
+    (dateStr.toLowerCase().includes("announced") || dateStr.toLowerCase().includes("tba"))
+  ) {
+    return fallback;
+  }
   const dateObj = new Date(dateStr);
-  if (isNaN(dateObj.getTime())) return "";
+  if (isNaN(dateObj.getTime())) return fallback;
   try {
     return format(dateObj, formatPattern);
   } catch (err) {
-    return "";
+    return fallback;
   }
 }
 
@@ -779,14 +786,17 @@ export default function EventDetailPage({
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-magenta" />
                       <span>
-                        {safeFormatDate(event.startDate, "MMMM dd, yyyy")}
+                        {(event as any).isDateTBA || !event.startDate
+                          ? "To be announced"
+                          : formatDisplayDate(event.startDate, event.endDate, (event as any).isDateTBA)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-magenta" />
                       <span>
-                        {safeFormatDate(event.startDate, "h:mm a")} -{" "}
-                        {safeFormatDate(event.endDate, "h:mm a")}
+                        {(event as any).isDateTBA || !event.startDate
+                          ? "Schedule to be announced"
+                          : `${safeFormatDate(event.startDate, "h:mm a")} - ${safeFormatDate(event.endDate, "h:mm a")}`}
                       </span>
                     </div>
                   </div>

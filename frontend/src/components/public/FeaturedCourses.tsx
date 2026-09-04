@@ -19,6 +19,7 @@ import {
   Sparkles,
   Flame,
 } from "lucide-react";
+import { formatDisplayDate } from "@/lib/dateUtils";
 
 type CatalogueTab = "courses" | "training-programs" | "events";
 
@@ -215,6 +216,10 @@ export const FeaturedCourses = () => {
                 {/* Meta Info */}
                 <div className="flex items-center gap-3 text-xs text-white/50 mb-4 flex-wrap">
                   <span className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5 text-lavender" />
+                    {formatDisplayDate(course.startDate, course.endDate, course.isDateTBA)}
+                  </span>
+                  <span className="flex items-center gap-1">
                     <User className="h-3.5 w-3.5 text-lavender" />
                     {course.instructorName || course.instructor?.name || "GrowthCraft Mentor"}
                   </span>
@@ -299,11 +304,17 @@ export const FeaturedCourses = () => {
                   {program.description}
                 </p>
 
-                {/* Duration & Tools */}
+                {/* Duration, Start Date & Tools */}
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-xs text-white/70">
-                    <Clock className="h-3.5 w-3.5 text-lavender" />
-                    <span>{program.durationDays || program.duration || 40} Days Intensive</span>
+                  <div className="flex items-center gap-3 text-xs text-white/70 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-lavender" />
+                      <span>{program.durationDays || program.duration || 40} Days</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-lavender" />
+                      <span>{formatDisplayDate(program.startDate, program.endDate, program.isDateTBA, program.durationDays || program.duration)}</span>
+                    </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {program.tools?.slice(0, 3).map((tool: string, idx: number) => (
@@ -395,6 +406,10 @@ export const FeaturedCourses = () => {
 
                 {/* Meta info */}
                 <div className="flex items-center gap-3 text-xs text-white/50 mb-4 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5 text-lavender" />
+                    {formatDisplayDate(event.startDate, event.endDate, event.isDateTBA, event.durationDays || event.duration)}
+                  </span>
                   <span className="flex items-center gap-1">
                     <User className="h-3.5 w-3.5 text-lavender" />
                     {event.mentorName || (Array.isArray(event.mentorNames) ? event.mentorNames[0] : "GrowthCraft Mentor")}

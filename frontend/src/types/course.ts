@@ -136,6 +136,9 @@ export interface Course {
   instructor: CourseInstructor;
   instructorName: string;
   mentors?: CourseMentor[];
+  startDate?: string | null;
+  endDate?: string | null;
+  isDateTBA?: boolean;
   bootcampDetails?: BootcampDetails;
 }
 

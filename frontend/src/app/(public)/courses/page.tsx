@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Clock, BookOpen, Star, Search, Loader2 } from "lucide-react";
+import { Clock, BookOpen, Star, Search, Loader2, Calendar } from "lucide-react";
+import { formatDisplayDate } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -317,6 +318,11 @@ export default function CoursesPage() {
                 <span className="text-xs text-muted-foreground">
                   {course.instructorName}
                 </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+                <Calendar className="h-3 w-3 text-magenta flex-shrink-0" />
+                <span>Next Batch: <strong className="font-semibold text-foreground">{formatDisplayDate(course.startDate, course.endDate, course.isDateTBA)}</strong></span>
               </div>
 
               <div className="flex items-center justify-between pt-3 border-t border-border">

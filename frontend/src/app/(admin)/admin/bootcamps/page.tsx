@@ -9,6 +9,7 @@ import {
 } from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
+import { getBatchDateDetails } from "@/lib/dateUtils";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -39,6 +40,7 @@ interface Bootcamp {
   price: number | null;
   discount_price: number | null;
   next_batch_date: string | null;
+  isDateTBA?: boolean;
   category: string | null;
   is_published: boolean;
   is_featured: boolean;
@@ -60,6 +62,7 @@ export default function AdminBootcamps() {
     price: "",
     discount_price: "",
     next_batch_date: "",
+    isDateTBA: false,
     category: "",
     is_published: false,
     is_featured: false,
@@ -82,6 +85,7 @@ export default function AdminBootcamps() {
     price: b.price || null,
     discount_price: b.discountedPrice || null,
     next_batch_date: b.startDate ? new Date(b.startDate).toISOString().split('T')[0] : null,
+    isDateTBA: b.isDateTBA !== undefined ? Boolean(b.isDateTBA) : (!b.startDate && !b.endDate),
     category: b.domain || b.category || null,
     is_published: b.isPublished,
     is_featured: b.isFeatured,
@@ -99,6 +103,7 @@ export default function AdminBootcamps() {
       price: "",
       discount_price: "",
       next_batch_date: "",
+      isDateTBA: true,
       category: "",
       is_published: false,
       is_featured: false,
@@ -117,6 +122,7 @@ export default function AdminBootcamps() {
       price: bootcamp.price?.toString() || "",
       discount_price: bootcamp.discount_price?.toString() || "",
       next_batch_date: bootcamp.next_batch_date || "",
+      isDateTBA: bootcamp.isDateTBA !== undefined ? Boolean(bootcamp.isDateTBA) : !bootcamp.next_batch_date,
       category: bootcamp.category || "",
       is_published: bootcamp.is_published,
       is_featured: bootcamp.is_featured,
@@ -148,8 +154,9 @@ export default function AdminBootcamps() {
       durationDays: durationNum,
       price: formData.price ? parseFloat(formData.price) : 0,
       discountedPrice: formData.discount_price ? parseFloat(formData.discount_price) : 0,
-      startDate: startDateStr,
-      endDate: endDateStr,
+      isDateTBA: formData.isDateTBA,
+      startDate: !formData.isDateTBA && startDateStr ? startDateStr : null,
+      endDate: !formData.isDateTBA && endDateStr ? endDateStr : null,
       maxSeats: formData.batch_size ? parseInt(formData.batch_size) : 30,
       description: formData.description || null,
       mode: formData.format || "Online",
@@ -192,6 +199,27 @@ export default function AdminBootcamps() {
       key: "price",
       label: "Price",
       render: (value: number) => (value ? `₹${value}` : "Free"),
+    },
+    {
+      key: "next_batch_date",
+      label: "Next Batch",
+      render: (val: string, row: any) => {
+        const details = getBatchDateDetails(val, row.endDate, row.isDateTBA, row.durationDays || row.duration);
+        return (
+          <Badge
+            variant="outline"
+            className={`text-xs font-medium ${
+              details.isTBA
+                ? "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                : details.status === "in-progress"
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                : "bg-primary/10 text-primary border-primary/20"
+            }`}
+          >
+            {details.displayWithStatus}
+          </Badge>
+        );
+      },
     },
     {
       key: "is_published",
@@ -305,16 +333,53 @@ export default function AdminBootcamps() {
                   }
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="next_batch_date">Start Date</Label>
-                <Input
-                  id="next_batch_date"
-                  type="date"
-                  value={formData.next_batch_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, next_batch_date: e.target.value })
-                  }
-                />
+              {/* Batch Date & TBA Setting */}
+              <div className="space-y-3 sm:col-span-2 p-3.5 rounded-lg border bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-semibold">Start / Batch Date</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Set scheduled date or mark as "To be announced"
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="bc-tba-switch" className="text-xs font-medium cursor-pointer">
+                      To be announced
+                    </Label>
+                    <Switch
+                      id="bc-tba-switch"
+                      checked={formData.isDateTBA}
+                      onCheckedChange={(checked) =>
+                        setFormData({
+                          ...formData,
+                          isDateTBA: checked,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <Label htmlFor="next_batch_date" className="text-xs font-medium">Scheduled Start Date</Label>
+                  <Input
+                    id="next_batch_date"
+                    type="date"
+                    value={formData.next_batch_date}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        next_batch_date: e.target.value,
+                        isDateTBA: e.target.value ? false : formData.isDateTBA,
+                      })
+                    }
+                    className="mt-1"
+                  />
+                </div>
+                {formData.isDateTBA && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ℹ️ Marked as "To be announced". The date input above is saved, but "To be announced" will be shown on public cards.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="price">Price (₹)</Label>
