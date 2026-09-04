@@ -15,6 +15,7 @@ import type {
   MentorStudentsResponse,
   MentorEarningsResponse,
   MentorProfileResponse,
+  PublicMentorsResponse,
 } from "@/types/mentor";
 
 export const mentorService = {
@@ -164,5 +165,38 @@ export const mentorService = {
     areasForImprovement?: string;
   }): Promise<any> => {
     return apiClient.post<any>(API_ENDPOINTS.mentor.progressNotes, data);
+  },
+
+  /** Get public mentors catalogue (unauthenticated) */
+  getPublicMentors: async (params?: {
+    limit?: number;
+    page?: number;
+    search?: string;
+    areaOfExpertise?: string;
+    sortBy?: string;
+  }): Promise<PublicMentorsResponse> => {
+    const q = new URLSearchParams();
+    if (params?.limit) q.append("limit", params.limit.toString());
+    if (params?.page) q.append("page", params.page.toString());
+    if (params?.search) q.append("search", params.search);
+    if (params?.areaOfExpertise) q.append("areaOfExpertise", params.areaOfExpertise);
+    if (params?.sortBy) q.append("sortBy", params.sortBy);
+    const url = q.toString() ? `${API_ENDPOINTS.mentors.list}?${q.toString()}` : API_ENDPOINTS.mentors.list;
+    return apiClient.get<PublicMentorsResponse>(url);
+  },
+
+  /** Upload mentor avatar photo */
+  uploadAvatar: async (file: File): Promise<ApiResponse<{ url: string }>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiClient.post<ApiResponse<{ url: string }>>(
+      API_ENDPOINTS.mentor.uploadAvatar,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      } as any
+    );
   },
 };

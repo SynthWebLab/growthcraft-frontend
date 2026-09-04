@@ -121,10 +121,12 @@ export interface MentorProfileData {
     fullName?: string;
     email?: string;
     phone?: string;
+    avatar?: string;
   };
   fullName?: string;
   email?: string;
   phone?: string;
+  avatar?: string;
   bio: string;
   experienceYears: number;
   areaOfExpertise: string;
@@ -136,3 +138,24 @@ export interface MentorProfileData {
 }
 
 export type MentorProfileResponse = ApiResponse<{ profile: MentorProfileData }>;
+
+export interface PublicMentor {
+  _id: string;
+  userId?: string;
+  name: string;
+  photo: string;
+  company: string;
+  areaOfExpertise?: string;
+  expertiseTags: string[];
+  sessionsDelivered: number;
+  rating: number;
+  bio?: string;
+  experienceYears?: number;
+  isVerified?: boolean;
+  linkedinUrl?: string;
+}
+
+export type PublicMentorsResponse = ApiResponse<{
+  mentors: PublicMentor[];
+  total: number;
+}>;
