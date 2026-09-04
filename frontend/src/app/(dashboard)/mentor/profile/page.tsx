@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import DataCard from "@/components/ui/data-card";
-import { useMentorProfile, useUpdateMentorProfile } from "@/hooks/queries/useMentor";
+import { useMentorProfile, useUpdateMentorProfile, useUploadMentorAvatar } from "@/hooks/queries/useMentor";
+import { Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const EXPERTISE_OPTIONS = [
@@ -41,8 +42,25 @@ const MentorProfile = () => {
 
   const { data: profileResponse, isLoading, error } = useMentorProfile();
   const { mutate: updateProfile, isPending: isSaving } = useUpdateMentorProfile();
+  const { mutate: uploadAvatar, isPending: isUploadingAvatar } = useUploadMentorAvatar();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const profile = profileResponse?.data?.profile;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image file must be under 5MB");
+      return;
+    }
+    uploadAvatar(file);
+  };
 
   useEffect(() => {
     if (profile) {
@@ -89,6 +107,8 @@ const MentorProfile = () => {
     );
   }
 
+  const avatarUrl = profile?.avatar || (profile as any)?.userId?.avatar;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -97,24 +117,76 @@ const MentorProfile = () => {
       />
 
       <DataCard>
-        <div className="flex items-center gap-4 mb-6">
-          <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold">
-            {profile?.fullName
-              ? profile.fullName
-                  .split(" ")
-                  .map((n: string) => n[0])
-                  .join("")
-              : "M"}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+          <div className="relative group flex-shrink-0">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={profile?.fullName || "Mentor"}
+                className="h-20 w-20 rounded-full object-cover border-2 border-primary/20 shadow-sm"
+              />
+            ) : (
+              <div className="h-20 w-20 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-bold border-2 border-primary/20 shadow-sm">
+                {profile?.fullName
+                  ? profile.fullName
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")
+                  : "M"}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingAvatar}
+              className="absolute inset-0 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-100"
+              title="Upload profile picture"
+            >
+              {isUploadingAvatar ? (
+                <Loader2 className="h-6 w-6 animate-spin text-white" />
+              ) : (
+                <Camera className="h-6 w-6 text-white" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">{profile?.fullName}</h3>
-            <p className="text-sm text-muted-foreground">{profile?.email}</p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-lg text-foreground truncate">{profile?.fullName}</h3>
+              {profile?.isVerified && (
+                <span className="bg-success/15 text-success text-xs font-semibold px-2.5 py-0.5 rounded-full flex-shrink-0">
+                  Verified Mentor
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground truncate">{profile?.email}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2 text-xs h-8"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingAvatar}
+            >
+              {isUploadingAvatar ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                  Uploading Photo...
+                </>
+              ) : (
+                <>
+                  <Camera className="h-3.5 w-3.5 mr-1.5" />
+                  Upload Profile Picture
+                </>
+              )}
+            </Button>
           </div>
-          {profile?.isVerified && (
-            <span className="ml-auto bg-success/15 text-success text-xs font-semibold px-2.5 py-1 rounded-full">
-              Verified Mentor
-            </span>
-          )}
         </div>
 
         <div className="grid gap-5">

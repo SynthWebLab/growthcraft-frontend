@@ -444,3 +444,44 @@ export function useMentorCreateProgressNote() {
     },
   });
 }
+
+/** Fetch public mentors catalogue (unauthenticated). */
+export function usePublicMentors(params?: {
+  limit?: number;
+  page?: number;
+  search?: string;
+  areaOfExpertise?: string;
+  sortBy?: string;
+}) {
+  return useQuery({
+    queryKey: ["public-mentors", params],
+    queryFn: () => mentorService.getPublicMentors(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
+  });
+}
+
+/** Mutation to upload mentor profile avatar. */
+export function useUploadMentorAvatar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => mentorService.uploadAvatar(file),
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success("Profile photo updated successfully!");
+        queryClient.invalidateQueries({ queryKey: mentorKeys.profile() });
+        queryClient.invalidateQueries({ queryKey: ["public-mentors"] });
+      } else {
+        toast.error("Avatar upload failed", {
+          description: response.message || "Please try again.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast.error("Avatar upload failed", {
+        description: extractApiError(error, "Could not upload image."),
+      });
+    },
+  });
+}

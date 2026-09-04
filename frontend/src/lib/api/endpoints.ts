@@ -63,6 +63,10 @@ export const API_ENDPOINTS = {
     enrollmentStatus: (id: string) => `/courses/${id}/enrollment-status`,
     config: "/courses/config",
   },
+  mentors: {
+    list: "/mentors",
+    detail: (id: string) => `/mentors/${id}`,
+  },
   bootcamps: {
     list: "/bootcamps",
     detail: (id: string) => `/bootcamps/${id}`,
@@ -173,6 +177,7 @@ export const API_ENDPOINTS = {
     earnings: "/mentor/earnings",
     withdraw: "/mentor/earnings/withdraw",
     profile: "/mentor/profile",
+    uploadAvatar: "/mentor/avatar",
     support: "/mentor/support",
     settingsAccount: "/mentor/settings/account",
     settingsPassword: "/mentor/settings/password",
