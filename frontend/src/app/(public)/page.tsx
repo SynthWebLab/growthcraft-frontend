@@ -14,7 +14,6 @@ const MentorShowcase = dynamic(() => import("@/components/public/MentorShowcase"
 const Outcomes = dynamic(() => import("@/components/public/Outcomes").then((m) => m.Outcomes));
 const HiringPartners = dynamic(() => import("@/components/public/HiringPartners").then((m) => m.HiringPartners));
 const FAQ = dynamic(() => import("@/components/public/FAQ").then((m) => m.FAQ));
-const FinalCTA = dynamic(() => import("@/components/public/FinalCTA").then((m) => m.FinalCTA));
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = SEO_CONFIG.homepage;
@@ -74,7 +73,6 @@ export default function Home() {
       <Outcomes />
       <HiringPartners />
       <FAQ />
-      <FinalCTA />
     </>
   );
 }
