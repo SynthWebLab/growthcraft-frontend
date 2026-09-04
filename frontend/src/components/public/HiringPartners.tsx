@@ -4,7 +4,6 @@ interface Partner {
   name: string;
   logo?: string;
   scale?: number;
-  darkBg?: boolean;
 }
 
 const companies: Partner[] = [
@@ -12,43 +11,36 @@ const companies: Partner[] = [
     name: "Digital Panda",
     logo: "/logos/digital panda axom.webp",
     scale: 1,
-    darkBg : true,
   },
   {
     name: "VisualVerse",
-    logo: "/logos/visual verse logo.webp",
+    logo: "/logos/visualverse.webp",
     scale: 1,
-    darkBg: true,
   },
   {
     name: "Cairn",
-    logo: "/logos/cairn.webp",
+    logo: "/logos/cairn2.webp",
     scale: 1,
-    darkBg: true,
   },
   {
     name: "TORUS",
     logo: "/logos/TORUS.webp",
     scale: 1,
-    darkBg : true,
   },
   {
     name: "Qurios",
     logo: "/logos/quorios.webp",
     scale: 1,
-    darkBg : true,
   },
   {
     name: "SynthWeb",
     logo: "/logos/synthweb.webp",
     scale: 1,
-    darkBg : true,
   },
   {
     name: "Social Stories",
     logo: "/logos/socialstories.webp",
     scale: 1,
-    darkBg : true,
   },
 ];
 
@@ -68,9 +60,7 @@ export const HiringPartners = () => {
         {companies.map((company) => (
           <div
             key={company.name}
-            className={`flex items-center justify-center h-20 sm:h-24 md:h-28 rounded-xl border border-border/60 hover:border-magenta/30 p-4 transition-all hover:shadow-xs overflow-hidden ${
-              company.darkBg ? "bg-[#4B33FF]/70" : "bg-card"
-            }`}
+            className="flex items-center justify-center h-20 sm:h-24 md:h-28 rounded-xl bg-card border border-border/60 hover:border-magenta/30 p-4 transition-all hover:shadow-xs overflow-hidden"
           >
             {company.logo ? (
               <img
