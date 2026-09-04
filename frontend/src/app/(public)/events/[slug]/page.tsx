@@ -40,7 +40,6 @@ import { useDirectCheckout } from "@/hooks/useDirectCheckout";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatDisplayDate } from "@/lib/dateUtils";
-import { getEventDetailBySlug } from "@/data/events-detail.mock";
 import type { WorkshopDetailResponse } from "@/types/workshop";
 import type { HackathonDetailResponse } from "@/types/hackathon";
 
@@ -248,8 +247,22 @@ export default function EventDetailPage({
   const { data: unifiedEventData } = useEventBySlug(normalizedSlug);
 
   // 2. Mock fallback for determining type or rendering mock details
-  const mockEventData = useMemo(() => getEventDetailBySlug(normalizedSlug) || getEventDetailBySlug(slug), [normalizedSlug, slug]);
+  const [mockEventData, setMockEventData] = useState<any>(null);
+  const [isMockLoading, setIsMockLoading] = useState(true);
+  
+  useEffect(() => {
+    let active = true;
+    import("@/test/fixtures/events-detail.mock").then(mod => {
+      if (active) {
+        setMockEventData(mod.getEventDetailBySlug(normalizedSlug) || mod.getEventDetailBySlug(slug));
+        setIsMockLoading(false);
+      }
+    });
+    return () => { active = false; };
+  }, [normalizedSlug, slug]);
+
   const eventType = (unifiedEventData as any)?.data?.type || (unifiedEventData as any)?.data?.event?.type || (unifiedEventData as any)?.event?.type || mockEventData?.data?.event?.type;
+
   
   // 3. Fetch from specific type endpoints if needed
   const { data: workshopDetailData } = useWorkshopDetails(
@@ -295,6 +308,14 @@ export default function EventDetailPage({
   const faqs = eventData?.data?.faqs || [];
 
   // Not found
+  if (isMockLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-magenta" />
+      </div>
+    );
+  }
+
   if (!event) {
     notFound();
   }

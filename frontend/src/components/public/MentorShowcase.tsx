@@ -1,9 +1,20 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Section } from "@/components/ui/section";
 import { DataCard } from "@/components/ui/data-card";
 import { usePublicMentors } from "@/hooks/queries/useMentor";
 import { Star } from "lucide-react";
+
+interface Mentor {
+  _id: string;
+  name: string;
+  photo: string;
+  company: string;
+  expertiseTags: string[];
+  sessionsDelivered: number;
+  rating: number;
+}
 
 export const MentorShowcase = () => {
   const { data, isLoading } = usePublicMentors();
@@ -90,3 +101,4 @@ export const MentorShowcase = () => {
     </Section>
   );
 };
+

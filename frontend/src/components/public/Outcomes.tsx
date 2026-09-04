@@ -1,10 +1,16 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Section } from "@/components/ui/section";
-import { testimonialsMock } from "@/data/testimonials.mock";
 import { Quote } from "lucide-react";
 
 export const Outcomes = () => {
+  const [testimonials, setTestimonials] = useState<any[]>([]);
+
+  useEffect(() => {
+    import("@/test/fixtures/testimonials.mock").then(mod => setTestimonials(mod.testimonialsMock));
+  }, []);
+
   return (
     <Section variant="marble" className="!py-10 sm:!py-14 md:!py-18 lg:!py-22">
       <div className="text-center mb-8 sm:mb-12 md:mb-14 animate-fade-up">
@@ -19,7 +25,7 @@ export const Outcomes = () => {
       <div
         className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide"
       >
-        {testimonialsMock.map((t) => (
+        {testimonials.map((t) => (
           <div
             key={t._id}
             className="w-[85vw] max-w-[340px] sm:w-[320px] md:w-[360px] snap-center sm:snap-start flex-shrink-0"
