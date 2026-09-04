@@ -68,7 +68,6 @@ export function usePendingAction() {
           );
         }
       } catch (error) {
-        console.error("Failed to parse pending action:", error);
         sessionStorage.removeItem("pendingAction");
         sessionStorage.removeItem("redirectAfterLogin");
       }

@@ -257,7 +257,7 @@ export default function TrainingProgramDetailPage({
           },
         });
       } catch (err) {
-        console.error("Callback request error:", err);
+        // ignore
       }
       return;
     }
@@ -286,7 +286,7 @@ export default function TrainingProgramDetailPage({
           },
         });
       } catch (err) {
-        console.error("Register interest error:", err);
+        // ignore
       }
       return;
     }
@@ -384,7 +384,7 @@ export default function TrainingProgramDetailPage({
         });
       }
     } catch (err) {
-      console.error("Enrollment error:", err);
+      // ignore
     }
   };
 
@@ -422,7 +422,7 @@ export default function TrainingProgramDetailPage({
         },
       });
     } catch (err) {
-      console.error("Callback error:", err);
+      // ignore
     }
   };
 

@@ -108,7 +108,7 @@ export default function AdminRegistrations() {
         setCurrentPage((prev) => prev - 1);
       }
     } catch (error) {
-      console.error("Error deleting registration:", error);
+      // ignore
     }
   };
 
@@ -129,7 +129,7 @@ export default function AdminRegistrations() {
       });
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Error updating registration:", error);
+      // ignore
     }
   };
 
