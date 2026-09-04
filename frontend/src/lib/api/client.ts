@@ -111,7 +111,6 @@ axiosInstance.interceptors.response.use(
     if (errorCode === "TOKEN_REVOKED") {
       console.log("[Axios Interceptor] Session revoked (TOKEN_REVOKED). Redirecting user to login page...");
       if (typeof window !== "undefined") {
-        localStorage.removeItem("gc_user");
         const path = window.location.pathname;
         const portalMatch = path.match(/^\/(student|college|mentor|employer|admin)/);
         const loginPath = portalMatch ? `/login/${portalMatch[1]}` : "/login/student";

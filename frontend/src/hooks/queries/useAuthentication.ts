@@ -68,18 +68,7 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
       // ── Guard: block login if already authenticated ──────────────────────────
       // This is the last line of defence in case the AuthPageLayout conflict modal
       // is somehow bypassed (e.g. via DevTools or a race condition).
-      const cachedUser: any =
-        queryClient.getQueryData(authKeys.profile()) ??
-        (typeof window !== "undefined"
-          ? (() => {
-              try {
-                const s = localStorage.getItem("gc_user");
-                return s ? JSON.parse(s) : null;
-              } catch {
-                return null;
-              }
-            })()
-          : null);
+      const cachedUser: any = queryClient.getQueryData(authKeys.profile());
 
       if (cachedUser) {
         // If the cached user's role doesn't match the expected portal role, hard-block.
@@ -147,19 +136,13 @@ export function useLogin(expectedRole?: string, callbackUrl?: string, setFormErr
       const user = response.data?.user;
       
       if (user) {
-        if (typeof window !== "undefined") {
-          localStorage.setItem("gc_user", JSON.stringify(user));
-        }
         queryClient.setQueryData(authKeys.profile(), user);
         // Validate that user role matches the login form's expected role
         if (expectedRole && user.role?.toLowerCase() !== expectedRole.toLowerCase()) {
           // Immediately log out to clear cookies and session state
           await authService.logout();
-          // Clear stale user data from cache and localStorage
+          // Clear stale user data from cache
           queryClient.setQueryData(authKeys.profile(), null);
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("gc_user");
-          }
 
           const actualRole = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase() : "another role";
           const correctPortalPath = `/login/${user.role?.toLowerCase()}`;
@@ -393,9 +376,6 @@ export function useLogout() {
       return { success: true };
     },
     onSuccess: async () => {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("gc_user");
-      }
       // Broadcast logout to all other open tabs
       broadcastAuthChange("LOGOUT");
       // Clear all React Query cache
@@ -439,9 +419,6 @@ export function useLogoutAll() {
       return { success: true };
     },
     onSuccess: async () => {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("gc_user");
-      }
       // Broadcast logout to all other open tabs
       broadcastAuthChange("LOGOUT");
       // Clear all React Query cache
