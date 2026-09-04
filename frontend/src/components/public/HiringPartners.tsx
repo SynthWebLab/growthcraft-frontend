@@ -3,86 +3,53 @@ import { Section } from "@/components/ui/section";
 interface Partner {
   name: string;
   logo?: string;
+  scale?: number;
+  darkBg?: boolean;
 }
 
 const companies: Partner[] = [
   {
-    name: "SynthWeb",
-    logo: "/images/partners/synthweb.webp",
+    name: "Digital Panda",
+    logo: "/logos/digital panda axom.webp",
+    scale: 1,
+    darkBg : true,
   },
   {
-    name: "Razorpay",
-    logo: "https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/razorpay-icon.png",
+    name: "VisualVerse",
+    logo: "/logos/visual verse logo.webp",
+    scale: 1,
+    darkBg: true,
   },
-  { name: "Swiggy",
-    logo:"https://logos-world.net/wp-content/uploads/2020/11/Swiggy-Symbol.png"
-   },
-  { name: "Flipkart",
-    logo:"https://logos-world.net/wp-content/uploads/2020/11/Flipkart-Logo.png"
-   },
-  { name: "Zomato" ,
-    logo:"https://iconlogovector.com/uploads/images/2025/01/lg-677a5f20c5bb4-Zomato.webp"
+  {
+    name: "Cairn",
+    logo: "/logos/cairn.webp",
+    scale: 1,
+    darkBg: true,
   },
-  { name: "CRED",
-    logo:"https://upload.wikimedia.org/wikipedia/commons/9/9d/CRED-LOGO2.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original"
+  {
+    name: "TORUS",
+    logo: "/logos/TORUS.webp",
+    scale: 1,
+    darkBg : true,
   },
-  { name: "PhonePe",
-    logo:"https://download.logo.wine/logo/PhonePe/PhonePe-Logo.wine.png"
+  {
+    name: "Qurios",
+    logo: "/logos/quorios.webp",
+    scale: 1,
+    darkBg : true,
   },
-  { name: "Groww",
-    logo:"https://www.logoshape.com/wp-content/uploads/2025/09/groww-logo_logoshape.png"
-   },
-  { name: "Meesho",
-    logo:"https://images.seeklogo.com/logo-png/50/2/meesho-logo-png_seeklogo-507116.png"
-   },
-  { name: "Ola",
-    logo:"https://1000logos.net/wp-content/uploads/2022/08/Ola-Cabs-Logo.png"
-   },
-  { name: "Paytm",
-    logo:"https://upload.wikimedia.org/wikipedia/commons/4/42/Paytm_logo.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original"
-   },
-  { name: "Freshworks",
-    logo:"https://seekvectorlogo.com/wp-content/uploads/2019/09/freshworks-vector-logo.png"
-   },
-  { name: "Zerodha",
-    logo:"https://images.seeklogo.com/logo-png/35/2/zerodha-logo-png_seeklogo-356512.png"
-   },
-  { name: "Myntra",
-    logo:"https://wp.logos-download.com/wp-content/uploads/2016/09/Myntra_logo.png?dl"
-   },
-  { name: "Nykaa",
-    logo:"https://cdn.iconscout.com/icon/free/png-256/free-nykaa-logo-icon-svg-download-png-2822953.png?f=webp"
-   },
-  { name: "Dream11",
-    logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Dream11_logo.svg/3840px-Dream11_logo.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail"
-   },
-  { name: "ShareChat",
-    logo:"https://cdn.iconscout.com/icon/free/png-256/free-share-chat-logo-icon-svg-download-png-1136709.png"
-   },
-  { name: "Lenskart",
-    logo:"https://1000logos.net/wp-content/uploads/2022/10/Lenskart-Logo.png"
-   },
-  { name: "Byju's",
-    logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Byju%27s_logo.svg/3840px-Byju%27s_logo.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail"
-   },
-  { name: "Unacademy",
-    logo:"https://images.seeklogo.com/logo-png/40/2/unacademy-logo-png_seeklogo-400820.png"
-   },
-  { name: "upGrad",
-    logo:"https://compciti.com/wp-content/uploads/2023/07/idE37EUsSR.png"
-   },
-  { name: "Dunzo",
-    logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Dunzo_Logo.svg/3840px-Dunzo_Logo.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail"
-   },
-  { name: "Urban Company",
-    logo:"https://iconlogovector.com/uploads/images/2025/11/lg-69165dd60f7ef-Urban-Company.webp"
+  {
+    name: "SynthWeb",
+    logo: "/logos/synthweb.webp",
+    scale: 1,
+    darkBg : true,
   },
-  { name: "Rapido",
-    logo:"https://1000logos.net/wp-content/uploads/2023/09/Rapido-Logo.png"
-   },
-  { name: "Practo",
-    logo:"https://upload.wikimedia.org/wikipedia/en/6/64/Practo_new_logo.png?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original"
-   },
+  {
+    name: "Social Stories",
+    logo: "/logos/socialstories.webp",
+    scale: 1,
+    darkBg : true,
+  },
 ];
 
 export const HiringPartners = () => {
@@ -97,17 +64,20 @@ export const HiringPartners = () => {
         </h2>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-5">
         {companies.map((company) => (
           <div
             key={company.name}
-            className="flex items-center justify-center h-14 sm:h-16 md:h-18 rounded-xl bg-card border border-border/60 hover:border-magenta/30 p-2.5 sm:p-3 transition-all hover:shadow-xs"
+            className={`flex items-center justify-center h-20 sm:h-24 md:h-28 rounded-xl border border-border/60 hover:border-magenta/30 p-4 transition-all hover:shadow-xs overflow-hidden ${
+              company.darkBg ? "bg-[#4B33FF]/70" : "bg-card"
+            }`}
           >
             {company.logo ? (
               <img
                 src={company.logo}
                 alt={company.name}
-                className="max-h-7 sm:max-h-9 md:max-h-10 w-auto max-w-full object-contain hover:grayscale-0 transition-all"
+                style={{ transform: `scale(${company.scale || 1})` }}
+                className="w-full h-full object-contain hover:grayscale-0 transition-all"
               />
             ) : (
               <span className="text-xs sm:text-sm font-medium text-muted-foreground">
