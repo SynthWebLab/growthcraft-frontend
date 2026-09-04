@@ -26,8 +26,7 @@ import {
 
 const ITEMS_PER_PAGE = 10; // Show 10 bootcamps per page
 
-const formatBootcampDate = (date: string) =>
-  new Date(date).toLocaleDateString("en-GB");
+import { formatDisplayDate } from "@/lib/dateUtils";
 
 const BootcampsPage = () => {
   const [selectedMode, setSelectedMode] = useState<(typeof BOOTCAMP_MODES)[number] | null>(null);
@@ -293,7 +292,7 @@ const BootcampsPage = () => {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    {formatBootcampDate(bootcamp.startDate)} — {formatBootcampDate(bootcamp.endDate)}
+                    {formatDisplayDate(bootcamp.startDate, bootcamp.endDate, (bootcamp as any).isDateTBA, bootcamp.duration)}
                   </span>
                 </div>
 

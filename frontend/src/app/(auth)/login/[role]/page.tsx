@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
-import { useParams, useSearchParams, notFound } from "next/navigation";
+import { use, Suspense } from "react";
+import { useSearchParams, notFound } from "next/navigation";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -165,9 +165,12 @@ function LoginPageContent({ role }: { role: keyof typeof roleConfig }) {
   );
 }
 
-export default function LoginPage() {
-  const params = useParams();
-  const rawRole = Array.isArray(params?.role) ? params.role[0] : params?.role;
+export default function LoginPage({
+  params,
+}: {
+  params: Promise<{ role: string }>;
+}) {
+  const { role: rawRole } = use(params);
   const role = (rawRole?.toLowerCase() || "") as keyof typeof roleConfig;
   const config = roleConfig[role];
 

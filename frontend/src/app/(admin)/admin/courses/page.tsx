@@ -11,6 +11,7 @@ import {
 } from "@/hooks/queries/useAdmin";
 import { DataTable } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
+import { formatDisplayDate, getBatchDateDetails } from "@/lib/dateUtils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -45,6 +46,9 @@ interface Course {
   instructorName?: string | null;
   mentors?: any[];
   tags?: string | null;
+  isDateTBA?: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
   is_published: boolean;
   is_featured: boolean;
   created_at: string;
@@ -78,6 +82,9 @@ const EMPTY_FORM = {
   instructorName: "GrowthCraft Team",
   selectedMentorIds: [] as string[],
   tags: "",
+  isDateTBA: false,
+  startDate: "",
+  endDate: "",
   is_published: false,
   is_featured: false,
 };
@@ -123,6 +130,8 @@ export default function AdminCourses() {
     instructorName: c.instructor?.name || c.instructorName || null,
     mentors: c.mentors || [],
     tags: Array.isArray(c.tags) ? c.tags.join(", ") : c.tags || "",
+    startDate: c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : null,
+    isDateTBA: c.isDateTBA !== undefined ? Boolean(c.isDateTBA) : true,
     is_published: !!c.isPublished,
     is_featured: !!c.isFeatured,
     created_at: c.createdAt || new Date().toISOString(),
@@ -149,6 +158,9 @@ export default function AdminCourses() {
       instructorName: course.instructorName || "GrowthCraft Team",
       selectedMentorIds: existingMentorIds,
       tags: course.tags || "",
+      isDateTBA: course.isDateTBA !== undefined ? course.isDateTBA : true,
+      startDate: course.startDate || "",
+      endDate: course.endDate || "",
       is_published: course.is_published,
       is_featured: course.is_featured,
     });
@@ -181,6 +193,9 @@ export default function AdminCourses() {
       tags: formData.tags
         ? formData.tags.split(",").map((t) => t.trim()).filter(Boolean)
         : [],
+      isDateTBA: formData.isDateTBA,
+      startDate: !formData.isDateTBA && formData.startDate ? formData.startDate : null,
+      endDate: !formData.isDateTBA && formData.endDate ? formData.endDate : null,
       isPublished: formData.is_published,
       isFeatured: formData.is_featured,
     };
@@ -222,6 +237,27 @@ export default function AdminCourses() {
       key: "price",
       label: "Price",
       render: (v: number) => (v ? `₹${v.toLocaleString()}` : "Free"),
+    },
+    {
+      key: "startDate",
+      label: "Next Batch",
+      render: (v: string, row: Course) => {
+        const details = getBatchDateDetails(v, row.endDate, row.isDateTBA);
+        return (
+          <Badge
+            variant="outline"
+            className={`text-xs font-medium ${
+              details.isTBA
+                ? "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                : details.status === "in-progress"
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                : "bg-primary/10 text-primary border-primary/20"
+            }`}
+          >
+            {details.displayWithStatus}
+          </Badge>
+        );
+      },
     },
     {
       key: "is_published",
@@ -427,6 +463,82 @@ export default function AdminCourses() {
                   onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
                   placeholder="e.g. 8999 (for strikethrough)"
                 />
+              </div>
+
+              {/* Batch Date & TBA Setting */}
+              <div className="space-y-3 md:col-span-2 p-3.5 rounded-lg border bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-semibold">Next Batch Date</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Set upcoming batch date or mark as "To be announced"
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="course-tba-switch" className="text-xs font-medium cursor-pointer">
+                      To be announced
+                    </Label>
+                    <Switch
+                      id="course-tba-switch"
+                      checked={formData.isDateTBA}
+                      onCheckedChange={(checked) =>
+                        setFormData({
+                          ...formData,
+                          isDateTBA: checked,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="course-start-date" className="text-xs font-medium">Scheduled Start Date</Label>
+                    <Input
+                      id="course-start-date"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => {
+                        const newStart = e.target.value;
+                        let newEnd = formData.endDate;
+                        if (newStart && formData.duration && !newEnd) {
+                          const days = parseInt(formData.duration, 10) || 30;
+                          const d = new Date(newStart);
+                          d.setDate(d.getDate() + days);
+                          newEnd = d.toISOString().split("T")[0];
+                        }
+                        setFormData({
+                          ...formData,
+                          startDate: newStart,
+                          endDate: newEnd,
+                          isDateTBA: newStart ? false : formData.isDateTBA,
+                        });
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="course-end-date" className="text-xs font-medium">Scheduled End Date</Label>
+                    <Input
+                      id="course-end-date"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          endDate: e.target.value,
+                          isDateTBA: e.target.value ? false : formData.isDateTBA,
+                        })
+                      }
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                {formData.isDateTBA && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ℹ️ Marked as "To be announced". The date inputs above are saved, but "To be announced" will be shown on public cards.
+                  </p>
+                )}
               </div>
 
               {/* Assigned Mentors & Instructor */}

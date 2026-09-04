@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useBootcamps } from "@/hooks/queries/useBootcamps";
 import { Calendar, MapPin, Users } from "lucide-react";
 
+import { formatDisplayDate } from "@/lib/dateUtils";
+
 export const BootcampHighlight = () => {
   // Fetch open bootcamps
   const { data: bootcampsData, isLoading } = useBootcamps({
@@ -60,7 +62,7 @@ export const BootcampHighlight = () => {
               <div className="flex items-center gap-3 text-xs sm:text-sm md:text-base text-muted-foreground">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-secondary flex-shrink-0" />
                 <span>
-                  {new Date(openBootcamp.startDate).toLocaleDateString()} — {new Date(openBootcamp.endDate).toLocaleDateString()}
+                  {formatDisplayDate(openBootcamp.startDate, openBootcamp.endDate, (openBootcamp as any).isDateTBA, (openBootcamp as any).durationDays || (openBootcamp as any).duration)}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs sm:text-sm md:text-base text-muted-foreground">

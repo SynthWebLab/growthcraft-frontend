@@ -33,6 +33,7 @@ export interface TrainingProgram {
   description: string;
   domain: string;
   duration: number; // in days
+  durationDays?: number;
   tools: string[];
   price: number;
   originalPrice?: number;
@@ -41,6 +42,9 @@ export interface TrainingProgram {
   rating: number;
   level: "Beginner" | "Intermediate" | "Advanced";
   thumbnail?: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  isDateTBA?: boolean;
   cohorts?: CohortDate[]; // Available cohort start dates
   mentorName: string;
   primaryCTA: string;

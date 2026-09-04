@@ -13,8 +13,9 @@ export interface Hackathon {
   banner?: string;
   rating: number;
   tags: string[];
-  startDate: string;
-  endDate: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  isDateTBA?: boolean;
   mode: HackathonMode;
   maxSeats: number;
   enrolledCount: number;

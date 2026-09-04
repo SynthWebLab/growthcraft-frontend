@@ -39,6 +39,9 @@ export interface CreateCourseRequest {
   slug?: string;
   mentorIds?: string[];
   mentors?: any[];
+  startDate?: string | Date | null;
+  endDate?: string | Date | null;
+  isDateTBA?: boolean;
   [key: string]: any;
 }
 
@@ -50,6 +53,10 @@ export interface CreateTrainingProgramRequest {
   description: string;
   domain: string;
   price: number;
+  durationDays?: number | string;
+  startDate?: string | Date | null;
+  endDate?: string | Date | null;
+  isDateTBA?: boolean;
   [key: string]: any;
 }
 
@@ -62,8 +69,9 @@ export interface CreateEventRequest {
   type?: string;
   durationDays?: number | string;
   price?: number | string;
-  startDate?: string | Date;
-  endDate?: string | Date;
+  startDate?: string | Date | null;
+  endDate?: string | Date | null;
+  isDateTBA?: boolean;
   maxSeats?: number | string;
   mentorIds?: string[];
   mentors?: any[];
